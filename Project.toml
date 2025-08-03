@@ -4,4 +4,4 @@ authors = ["Maxence Gollier maxence-2.gollier@polymtl.ca"]
 version = "0.1.0"
 
 [compat]
-julia = "lts"
+julia = "^1.6.0"
