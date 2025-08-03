@@ -1,0 +1,41 @@
+# Changes here will be overwritten by Copier
+AddAllcontributors: true
+AddCitationCFF: true
+AddCodeOfConduct: true
+AddCompatHelperCI: true
+AddContributionDocs: true
+AddCopierCI: false
+AddDependabot: false
+AddDocs: true
+AddDocsCI: true
+AddFormatterAndLinterConfigFiles: true
+AddGitHubPRTemplate: false
+AddGitHubTemplates: true
+AddLintCI: false
+AddLychee: false
+AddMacToCI: true
+AddPrecommit: true
+AddTagBotCI: true
+AddTestCI: true
+AddWinToCI: true
+Authors: Maxence Gollier maxence-2.gollier@polymtl.ca
+AutoIncludeTests: true
+CheckExplicitImports: true
+CodeOfConductContact: Maxence Gollier maxence-2.gollier@polymtl.ca
+ConfigIndentation: 2
+ExplicitImportsChecklist: exclude_all_qualified_access_are_public
+JuliaIndentation: 2
+JuliaMinCIVersion: lts
+JuliaMinVersion: lts
+License: MPL-2.0
+LicenseCopyrightHolders: Maxence Gollier maxence-2.gollier@polymtl.ca
+MarkdownIndentation: 2
+PackageName: ExactPenalty
+PackageOwner: JuliaSmoothOptimizers
+PackageUUID: 9416bf39-c24a-5b52-a5c2-6dfe9a752fef
+RunJuliaNightlyOnCI: true
+StrategyConfirmIncluded: true
+StrategyLevel: 1
+StrategyReviewExcluded: true
+UseCirrusCI: true
+_src_path: C:\Users\mgoll\.julia\packages\BestieTemplate\jdG8v

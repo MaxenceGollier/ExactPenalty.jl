@@ -1,0 +1,7 @@
+name = "ExactPenalty"
+uuid = "9416bf39-c24a-5b52-a5c2-6dfe9a752fef"
+authors = ["Maxence Gollier maxence-2.gollier@polymtl.ca"]
+version = "0.1.0"
+
+[compat]
+julia = "lts"
