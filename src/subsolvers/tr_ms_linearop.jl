@@ -59,7 +59,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   stats::GenericExecutionStats{T, V, V};
   x = reg_nlp.model.meta.x0,
   σk = T(1),
-  atol = eps(T)^(0.3),
+  atol = eps(T)^(0.5),
   max_time = T(30),
   max_iter = 100,
 ) where {T <: Real, V <: AbstractVector{T}}
@@ -85,6 +85,8 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   H.α = zero(T)
   αmin = eps(T)^(0.5)
   θ = 0.8
+  Q = 
+  atol = eps(T)^0.3
 
   #FIXME : Do I need to update H.Q, H.A or are they automatically referenced ?
   H.σ = reg_nlp.model.σ
@@ -121,7 +123,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
 
     minres_qlp!(krylov_workspace, H, u1, atol = eps(T)^0.7, rtol = eps(T)^0.7)
     x1 .= krylov_workspace.x
-    norm_x1 = norm(@view x1[(n + 1):(n + m)])
+    norm_x1 = norm(x1)
 
     @views @. u2[(n + 1):(n + m)] = -x1[(n + 1):(n + m)]
     minres_qlp!(krylov_workspace, H, u1, atol = eps(T)^0.7, rtol = eps(T)^0.7)
