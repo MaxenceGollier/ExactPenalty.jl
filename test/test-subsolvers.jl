@@ -1,5 +1,5 @@
 # Get instances 
-instances = "test/instances/"
+instances = "instances/"
 instances = filter(isfile, joinpath.(instances, readdir(instances)))
 
 # Get subsolvers
