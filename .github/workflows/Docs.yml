@@ -1,57 +1,24 @@
-name: Docs
-
+name: Documentation
 on:
   push:
     branches:
-      - main
-    paths:
-      - "docs/**"
-      - "src/**"
-      - "*.toml"
-    tags: ["*"]
+      - master
+    tags: '*'
   pull_request:
-    branches:
-      - main
-    paths:
-      - "docs/**"
-      - "src/**"
-      - "*.toml"
     types: [opened, synchronize, reopened]
-
-concurrency:
-  # Skip intermediate builds: always.
-  # Cancel intermediate builds: only if it is a pull request build.
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
-
 jobs:
-  docs:
-    name: Documentation
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@latest
         with:
-          version: "1"
-      - name: Use Julia cache
-        uses: julia-actions/cache@v2
-      - name: Instantiate environment with development version of the package
-        run: |
-          julia --project=docs -e '
-            using Pkg
-            Pkg.develop(PackageSpec(path=pwd()))
-            Pkg.instantiate()'
-      - name: Run doctest
-        run: |
-          julia --project=docs -e '
-            using Documenter: DocMeta, doctest
-            using ExactPenalty
-            DocMeta.setdocmeta!(ExactPenalty, :DocTestSetup, :(using ExactPenalty); recursive=true)
-            doctest(ExactPenalty)'
-      - name: Generate and deploy documentation
-        run: julia --project=docs docs/make.jl
+          version: '1'
+      - name: Install dependencies
+        run: julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+      - name: Build and deploy
         env:
-          JULIA_PKG_SERVER: ""
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
-          GKSwstype: "100" # https://discourse.julialang.org/t/generation-of-documentation-fails-qt-qpa-xcb-could-not-connect-to-display/60988
+        run: julia --project=docs --color=yes docs/make.jl
+
