@@ -19,7 +19,7 @@ function TRMoreSorensenSparseSolver(reg_nlp::AbstractRegularizedNLPModel{T, V}; 
   x1 = similar(u1)
   x2 = similar(u1)
   work = similar(u1, 4*(n+m))
-  residual = zeros(u1, n + m)
+  residual = zeros(T, n + m)
 
   H1 = [reg_nlp.model.B+one(T)*I(n) coo_spzeros(T, n, m);]
   H2 = [reg_nlp.h.A (-one(T))*I]
@@ -49,7 +49,8 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   n_refin = 20
 
   # Retrieve workspace
-  m, n = size(A)
+  n = length(x)
+  m = solver.workspace.n - n
   Δ = reg_nlp.h.h.lambda
 
   u1, u2, x1, x2 = solver.u1, solver.u2, solver.x1, solver.x2
