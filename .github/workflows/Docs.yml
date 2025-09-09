@@ -2,10 +2,8 @@ name: Documentation
 on:
   push:
     branches:
-      - master
+      - other
     tags: '*'
-  pull_request:
-    types: [opened, synchronize, reopened]
 jobs:
   build:
     runs-on: ubuntu-latest
