@@ -1,8 +1,8 @@
 module ExactPenalty
 
 using LinearAlgebra
-using NLPModels, NLPModelsModifiers, RegularizedProblems
-using Krylov, LinearOperators, SolverCore
+using NLPModels, NLPModelsModifiers, RegularizedProblems, RegularizedOptimization
+using Krylov, LinearOperators, ShiftedProximalOperators, SolverCore, SparseMatricesCOO
 
 abstract type AbstractPenalizedProblemSolver <: AbstractOptimizationSolver end
 
