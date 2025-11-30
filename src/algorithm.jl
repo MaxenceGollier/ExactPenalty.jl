@@ -51,7 +51,7 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T, V}; subsolver = R2Solver) wher
     CompositeNormL2(one(T), (c, x) -> cons!(nlp, x, c), (j, x) -> jac_coord!(nlp, x, j.vals), A, b, store_previous_jacobian = store_previous_jacobian)
   subnlp = RegularizedNLPModel(nlp, sub_h)
   if subsolver == R2NSolver
-    solver = subsolver(subnlp, subsolver = L2_R2N_subsolver)
+    solver = subsolver(subnlp, subsolver = TRMoreSorensenLinOpSolver)
   else
     solver = subsolver(subnlp)
   end
