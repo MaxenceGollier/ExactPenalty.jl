@@ -31,7 +31,8 @@ function read_instance(file::String; type = Float64, Hessian_modifier = H -> H)
     end
   end
   x0 = zeros(type, length(data["nabla"]))
-  model = R2NModel(Hessian_modifier(data["Q"]), data["nabla"], data["sigma"], x0)
+  model = Hessian_modifier == SparseMatrixCOO ? R2NModel(Hessian_modifier(tril(Q)), data["nabla"], data["sigma"], x0) : R2NModel(Hessian_modifier(Q), data["nabla"], data["sigma"], x0)
+
   c! = let c = data["c"] 
     (b, x) -> 
     begin
@@ -104,7 +105,7 @@ function generate_instance(n::Int, m::Int, alpha::Real;
   end
 
   x0 = zeros(typeof(alpha), n)
-  model = R2NModel(Hessian_modifier(Q), nabla, 0.0, x0)
+  model = Hessian_modifier == SparseMatrixCOO ? R2NModel(Hessian_modifier(tril(Q)), nabla, 0.0, x0) : R2NModel(Hessian_modifier(Q), nabla, 0.0, x0)
   c! = let c = b
   (b, x) -> 
     begin

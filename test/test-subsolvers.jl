@@ -1,17 +1,18 @@
 # Get instances 
-instances = "instances/"
+instances = "test/instances/"
 instances = filter(isfile, joinpath.(instances, readdir(instances)))
 
 # Get subsolvers
-solver_names = ["TRMoreSorensenLinOpSolver"]
-solvers = [TRMoreSorensenLinOpSolver]
+solver_names = ["TRMoreSorensenLinOpSolver", "TRMoreSorensenSparseSolver"]
+solvers = [TRMoreSorensenLinOpSolver, TRMoreSorensenSparseSolver]
+modifiers = [LinearOperator, SparseMatrixCOO]
 
 # Test on real instances
-for (solver_name, solver_constructor) in zip(solver_names, solvers)
+for (solver_name, solver_constructor, modifier) in zip(solver_names, solvers, modifiers)
   @testset "$solver_name" begin
     @testset "Well-conditionned generated" begin
       n, m = 10, 2
-      small_instance_boundary, solution = generate_instance(n, m, 0.5, Hessian_modifier = LinearOperator)
+      small_instance_boundary, solution = generate_instance(n, m, 0.5, Hessian_modifier = modifier)
       solver = eval(solver_constructor)(small_instance_boundary)
       stats = RegularizedExecutionStats(small_instance_boundary)
       @test @wrappedallocs(solve!(solver, small_instance_boundary, stats, atol = 1e-9)) == 0 
@@ -19,7 +20,7 @@ for (solver_name, solver_constructor) in zip(solver_names, solvers)
       @test norm(solution[:y] - solver.x1[n+1:end]) <= 1e-9
       @test abs(solution[:tau] - norm(solver.x1[n+1:end])) <= 1e-9
 
-      small_instance_interior, solution = generate_instance(n, m, 0.0, Hessian_modifier = LinearOperator)
+      small_instance_interior, solution = generate_instance(n, m, 0.0, Hessian_modifier = modifier)
       solver = eval(solver_constructor)(small_instance_interior)
       stats = RegularizedExecutionStats(small_instance_interior)
       @test @wrappedallocs(solve!(solver, small_instance_interior, stats, atol = 1e-9)) == 0 
@@ -28,7 +29,7 @@ for (solver_name, solver_constructor) in zip(solver_names, solvers)
       @test norm(solver.x1[n+1:end]) <= solution[:tau]
 
       n, m = 100, 20
-      medium_instance_boundary, solution = generate_instance(n, m, 0.5, Hessian_modifier = LinearOperator)
+      medium_instance_boundary, solution = generate_instance(n, m, 0.5, Hessian_modifier = modifier)
       solver = eval(solver_constructor)(medium_instance_boundary)
       stats = RegularizedExecutionStats(medium_instance_boundary)
       @test @wrappedallocs(solve!(solver, medium_instance_boundary, stats, atol = 1e-9)) == 0 
@@ -36,7 +37,7 @@ for (solver_name, solver_constructor) in zip(solver_names, solvers)
       @test norm(solution[:y] - solver.x1[n+1:end]) <= 1e-9
       @test abs(solution[:tau] - norm(solver.x1[n+1:end])) <= 1e-9
 
-      medium_instance_interior, solution = generate_instance(n, m, 0.0, Hessian_modifier = LinearOperator)
+      medium_instance_interior, solution = generate_instance(n, m, 0.0, Hessian_modifier = modifier)
       solver = eval(solver_constructor)(medium_instance_interior)
       stats = RegularizedExecutionStats(medium_instance_interior)
       @test @wrappedallocs(solve!(solver, medium_instance_interior, stats, atol = 1e-9)) == 0 
@@ -47,7 +48,7 @@ for (solver_name, solver_constructor) in zip(solver_names, solvers)
 
     @testset "Ill-conditionned real" begin
       for instance in instances
-        reg_nlp = read_instance(instance, type = Float64, Hessian_modifier = LinearOperator)
+        reg_nlp = read_instance(instance, type = Float64, Hessian_modifier = modifier)
         solver = eval(solver_constructor)(reg_nlp)
         stats = RegularizedExecutionStats(reg_nlp)
         @test @wrappedallocs(solve!(solver, reg_nlp, stats)) == 0 
