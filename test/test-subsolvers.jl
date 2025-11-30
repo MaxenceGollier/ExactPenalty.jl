@@ -9,7 +9,7 @@ solvers = [TRMoreSorensenLinOpSolver]
 # Test on real instances
 for (solver_name, solver_constructor) in zip(solver_names, solvers)
   @testset "$solver_name" begin
-    @testset "Well-conditionned generated" begin
+    @testset "Well-conditionned" begin
       n, m = 10, 2
       small_instance_boundary, solution = generate_instance(n, m, 0.5, Hessian_modifier = LinearOperator)
       solver = eval(solver_constructor)(small_instance_boundary)
@@ -45,7 +45,7 @@ for (solver_name, solver_constructor) in zip(solver_names, solvers)
       @test norm(solver.x1[n+1:end]) <= solution[:tau]
     end
 
-    @testset "Ill-conditionned real" begin
+    @testset "Ill-conditionned" begin
       for instance in instances
         reg_nlp = read_instance(instance, type = Float64, Hessian_modifier = LinearOperator)
         solver = eval(solver_constructor)(reg_nlp)
