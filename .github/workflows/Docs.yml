@@ -4,6 +4,16 @@ on:
     branches:
       - other
     tags: '*'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "src/**"
+      - "test/**"
+      - "*.toml"
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    
 jobs:
   build:
     runs-on: ubuntu-latest
