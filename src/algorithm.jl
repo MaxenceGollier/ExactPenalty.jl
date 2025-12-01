@@ -265,7 +265,6 @@ function SolverCore.solve!(
         max_eval = min(rem_eval, sub_max_eval),
         σmin = β4,
         σk = 1/νsub,
-        sub_kwargs = Dict{Symbol, Any}()
       )
     end
 
@@ -304,6 +303,10 @@ function SolverCore.solve!(
     solved =
       (sqrt_θ ≤ atol && solver.substats.status == :first_order) ||
       (θ < 0 && sqrt_θ ≤ neg_tol && solver.substats.status == :first_order)
+    infeasible = 
+      (hx > 1e2*θ) && 
+      (sqrt_θ < atol && hx > atol)
+      
     (θ < 0 && sqrt_θ > neg_tol) &&
       error("L2Penalty: prox-gradient step should produce a decrease but θ = $(θ)")
 
@@ -318,10 +321,16 @@ function SolverCore.solve!(
     rem_eval = max_eval - neval_obj(nlp)
     set_time!(stats, time() - start_time)
     set_objective!(stats, fx)
-    set_solver_specific!(stats,  :theta, sqrt_θ)
+    #set_solver_specific!(stats,  :theta, sqrt_θ)
 
-    isa(solver.subsolver, R2Solver) && set_residuals!(stats, hx, norm(solver.subsolver.s)*solver.substats.solver_specific[:sigma])
-    isa(solver.subsolver, R2NSolver) && set_residuals!(stats, hx, norm(solver.subsolver.s1)*solver.substats.solver_specific[:sigma_cauchy])
+    if isa(solver.subsolver, R2Solver) 
+      set_residuals!(stats, hx, norm(solver.subsolver.s)*solver.substats.solver_specific[:sigma])
+      set_constraint_multipliers!(stats, solver.subsolver.ψ.q*solver.substats.solver_specific[:sigma])
+    elseif isa(solver.subsolver, R2NSolver) 
+      set_residuals!(stats, hx, norm(solver.subsolver.s1)*solver.substats.solver_specific[:sigma_cauchy])
+      set_constraint_multipliers!(stats, solver.subsolver.ψ.q*solver.substats.solver_specific[:sigma_cauchy])
+    end
+    
 
     set_status!(
       stats,
@@ -331,6 +340,7 @@ function SolverCore.solve!(
         n_iter_since_decrease = n_iter_since_decrease,
         iter = stats.iter,
         optimal = solved,
+        infeasible = infeasible,
         max_eval = max_eval,
         max_time = max_time,
         max_iter = max_iter,
@@ -352,13 +362,16 @@ function get_status(
   elapsed_time = 0.0,
   iter = 0,
   optimal = false,
+  infeasible = false,
   n_iter_since_decrease = 0,
   max_eval = Inf,
   max_time = Inf,
   max_iter = Inf,
   max_decreas_iter = Inf,
 ) where {M <: AbstractNLPModel}
-  if optimal
+  if infeasible
+    :infeasible
+  elseif optimal
     :first_order
   elseif iter > max_iter
     :max_iter
