@@ -1,7 +1,7 @@
 name = "ExactPenalty"
 uuid = "9416bf39-c24a-5b52-a5c2-6dfe9a752fef"
-authors = ["Maxence Gollier maxence-2.gollier@polymtl.ca"]
 version = "0.1.0"
+authors = ["Maxence Gollier maxence-2.gollier@polymtl.ca"]
 
 [deps]
 Krylov = "ba0b0d4f-ebba-5204-a429-3ac8c609bfb7"
@@ -22,7 +22,7 @@ LinearOperators = "2.10.0"
 NLPModels = "0.20, 0.21"
 NLPModelsModifiers = "0.7.2"
 Random = "1.10.0"
-RegularizedOptimization = "0.1"
+RegularizedOptimization = "0.1, 0.2"
 RegularizedProblems = "0.1.1"
 ShiftedProximalOperators = "0.2.2"
 SolverCore = "0.3.8"
