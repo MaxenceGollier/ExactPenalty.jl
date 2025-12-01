@@ -321,7 +321,7 @@ function SolverCore.solve!(
     rem_eval = max_eval - neval_obj(nlp)
     set_time!(stats, time() - start_time)
     set_objective!(stats, fx)
-    #set_solver_specific!(stats,  :theta, sqrt_θ)
+    set_solver_specific!(stats,  :theta, sqrt_θ)
 
     if isa(solver.subsolver, R2Solver) 
       set_residuals!(stats, hx, norm(solver.subsolver.s)*solver.substats.solver_specific[:sigma])
