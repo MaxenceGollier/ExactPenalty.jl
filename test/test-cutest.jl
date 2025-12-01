@@ -1,6 +1,7 @@
 using CUTEst
 
-problem_names = ["BT1", "MSS1", "SSINE", "VANDAMIUS"]
+problem_names = ["BT1", "MSS1", "SSINE", "VANDANIUMS"]
+expected_status = [:first_order, :first_order, :infeasible, :infeasible]
 
 tol = 1e-3
 
