@@ -82,7 +82,7 @@ For advanced usage, first define a solver "L2PenaltySolver" to preallocate the m
     solver = L2PenaltySolver(nlp)
     solve!(solver, nlp)
 
-    stats = GenericExecutionStats(nlp)
+    stats = ExactPenaltyExecutionStats(nlp)
     solver = L2PenaltySolver(nlp)
     solve!(solver, nlp, stats)
 
@@ -140,7 +140,7 @@ function L2Penalty(
     error("L2Penalty: This algorithm only works for equality contrained problems.")
   end
   solver = L2PenaltySolver(nlp, subsolver = subsolver)
-  stats = GenericExecutionStats(nlp)
+  stats = ExactPenaltyExecutionStats(nlp)
   solve!(solver, nlp, stats; kwargs...)
   return stats
 end
