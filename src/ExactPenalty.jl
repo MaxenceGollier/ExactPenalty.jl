@@ -6,6 +6,8 @@ using Krylov, LinearOperators, ProximalOperators, QRMumps, ShiftedProximalOperat
 
 abstract type AbstractPenalizedProblemSolver <: AbstractOptimizationSolver end
 
+include("ExactPenaltyExecutionStats.jl")
+
 include("subsolvers/tr_ms_linearop.jl")
 include("subsolvers/tr_ms_sparse.jl")
 
