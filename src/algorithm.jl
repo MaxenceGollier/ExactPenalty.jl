@@ -169,7 +169,6 @@ function SolverCore.solve!(
   β2::T = T(0.1),
   β3::T = 1/τ,
   β4::T = eps(T),
-  kwargs...,
 ) where {T, V, F <: Function}
   reset!(stats)
 
@@ -325,10 +324,10 @@ function SolverCore.solve!(
 
     if isa(solver.subsolver, R2Solver) 
       set_residuals!(stats, hx, norm(solver.subsolver.s)*solver.substats.solver_specific[:sigma])
-      set_constraint_multipliers!(stats, solver.subsolver.ψ.q*solver.substats.solver_specific[:sigma])
+      @. stats.multipliers = solver.subsolver.ψ.q*solver.substats.solver_specific[:sigma]
     elseif isa(solver.subsolver, R2NSolver) 
       set_residuals!(stats, hx, norm(solver.subsolver.s1)*solver.substats.solver_specific[:sigma_cauchy])
-      set_constraint_multipliers!(stats, solver.subsolver.ψ.q*solver.substats.solver_specific[:sigma_cauchy])
+      @. stats.multipliers = solver.subsolver.ψ.q*solver.substats.solver_specific[:sigma_cauchy] 
     end
     
 
