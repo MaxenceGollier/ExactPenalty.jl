@@ -39,7 +39,8 @@ tol = 1e-3
   end
   # Test with R2N
   @testset "R2N (LBFGS)" begin
-    stats = L2Penalty(LBFGSModel(nlp), atol = tol, rtol = tol, subsolver = R2NSolver)
+    LBFGS_model = LBFGSModel(nlp)
+    stats = L2Penalty(LBFGS_model, atol = tol, rtol = tol, subsolver = R2NSolver)
 
     @test stats.status == :first_order
     @test norm(primal_solution - stats.solution) ≤ 10*tol
@@ -49,9 +50,9 @@ tol = 1e-3
     @test abs(stats.dual_feas - norm(jtprod(nlp, stats.solution, stats.multipliers) - grad(nlp, stats.solution))) ≤ eps(Float64)
 
     # Test stability and allocations
-    solver = L2PenaltySolver(LBFGSModel(nlp), subsolver = R2NSolver)
-    stats_optimized = ExactPenaltyExecutionStats(nlp)
-    @test @wrappedallocs(solve!(solver, nlp, stats_optimized, atol = 1e-3, rtol = 1e-3)) == 0
+    solver = L2PenaltySolver(LBFGS_model, subsolver = R2NSolver)
+    stats_optimized = ExactPenaltyExecutionStats(LBFGS_model)
+    @test @wrappedallocs(solve!(solver, LBFGS_model, stats_optimized, atol = 1e-3, rtol = 1e-3)) == 0
     
     # Test that the second calling form gives the same output
     @test stats_optimized.status == stats.status

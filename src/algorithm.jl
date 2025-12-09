@@ -171,6 +171,7 @@ function SolverCore.solve!(
   β4::T = eps(T),
 ) where {T, V, F <: Function}
   reset!(stats)
+  isa(nlp, QuasiNewtonModel) && LinearOperators.reset!(nlp.op)
 
   # Retrieve workspace
   ψ = solver.ψ
