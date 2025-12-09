@@ -171,7 +171,13 @@ function SolverCore.solve!(
   β4::T = eps(T),
 ) where {T, V, F <: Function}
   reset!(stats)
-  isa(nlp, QuasiNewtonModel) && LinearOperators.reset!(nlp.op)
+  reset!(solver)
+  reset!(solver.substats)
+  reset!(solver.subsolver)
+  reset_data!(nlp)
+
+  isa(solver.subsolver, R2NSolver) && (solver.subsolver.v0 .= (isodd.(eachindex(solver.subsolver.v0)) .* -2 .+ 1) ./ sqrt(length(solver.subsolver.v0))) # FIXME
+  #This should be done in RegularizedOptimization, when calling reset!(::R2NSolver)
 
   # Retrieve workspace
   ψ = solver.ψ
