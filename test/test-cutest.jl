@@ -25,8 +25,8 @@ tol = 1e-3
 
     # Test stability and allocations
     solver = L2PenaltySolver(nlp)
-    stats_optimized = GenericExecutionStats(nlp)
-    @test @wrappedallocs(solve!(solver, nlp, stats_optimized, atol = tol, rtol = tol)) == 0
+    stats_optimized = ExactPenaltyExecutionStats(nlp)
+    @test @wrappedallocs(solve!(solver, nlp, stats_optimized, atol = 1e-3, rtol = 1e-3)) == 0
     
     # Test that the second calling form gives the same output
     @test stats_optimized.status == stats.status
@@ -50,8 +50,8 @@ tol = 1e-3
 
     # Test stability and allocations
     solver = L2PenaltySolver(LBFGSModel(nlp), subsolver = R2NSolver)
-    stats_optimized = GenericExecutionStats(nlp)
-    @test @wrappedallocs(solve!(solver, nlp, stats_optimized, atol = tol, rtol = tol)) == 0
+    stats_optimized = ExactPenaltyExecutionStats(nlp)
+    @test @wrappedallocs(solve!(solver, nlp, stats_optimized, atol = 1e-3, rtol = 1e-3)) == 0
     
     # Test that the second calling form gives the same output
     @test stats_optimized.status == stats.status
