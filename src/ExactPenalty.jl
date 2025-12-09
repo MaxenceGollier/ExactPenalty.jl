@@ -4,6 +4,8 @@ using LinearAlgebra
 using NLPModels, NLPModelsModifiers, RegularizedProblems, RegularizedOptimization
 using Krylov, LinearOperators, ProximalOperators, QRMumps, ShiftedProximalOperators, SolverCore, SparseMatricesCOO
 
+import SolverCore.reset!
+
 abstract type AbstractPenalizedProblemSolver <: AbstractOptimizationSolver end
 
 include("ExactPenaltyExecutionStats.jl")
