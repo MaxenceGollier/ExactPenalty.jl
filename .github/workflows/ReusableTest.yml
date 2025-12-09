@@ -39,6 +39,13 @@ jobs:
         with:
           version: ${{ inputs.version }}
           arch: ${{ inputs.arch }}
+      - name: Installing non-registered dependencies
+        run: |
+          using Pkg
+          pkg1 = PackageSpec(url = "https://github.com/JuliaSmoothOptimizers/RegularizedOptimization.jl.git")
+          pkg_list = [pkg1]
+          Pkg.add(pkg_list)
+        shell: julia --project="@." --color=yes {0}
       - name: Use Julia cache
         uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
