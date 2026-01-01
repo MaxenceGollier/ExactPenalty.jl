@@ -253,7 +253,7 @@ function SolverCore.solve!(
         σmin = β4,
         ν = νsub
       )
-    else
+    elseif isa(nlp, QuasiNewtonModel)
       solve!(
         solver.subsolver,
         solver.subpb,
@@ -271,6 +271,23 @@ function SolverCore.solve!(
         max_eval = min(rem_eval, sub_max_eval),
         σmin = β4,
         σk = 1/νsub,
+      )
+    else 
+      solve!(
+        solver.subsolver,
+        solver.subpb,
+        solver.substats;
+        callback = sub_callback,
+        x = x,
+        atol = ktol,
+        rtol = T(0),
+        neg_tol = neg_tol,
+        verbose = sub_verbose,
+        max_iter = sub_max_iter,
+        max_time = max_time - stats.elapsed_time,
+        max_eval = min(rem_eval, sub_max_eval),
+        σmin = β4,
+        σk = 1e12*β4 #1/νsub,
       )
     end
 
