@@ -93,9 +93,9 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   x1 .= krylov_workspace.x
   stats_krylov = krylov_workspace.stats
 
-  if norm(@view x1[n+1:n+m]) <= Δ && stats_krylov.inconsistent && !(stats_krylov.status =="condition number seems too large for this machine")
+  if norm(@view x1[n+1:n+m]) <= Δ && !stats_krylov.inconsistent && !(stats_krylov.status =="condition number seems too large for this machine")
 		set_solution!(stats, x1[1:n])
-    if reg_nlp.h.lambda*norm(reg_nlp.h.b) - obj(reg_nlp, x1[1:n]) < 0 #TODO: make sure to test these
+    if reg_nlp.h.h.lambda*norm(reg_nlp.h.b) - obj(reg_nlp, x1[1:n]) < 0 #TODO: make sure to test these
       set_solution!(stats, x)
       isa(reg_nlp.model.B, AbstractQuasiNewtonOperator) && reset!(reg_nlp.model.B)
     end
