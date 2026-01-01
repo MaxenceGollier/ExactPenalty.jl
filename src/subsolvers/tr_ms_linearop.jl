@@ -43,8 +43,8 @@ function TRMoreSorensenLinOpSolver(reg_nlp::AbstractRegularizedNLPModel{T, V}; )
   m = length(reg_nlp.h.b)
   u1 = similar(x0, n+m)
   u2 = zeros(eltype(x0), n+m)
-  x1 = similar(u1)
-  x2 = similar(u1)
+  x1 = zeros(eltype(x0), n+m)
+  x2 = zeros(eltype(x0), n+m)
 
 
   H = K2(n, m, n+m, n+m, zero(T), reg_nlp.model.σ, reg_nlp.h.A, reg_nlp.model.B)
@@ -95,7 +95,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
 
   if norm(@view x1[n+1:n+m]) <= Δ && stats_krylov.inconsistent && !(stats_krylov.status =="condition number seems too large for this machine")
 		set_solution!(stats, x1[1:n])
-    if reg_nlp.h.lambda*norm(reg_nlp.h.b) - obj(reg_nlp, x1[1:n]) < 0
+    if reg_nlp.h.lambda*norm(reg_nlp.h.b) - obj(reg_nlp, x1[1:n]) < 0 #TODO: make sure to test these
       set_solution!(stats, x)
       isa(reg_nlp.model.B, AbstractQuasiNewtonOperator) && reset!(reg_nlp.model.B)
     end
@@ -137,6 +137,6 @@ function SolverCore.solve!( #TODO add verbose and kwargs
 
   if Δ*norm(reg_nlp.h.b) - obj(reg_nlp, @view x1[1:n]) < 0 || any(isnan, x1)
     set_solution!(stats, x)
-    isa(reg_nlp.model.B, AbstractQuasiNewtonOperator) && reset!(reg_nlp.model.B)
+    isa(reg_nlp.model.B, AbstractQuasiNewtonOperator) && reset!(reg_nlp.model.B) #TODO: make sure to test these
   end
 end
