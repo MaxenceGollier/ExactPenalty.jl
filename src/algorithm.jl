@@ -167,7 +167,7 @@ function SolverCore.solve!(
   τ::T = T(100),
   β1::T = τ,
   β2::T = T(0.1),
-  β3::T = 1/τ,
+  β3::T = 1e-4/τ,
   β4::T = eps(T),
 ) where {T, V, F <: Function}
   reset!(stats)
@@ -287,7 +287,7 @@ function SolverCore.solve!(
         max_time = max_time - stats.elapsed_time,
         max_eval = min(rem_eval, sub_max_eval),
         σmin = β4,
-        σk = 1e12*β4 #1/νsub,
+        σk = 1/νsub,
       )
     end
 
