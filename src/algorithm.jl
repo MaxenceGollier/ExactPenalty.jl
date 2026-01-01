@@ -189,7 +189,7 @@ function SolverCore.solve!(
   s = solver.s
   s0 = solver.s0
   shift!(ψ, x)
-  fx = obj(nlp, x)
+  fx = obj(nlp, x) #TODO: this call is redundant with the first evaluation of the objective function of R2N. We can remove this and rely on the lines in the while loop below.
   hx = norm(ψ.b)
 
   if verbose > 0
