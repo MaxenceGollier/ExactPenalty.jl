@@ -88,7 +88,9 @@ function SolverCore.solve!( #TODO add verbose and kwargs
 
   #FIXME : Do I need to update H.Q, H.A or are they automatically referenced ?
   H.σ = reg_nlp.model.σ
-  
+  H.B = reg_nlp.model.B
+  H.A = reg_nlp.h.A
+
   minres_qlp!(krylov_workspace, H, u1, atol = eps(T)^0.8, rtol = eps(T)^0.8, Artol  = eps(T)^0.7)
   x1 .= krylov_workspace.x
   stats_krylov = krylov_workspace.stats
