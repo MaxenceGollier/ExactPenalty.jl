@@ -1,5 +1,16 @@
 {
   "projectName": "ExactPenalty",
-  "projectOwner": "JuliaSmoothOptimizers",
-  "files": ["README.md", "docs/src/index.md"]
+  "projectOwner": "MaxenceGollier",
+  "files": ["README.md", "docs/src/index.md"],
+  "commitType": "docs",
+  "commitConvention": "angular",
+  "contributorsPerLine": 7,
+  "contributors": [
+    {
+      "login": "MaxenceGollier",
+      "name": "Maxence Gollier",
+      "avatar_url": "https://avatars.githubusercontent.com/MaxenceGollier?v=4",
+      "profile": "https://github.com/MaxenceGollier"
+    }
+  ]
 }
