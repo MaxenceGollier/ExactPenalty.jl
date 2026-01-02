@@ -95,8 +95,8 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   stats_krylov = krylov_workspace.stats
 
   if norm(@view x1[n+1:n+m]) <= Δ && !stats_krylov.inconsistent && !(stats_krylov.status =="condition number seems too large for this machine")
-		set_solution!(stats,@view x1[1:n])
-    if reg_nlp.h.h.lambda*norm(reg_nlp.h.b) - obj(reg_nlp,@view x1[1:n]) < 0 #TODO: make sure to test these
+		set_solution!(stats, @view x1[1:n])
+    if reg_nlp.h.h.lambda*norm(reg_nlp.h.b) - obj(reg_nlp, @view x1[1:n]) < 0
       set_solution!(stats, x)
       isa(reg_nlp.model.B, AbstractQuasiNewtonOperator) && LinearOperators.reset!(reg_nlp.model.B)
     end
@@ -138,6 +138,6 @@ function SolverCore.solve!( #TODO add verbose and kwargs
 
   if Δ*norm(reg_nlp.h.b) - obj(reg_nlp, @view x1[1:n]) < 0 || any(isnan, x1)
     set_solution!(stats, x)
-    isa(reg_nlp.model.B, AbstractQuasiNewtonOperator) && reset!(reg_nlp.model.B) #TODO: make sure to test these
+    isa(reg_nlp.model.B, AbstractQuasiNewtonOperator) && LinearOperators.reset!(reg_nlp.model.B)
   end
 end
