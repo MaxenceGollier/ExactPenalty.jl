@@ -86,7 +86,6 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   αmin = eps(T)^(0.5)
   θ = 0.8
 
-  #FIXME : Do I need to update H.Q, H.A or are they automatically referenced ?
   H.σ = reg_nlp.model.σ
   H.B = reg_nlp.model.B
 
