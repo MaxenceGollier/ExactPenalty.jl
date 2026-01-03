@@ -18,12 +18,6 @@ jobs:
 
       - name: Use Julia cache
         uses: julia-actions/cache@v2
-
-      - name: Develop root project
-        run: |
-          julia --project=benchmark -e '
-            using Pkg
-            Pkg.develop(path=".")'
       
       - name: Instantiate benchmark environment
         run: |

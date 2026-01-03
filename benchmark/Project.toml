@@ -9,3 +9,4 @@ SolverBenchmark = "581a75fa-a23a-52d0-a590-d6201de2218a"
 
 [sources]
 ShiftedProximalOperators = {url = "https://github.com/MaxenceGollier/ShiftedProximalOperators.jl.git", rev = "update_shiftedcomposite"}
+ExactPenalty = {path = ".."}
