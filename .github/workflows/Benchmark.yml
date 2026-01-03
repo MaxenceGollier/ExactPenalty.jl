@@ -1,0 +1,45 @@
+name: CUTEst Benchmark
+
+on:
+  pull_request:
+    types: [labeled, opened, synchronize, reopened]
+
+# Only trigger the benchmark job when you add `run CUTEst benchmark` label to the PR
+jobs:
+  Benchmark:
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'run CUTEst benchmark')
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: julia-actions/setup-julia@latest
+        with:
+          version: 'lts'
+
+      - name: Use Julia cache
+        uses: julia-actions/cache@v2
+      
+      - name: Instantiate benchmark environment
+        run: |
+          julia --project=benchmark -e '
+            using Pkg
+            Pkg.instantiate()
+
+      - name: Add ShiftedProximalOperators from branch
+        run: |
+          julia --project=benckmark -e '
+            using Pkg
+            Pkg.add(url="https://github.com/MaxenceGollier/ShiftedProximalOperators.jl.git",
+                    rev="update_shiftedcomposite")'
+            
+      - name: Run CUTEst benchmark
+        run: |
+          julia --project=benchmark benchmark/benchmark-cutest.jl
+      
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: cutest-benchmark-stats
+          path: benchmark/stats.jld2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
