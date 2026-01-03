@@ -1,7 +1,6 @@
 using CUTEst, ExactPenalty, NLPModelsModifiers, RegularizedOptimization, SolverBenchmark
 
 nmax = 300
-max_time = 100.0 #Each problem has 5 minutes.
 problem_names = CUTEst.select_sif_problems(min_con=1, max_var= nmax, only_equ_con=true, only_free_var=true)
 problem_list = (CUTestModel(name) for name in problem_names)
 
@@ -13,7 +12,6 @@ solvers = Dict(
     nlp -> L2Penalty(
       nlp,
       verbose   = 0,
-      max_time  = max_time,
       atol      = imprecise_tol,
       rtol      = imprecise_tol,
       subsolver = R2NSolver,
@@ -22,7 +20,6 @@ solvers = Dict(
     nlp -> L2Penalty(
       nlp,
       verbose   = 0,
-      max_time  = max_time,
       atol      = precise_tol,
       rtol      = precise_tol,
       subsolver = R2NSolver,
@@ -31,7 +28,6 @@ solvers = Dict(
     nlp -> L2Penalty(
       LBFGSModel(nlp),
       verbose   = 0,
-      max_time  = max_time,
       atol      = imprecise_tol,
       rtol      = imprecise_tol,
       subsolver = R2NSolver,
@@ -40,7 +36,6 @@ solvers = Dict(
     nlp -> L2Penalty(
       LBFGSModel(nlp),
       verbose   = 0,
-      max_time  = max_time,
       atol      = precise_tol,
       rtol      = precise_tol,
       subsolver = R2NSolver,
@@ -48,7 +43,6 @@ solvers = Dict(
   :l2penalty_r2_imprecise =>
     nlp -> L2Penalty(
       nlp,
-      max_time  = max_time,
       verbose   = 0,
       atol      = imprecise_tol,
       rtol      = imprecise_tol,
@@ -57,7 +51,6 @@ solvers = Dict(
   :l2penalty_r2_precise =>
     nlp -> L2Penalty(
       nlp,
-      max_time  = max_time,
       verbose   = 0,
       atol      = precise_tol,
       rtol      = precise_tol,
