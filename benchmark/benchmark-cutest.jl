@@ -1,4 +1,4 @@
-using CUTEst, ExactPenalty, NLPModelsModifiers, RegularizedOptimization, SolverBenchmark
+using CUTEst, ExactPenalty, NLPModelsModifiers, RegularizedOptimization, ShiftedProximalOperators, SolverBenchmark
 
 nmax = 300
 problem_names = CUTEst.select_sif_problems(min_con=1, max_var= nmax, only_equ_con=true, only_free_var=true)
@@ -58,5 +58,5 @@ solvers = Dict(
     ),
 )
 
-stats = bmark_solvers(solvers, problem_list, skipif=nlp -> nlp.meta.ncon ≥ nlp.meta.nvar)
+stats = bmark_solvers(solvers, problem_list, skipif= nlp -> nlp.meta.ncon ≥ nlp.meta.nvar)
 @save "stats.jld2" stats
