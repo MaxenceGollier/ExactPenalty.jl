@@ -23,7 +23,7 @@ jobs:
         run: |
           julia --project=benchmark -e '
             using Pkg
-            Pkg.instantiate()
+            Pkg.instantiate()'
 
       - name: Add ShiftedProximalOperators from branch
         run: |
