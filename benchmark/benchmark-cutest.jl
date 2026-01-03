@@ -2,7 +2,7 @@ using CUTEst, ExactPenalty, NLPModelsModifiers, RegularizedOptimization, SolverB
 
 nmax = 300
 problem_names = CUTEst.select_sif_problems(min_con=1, max_var= nmax, only_equ_con=true, only_free_var=true)
-problem_list = (CUTestModel(name) for name in problem_names)
+problem_list = (CUTEstModel(name) for name in problem_names)
 
 imprecise_tol = 1e-3
 precise_tol = 1e-9
@@ -46,7 +46,7 @@ solvers = Dict(
       verbose   = 0,
       atol      = imprecise_tol,
       rtol      = imprecise_tol,
-      subsolver = R2NSolver,
+      subsolver = R2Solver,
     ),
   :l2penalty_r2_precise =>
     nlp -> L2Penalty(
@@ -54,7 +54,7 @@ solvers = Dict(
       verbose   = 0,
       atol      = precise_tol,
       rtol      = precise_tol,
-      subsolver = R2NSolver,
+      subsolver = R2Solver,
     ),
 )
 
