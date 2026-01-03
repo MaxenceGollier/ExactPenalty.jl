@@ -19,16 +19,14 @@ jobs:
       - name: Use Julia cache
         uses: julia-actions/cache@v2
       
-      - name: Instantiate benchmark environment
+      - name: Run CUTEst benchmark
         run: |
           julia --project=benchmark -e '
             using Pkg
             Pkg.develop(path=".")
-            Pkg.instantiate()'
-            
-      - name: Run CUTEst benchmark
-        run: |
-          julia --project=benchmark benchmark/benchmark-cutest.jl
+            Pkg.instantiate()
+            benchmark/benchmark-cutest.jl
+            '
       
       - name: Upload benchmark results
         uses: actions/upload-artifact@v4
