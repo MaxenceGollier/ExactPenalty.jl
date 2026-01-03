@@ -1,4 +1,6 @@
-using CUTEst, ExactPenalty, NLPModelsModifiers, RegularizedOptimization, ShiftedProximalOperators, SolverBenchmark
+using JLD2
+
+using CUTEst, ExactPenalty, NLPModelsModifiers, RegularizedOptimization, SolverBenchmark
 
 nmax = 300
 problem_names = CUTEst.select_sif_problems(min_con=1, max_var= nmax, only_equ_con=true, only_free_var=true)
