@@ -25,7 +25,7 @@ jobs:
             using Pkg
             Pkg.develop(path=".")
             Pkg.instantiate()
-            benchmark/benchmark-cutest.jl
+            include("benchmark/benchmark-cutest.jl")
             '
       
       - name: Upload benchmark results
