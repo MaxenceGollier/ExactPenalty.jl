@@ -30,13 +30,6 @@ jobs:
           julia --project=benchmark -e '
             using Pkg
             Pkg.instantiate()'
-
-      - name: Add ShiftedProximalOperators from branch
-        run: |
-          julia --project=benckmark -e '
-            using Pkg
-            Pkg.add(url="https://github.com/MaxenceGollier/ShiftedProximalOperators.jl.git",
-                    rev="update_shiftedcomposite")'
             
       - name: Run CUTEst benchmark
         run: |
