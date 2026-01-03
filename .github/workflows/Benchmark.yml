@@ -25,6 +25,9 @@ jobs:
             using Pkg
             Pkg.develop(path=".")
             Pkg.instantiate()
+            Pkg.rm("ShiftedProximalOperators")
+            Pkg.add(url="https://github.com/MaxenceGollier/ShiftedProximalOperators.jl.git",
+                    rev="update_shiftedcomposite")
             include("benchmark/benchmark-cutest.jl")
             '
       
