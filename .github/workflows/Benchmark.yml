@@ -23,6 +23,7 @@ jobs:
         run: |
           julia --project=benchmark -e '
             using Pkg
+            Pkg.develop("..")
             Pkg.instantiate()'
             
       - name: Run CUTEst benchmark
