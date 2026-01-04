@@ -29,4 +29,4 @@ solvers = Dict(
 )
 
 stats = bmark_solvers(solvers, problem_list, skipif= nlp -> nlp.meta.ncon ≥ nlp.meta.nvar)
-@save "benchmark/results/stats_lbfgs.jld2" stats
+@save "benchmark/result/stats_lbfgs.jld2" stats
