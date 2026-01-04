@@ -1,0 +1,58 @@
+name: CUTEst Benchmark
+
+on:
+  pull_request:
+    types: [labeled, opened, synchronize, reopened]
+
+# Only trigger the benchmark job when you add `run CUTEst benchmark` label to the PR
+jobs:
+  Benchmark:
+    runs-on: windows-latest
+    if: contains(github.event.pull_request.labels.*.name, 'run CUTEst benchmark')
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: julia-actions/setup-julia@latest
+        with:
+          version: 'lts'
+
+      - name: Use Julia cache
+        uses: julia-actions/cache@v2
+      
+      - name: Instantiate project
+        run: |
+          julia --project=benchmark -e '
+            using Pkg
+            Pkg.develop(path=".")
+            Pkg.instantiate()
+            Pkg.rm("ShiftedProximalOperators")
+            Pkg.add(url="https://github.com/MaxenceGollier/ShiftedProximalOperators.jl.git",
+                    rev="update_shiftedcomposite")
+            mkpath("benchmark/result")
+            '
+      
+      - name: Run benchmarks with null Hessian (R2)
+        run: |
+          julia --project=benchmark -e '
+              include("benchmark/benchmark-cutest-null-hessian.jl")
+              '
+      
+      - name: Run benchmarks with LBFGS
+        run: |
+          julia --project=benchmark -e '
+              include("benchmark/benchmark-cutest-lbfgs.jl")
+              '
+        
+      - name: Run benchmarks with exact Hessian
+        run: |
+          julia --project=benchmark -e '
+              include("benchmark/benchmark-cutest-exact-hessian.jl")
+            '
+      
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: cutest-benchmark-stats
+          path: benchmark/results
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
