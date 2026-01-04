@@ -53,6 +53,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cutest-benchmark-stats
-          path: benchmark/results
+          path: benchmark/result
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
