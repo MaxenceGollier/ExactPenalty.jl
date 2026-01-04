@@ -28,6 +28,7 @@ jobs:
             Pkg.rm("ShiftedProximalOperators")
             Pkg.add(url="https://github.com/MaxenceGollier/ShiftedProximalOperators.jl.git",
                     rev="update_shiftedcomposite")
+            mkpath("benchmark/result")
             '
       
       - name: Run benchmarks with null Hessian (R2)
