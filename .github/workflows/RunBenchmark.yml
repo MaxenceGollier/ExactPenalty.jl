@@ -11,7 +11,8 @@ jobs:
     runs-on: windows-latest
     if: |
       github.event_name == 'workflow_call' ||
-      contains(github.event.pull_request.labels.*.name, 'run CUTEst benchmark')
+      (github.event_name == 'pull_request' &&
+       contains(github.event.pull_request.labels.*.name, 'run CUTEst benchmark'))
     steps:
       - uses: actions/checkout@v4
 
