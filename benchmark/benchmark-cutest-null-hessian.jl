@@ -6,6 +6,10 @@ nmax = 300
 problem_names = CUTEst.select_sif_problems(min_con=1, max_var= nmax, only_equ_con=true, only_free_var=true)
 problem_list = (CUTEstModel(name) for name in problem_names)
 
+@save "data.jld2" a=1 b=[1,2,3] c="hi"
+
+error("done")
+
 imprecise_tol = 1e-3
 precise_tol = 1e-9
 
