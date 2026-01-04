@@ -19,7 +19,7 @@ jobs:
       - name: Use Julia cache
         uses: julia-actions/cache@v2
       
-      - name: Run CUTEst benchmark
+      - name: Instantiate project
         run: |
           julia --project=benchmark -e '
             using Pkg
@@ -28,13 +28,30 @@ jobs:
             Pkg.rm("ShiftedProximalOperators")
             Pkg.add(url="https://github.com/MaxenceGollier/ShiftedProximalOperators.jl.git",
                     rev="update_shiftedcomposite")
-            include("benchmark/benchmark-cutest.jl")
+            '
+      
+      - name: Run benchmarks with null Hessian (R2)
+        run: |
+          julia --project=benchmark -e '
+              include("benchmark/benchmark-cutest-null-hessian.jl")
+              '
+      
+      - name: Run benchmarks with LBFGS
+        run: |
+          julia --project=benchmark -e '
+              include("benchmark/benchmark-cutest-lbfgs.jl")
+              '
+        
+      - name: Run benchmarks with exact Hessian
+        run: |
+          julia --project=benchmark -e '
+              include("benchmark/benchmark-cutest-exact-hessian.jl")
             '
       
       - name: Upload benchmark results
         uses: actions/upload-artifact@v4
         with:
           name: cutest-benchmark-stats
-          path: benchmark/stats.jld2
+          path: benchmark/results
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
