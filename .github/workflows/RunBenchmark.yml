@@ -1,14 +1,17 @@
-name: CUTEst Benchmark
+name: Run Benchmark
 
 on:
   pull_request:
     types: [labeled, opened, synchronize, reopened]
+  workflow_call:
 
 # Only trigger the benchmark job when you add `run CUTEst benchmark` label to the PR
 jobs:
   Benchmark:
     runs-on: windows-latest
-    if: contains(github.event.pull_request.labels.*.name, 'run CUTEst benchmark')
+    if: |
+      github.event_name == 'workflow_call' ||
+      contains(github.event.pull_request.labels.*.name, 'run CUTEst benchmark')
     steps:
       - uses: actions/checkout@v4
 
