@@ -1,0 +1,15 @@
+name: Save benchmarks on main
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "**/*.toml"
+
+  schedule:
+    - cron: "0 0 1 */2 *"
+
+jobs:
+  run-benchmarks:
+    uses: ./.github/workflows/RunBenchmark.yml
