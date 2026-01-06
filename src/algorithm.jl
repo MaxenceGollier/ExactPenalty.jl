@@ -169,6 +169,7 @@ function SolverCore.solve!(
   β2::T = T(0.1),
   β3::T = 1e-4/τ,
   β4::T = eps(T),
+  feasibility_mode = :kkt,
 ) where {T, V, F <: Function}
   reset!(stats)
   reset!(solver)
@@ -179,30 +180,30 @@ function SolverCore.solve!(
   isa(solver.subsolver, R2NSolver) && (solver.subsolver.v0 .= (isodd.(eachindex(solver.subsolver.v0)) .* -2 .+ 1) ./ sqrt(length(solver.subsolver.v0))) # FIXME
   #This should be done in RegularizedOptimization, when calling reset!(::R2NSolver)
 
+  @assert feasibility_mode ∈ [:prox, :kkt]
+
   # Retrieve workspace
   ψ = solver.ψ
   sub_h = solver.sub_h
-  sub_h.h = NormL2(τ)
-  solver.subsolver.ψ.h = NormL2(τ)
 
   x = solver.x .= x
   s = solver.s
   s0 = solver.s0
   shift!(ψ, x)
+  shift!(solver.subsolver.ψ, x)
   fx = obj(nlp, x) #TODO: this call is redundant with the first evaluation of the objective function of R2N. We can remove this and rely on the lines in the while loop below.
   hx = norm(ψ.b)
 
   if verbose > 0
     @info log_header(
-      [:iter, :sub_iter, :fx, :hx, :theta, :xi, :epsk, :tau, :normx],
+      [:iter, :sub_iter, :fx, :pr_feas, :du_feas, :epsk, :tau, :normx],
       [Int, Int, Float64, Float64, Float64, Float64, Float64, Float64, Float64],
       hdr_override = Dict{Symbol, String}(   # TODO: Add this as constant dict elsewhere
         :iter => "outer",
         :sub_iter => "inner",
         :fx => "f(x)",
-        :hx => "‖c(x)‖₂",
-        :theta => "√θ",
-        :xi => "√(ξ/ν)",
+        :pr_feas => "pr_feas",
+        :du_feas => "du_feas",
         :epsk => "ϵₖ",
         :tau => "τ",
         :normx => "‖x‖",
@@ -217,23 +218,54 @@ function SolverCore.solve!(
   set_time!(stats, 0.0)
   set_objective!(stats, fx)
 
-  local θ::T
-  prox!(s, ψ, s0, T(1))
-  θ = hx - ψ(s)
+  ## Compute Feasibility
 
-  sqrt_θ = θ ≥ 0 ? sqrt(θ) : sqrt(-θ)
-  θ < 0 &&
-    sqrt_θ ≥ neg_tol &&
-    error("L2Penalty: prox-gradient step should produce a decrease but θ = $(θ)")
+  primal_feas_computer! = feasibility_mode == :prox ? prox_primal_feas! : kkt_primal_feas!
+  primal_feas = primal_feas_computer!(solver)
 
-  atol += rtol * sqrt_θ # make stopping test absolute and relative
-  ktol = max(ktol, atol) # Keep ϵ₀ ≥ ϵ
-  tol_init = ktol # store value of ϵ₀ 
+  grad!(nlp, x, solver.subsolver.∇fk)
+  compute_multipliers!(solver)
 
-  done = false
-
-  n_iter_since_decrease = 0
+  τ = max(norm(solver.y, 1), T(1))
+  β1 = τ
+  sub_h.h = NormL2(τ)
+  solver.subsolver.ψ.h = NormL2(τ)
   νsub = 1/max(β4, β3*τ)
+
+  dual_feas_computer! = feasibility_mode == :prox ? prox_dual_feas! : kkt_dual_feas!
+  dual_feas = dual_feas_computer!(solver)
+
+  feas = max(primal_feas, dual_feas) 
+
+  atol += rtol * feas # make stopping test absolute and relative
+
+  sub_rtol = 1e-2
+  sub_atol = zero(T) #FIXME
+  ktol = max(sub_rtol*dual_feas + sub_atol, atol) # Keep ϵ₀ ≥ ϵ
+  
+  solved = feas ≤ atol
+  infeasible = false
+  n_iter_since_decrease = 0
+
+  set_status!(
+      stats,
+      get_status(
+        nlp,
+        elapsed_time = stats.elapsed_time,
+        n_iter_since_decrease = n_iter_since_decrease,
+        iter = stats.iter,
+        optimal = solved,
+        infeasible = infeasible,
+        max_eval = max_eval,
+        max_time = max_time,
+        max_iter = max_iter,
+        max_decreas_iter = max_decreas_iter,
+      ),
+    )
+  
+  callback(nlp, solver, stats)
+
+  done = stats.status != :unknown
 
   while !done
     if isa(solver.subsolver, R2Solver)
@@ -295,48 +327,42 @@ function SolverCore.solve!(
     fx = solver.substats.solver_specific[:smooth_obj]
     hx_prev = copy(hx)
     hx = solver.substats.solver_specific[:nonsmooth_obj]/τ
-    sqrt_ξ_νInv = solver.substats.dual_feas
 
     shift!(ψ, x)
-    prox!(s, ψ, s0, T(1))
 
-    θ = hx - ψ(s)
-    sqrt_θ = θ ≥ 0 ? sqrt(θ) : sqrt(-θ)
-    θ < 0 &&
-      sqrt_θ ≥ neg_tol &&
-      error("L2Penalty: prox-gradient step should produce a decrease but θ = $(θ)")
+    ## Compute feasibility 
 
-    if sqrt_θ > ktol
+    primal_feas = primal_feas_computer!(solver)
+    dual_feas = dual_feas_computer!(solver)
+    feas = max(primal_feas, dual_feas)
+
+    if primal_feas > ktol
       τ = τ + β1
       sub_h.h = NormL2(τ)
       solver.subsolver.ψ.h = NormL2(τ)
       νsub = 1/max(β4, β3*τ)
     else
       n_iter_since_decrease = 0
-      ktol = max(β2*ktol, atol)
+      ktol = max(sub_rtol*dual_feas + sub_atol, atol)
       νsub = 1/solver.substats.solver_specific[:sigma]
     end
-    if sqrt_θ > ktol && hx_prev ≥ hx
+    if primal_feas > ktol && hx_prev ≥ hx
       n_iter_since_decrease += 1
       β1 *= 10
     else
       n_iter_since_decrease = 0
     end
 
-    solved =
-      (sqrt_θ ≤ atol && solver.substats.status == :first_order) ||
-      (θ < 0 && sqrt_θ ≤ neg_tol && solver.substats.status == :first_order)
-    infeasible = 
-      (hx > 1e2*θ) && 
-      (sqrt_θ < atol && hx > atol)
-      
-    (θ < 0 && sqrt_θ > neg_tol) &&
-      error("L2Penalty: prox-gradient step should produce a decrease but θ = $(θ)")
+    solved = feas ≤ atol
 
+    #infeasible = 
+    #  (hx > 1e2*θ) && 
+    #  (sqrt_θ < atol && hx > atol)
+      
     verbose > 0 &&
       stats.iter % verbose == 0 &&
       @info log_row(
-        Any[stats.iter, solver.substats.iter, fx, hx, sqrt_θ, sqrt_ξ_νInv, ktol, τ, norm(x)],
+        Any[stats.iter, solver.substats.iter, fx, primal_feas, dual_feas, ktol, τ, norm(x)],
         colsep = 1,
       )
 
@@ -344,16 +370,8 @@ function SolverCore.solve!(
     rem_eval = max_eval - neval_obj(nlp)
     set_time!(stats, time() - start_time)
     set_objective!(stats, fx)
-    set_solver_specific!(stats,  :theta, sqrt_θ)
-
-    if isa(solver.subsolver, R2Solver) 
-      set_residuals!(stats, hx, norm(solver.subsolver.s)*solver.substats.solver_specific[:sigma])
-      @. stats.multipliers = solver.subsolver.ψ.q*solver.substats.solver_specific[:sigma]
-    elseif isa(solver.subsolver, R2NSolver) 
-      set_residuals!(stats, hx, norm(solver.subsolver.s1)*solver.substats.solver_specific[:sigma_cauchy])
-      @. stats.multipliers = solver.subsolver.ψ.q*solver.substats.solver_specific[:sigma_cauchy] 
-    end
-    
+    set_residuals!(stats, primal_feas, dual_feas)
+    # TODO: Compute multipliers
 
     set_status!(
       stats,
