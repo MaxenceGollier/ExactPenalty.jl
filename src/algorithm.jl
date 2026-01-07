@@ -15,6 +15,7 @@ mutable struct L2PenaltySolver{
   dual_res::V
   s::V
   s0::V
+  temp_b::V
   ψ::G1
   sub_h::G2
   subsolver::S
@@ -27,6 +28,7 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T, V}; subsolver = R2Solver) wher
   x = similar(x0)
   s = similar(x0)
   y = similar(x0, nlp.meta.ncon)
+  temp_b = similar(y)
   dual_res = similar(x0)
   s0 = zero(x0)
 
@@ -58,7 +60,7 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T, V}; subsolver = R2Solver) wher
   subpb = RegularizedNLPModel(nlp, sub_h)
   substats = RegularizedExecutionStats(subpb)
 
-  return L2PenaltySolver(x, y, dual_res, s, s0, ψ, sub_h, solver, subpb, substats)
+  return L2PenaltySolver(x, y, dual_res, s, s0, temp_b, ψ, sub_h, solver, subpb, substats)
 end
 
 """
@@ -228,7 +230,7 @@ function SolverCore.solve!(
   primal_feas = primal_feas_computer!(solver)
 
   grad!(nlp, x, solver.subsolver.∇fk)
-  compute_multipliers!(solver)
+  compute_least_square_multipliers!(solver)
 
   τ = max(norm(solver.y, 1), T(1))
   β1 = τ
