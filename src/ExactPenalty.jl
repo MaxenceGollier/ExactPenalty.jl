@@ -13,8 +13,7 @@ include("ExactPenaltyExecutionStats.jl")
 include("subsolvers/tr_ms_linearop.jl")
 include("subsolvers/tr_ms_sparse.jl")
 
-include("feas_computer.jl")
-
 include("algorithm.jl")
+include("feas_computer.jl")
 
 end
