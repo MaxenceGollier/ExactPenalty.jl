@@ -336,7 +336,7 @@ function SolverCore.solve!(
     dual_feas = dual_feas_computer!(solver)
     feas = max(primal_feas, dual_feas)
 
-    if primal_feas > ktol
+    if primal_feas > ktol #FIXME
       τ = τ + β1
       sub_h.h = NormL2(τ)
       solver.subsolver.ψ.h = NormL2(τ)
