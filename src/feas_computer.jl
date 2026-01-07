@@ -1,7 +1,10 @@
 function prox_primal_feas!(solver::L2PenaltySolver{T}) where{T}
-  norm_cx = solver.ψ.h(solver.ψ.b)  
-  prox!(solver.s, solver.ψ, solver.s0, T(1))
-  θ = norm_cx - solver.ψ(solver.s)
+  ψ = solver.subsolver.ψ
+
+  norm_cx = ψ.h(ψ.b)  
+  prox!(solver.s, ψ, solver.s0, ψ.h.lambda)
+
+  θ = (norm_cx - ψ(solver.s))/ψ.h.lambda
 
   sqrt_θ = θ ≥ 0 ? sqrt(θ) : sqrt(-θ)
   θ < 0 &&
@@ -11,7 +14,7 @@ function prox_primal_feas!(solver::L2PenaltySolver{T}) where{T}
 end
 
 function kkt_primal_feas!(solver::L2PenaltySolver{T}) where{T}
-  return norm(solver.ψ.b, Inf) 
+  return norm(solver.subsolver.ψ, Inf) 
 end
 
 function compute_least_square_multipliers!(solver::L2PenaltySolver{T}) where{T}
