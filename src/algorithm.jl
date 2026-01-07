@@ -7,8 +7,6 @@ mutable struct L2PenaltySolver{
   V <: AbstractVector{T},
   S <: AbstractOptimizationSolver,
   PB <: AbstractRegularizedNLPModel,
-  G1 <: ShiftedCompositeNormL2{T},
-  G2 <: CompositeNormL2{T}
 } <: AbstractOptimizationSolver
   x::V
   y::V
@@ -16,8 +14,6 @@ mutable struct L2PenaltySolver{
   s::V
   s0::V
   temp_b::V
-  ψ::G1
-  sub_h::G2
   subsolver::S
   subpb::PB
   substats::GenericExecutionStats{T, V, V, T}
@@ -38,15 +34,6 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T, V}; subsolver = R2Solver) wher
   A = SparseMatrixCOO(nlp.meta.ncon, nlp.meta.nvar, rows, cols, vals)
   b = similar(x0, eltype(x0), nlp.meta.ncon)
 
-  # Allocate ψ = ||c(x) + J(x)s|| to compute θ
-  ψ = ShiftedCompositeNormL2(
-    one(T),
-    (c, x) -> cons!(nlp, x, c),
-    (j, x) -> jac_coord!(nlp, x, j.vals),
-    A,
-    b,
-  )
-
   # Allocate sub_h = ||c(x)|| to solve min f(x) + τ||c(x)||
   store_previous_jacobian = isa(nlp, QuasiNewtonModel) ? true : false
   sub_h =
@@ -60,7 +47,7 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T, V}; subsolver = R2Solver) wher
   subpb = RegularizedNLPModel(nlp, sub_h)
   substats = RegularizedExecutionStats(subpb)
 
-  return L2PenaltySolver(x, y, dual_res, s, s0, temp_b, ψ, sub_h, solver, subpb, substats)
+  return L2PenaltySolver(x, y, dual_res, s, s0, temp_b, solver, subpb, substats)
 end
 
 """
@@ -189,14 +176,11 @@ function SolverCore.solve!(
   @assert feasibility_mode ∈ [:prox, :kkt]
 
   # Retrieve workspace
-  ψ = solver.ψ
-  sub_h = solver.sub_h
+  sub_h = solver.subpb.h
+  ψ = solver.subsolver.ψ
 
   x = solver.x .= x
-  s = solver.s
-  s0 = solver.s0
   shift!(ψ, x)
-  shift!(solver.subsolver.ψ, x)
   fx = obj(nlp, x) #TODO: this call is redundant with the first evaluation of the objective function of R2N. We can remove this and rely on the lines in the while loop below.
   hx = norm(ψ.b)
 
@@ -235,7 +219,7 @@ function SolverCore.solve!(
   τ = max(norm(solver.y, 1), T(1))
   β1 = τ
   sub_h.h = NormL2(τ)
-  solver.subsolver.ψ.h = NormL2(τ)
+  ψ.h = NormL2(τ)
   νsub = 1/max(β4, β3*τ)
 
   dual_feas_computer! = feasibility_mode == :prox ? prox_dual_feas! : kkt_dual_feas!
@@ -332,8 +316,6 @@ function SolverCore.solve!(
     hx_prev = copy(hx)
     hx = solver.substats.solver_specific[:nonsmooth_obj]/τ
 
-    shift!(ψ, x)
-
     ## Compute feasibility 
 
     primal_feas = primal_feas_computer!(solver)
@@ -343,7 +325,7 @@ function SolverCore.solve!(
     if primal_feas > ktol #FIXME
       τ = τ + β1
       sub_h.h = NormL2(τ)
-      solver.subsolver.ψ.h = NormL2(τ)
+      ψ.h = NormL2(τ)
       νsub = 1/max(β4, β3*τ)
     else
       n_iter_since_decrease = 0
