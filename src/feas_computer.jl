@@ -16,22 +16,26 @@ end
 
 function compute_multipliers!(solver::L2PenaltySolver{T}) where{T}
   s = isa(solver.subsolver, R2NSolver) ? solver.subsolver.s1 : solver.subsolver.s
-  sigma_symbol = isa(solver.subsolver, R2NSolver) ? :sigma_cauchy : sigma
+  sigma_symbol = isa(solver.subsolver, R2NSolver) ? :sigma_cauchy : :sigma
   ψ = solver.subsolver.ψ
 
   lambda_temp = ψ.h.lambda
 
   # if τ = Inf, assuming full row rankness of A, then the solution of the prox is given by
-  # y = (AAᵀ)^{-1}(b - A∇f) -> corresponds to the least-square multipliers.
+  # y = (AAᵀ)^{-1}(-A∇f) -> corresponds to the least-square multipliers.
   ψ.h = NormL2(Inf)
+  temp = copy(ψ.b) #FIXME
+  ψ.b .= 0 
   @. solver.subsolver.mν∇fk = - solver.subsolver.∇fk
   prox!(s, ψ, solver.subsolver.mν∇fk, T(1))
 
   # Reset old value
   ψ.h = NormL2(lambda_temp)
+  ψ.b .= temp
 
   set_solver_specific!(solver.substats, sigma_symbol, T(1))
   @. solver.y = - ψ.q
+  solver.subsolver.subsolver.x1[length(s)+1:end] .= ψ.q
 end
 
 function prox_dual_feas!(solver::L2PenaltySolver{T}) where{T}
