@@ -14,6 +14,8 @@ include("subsolvers/tr_ms_linearop.jl")
 include("subsolvers/tr_ms_sparse.jl")
 
 include("algorithm.jl")
+
+include("callbacks.jl")
 include("feas_computer.jl")
 
 end
