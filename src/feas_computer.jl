@@ -38,6 +38,15 @@ function compute_multipliers!(solver::L2PenaltySolver{T}) where{T}
   solver.subsolver.subsolver.x1[length(s)+1:end] .= ψ.q
 end
 
+function update_constraint_multipliers!(solver::L2PenaltySolver{T}) where{T}
+  n = length(solver.x)
+  if isa(solver.subsolver, R2NSolver)
+    @. solver.y = - solver.subsolver.subsolver.x1[n+1:end]
+  elseif isa(solver.subsolver, R2Solver)
+    @. solver.y = - solver.subsolver.ψ.q * solver.substats.solver_specific[:sigma]
+  end
+end
+
 function prox_dual_feas!(solver::L2PenaltySolver{T}) where{T}
   σ = isa(solver.subsolver, R2NSolver) ? solver.substats.solver_specific[:sigma_cauchy] : solver.substats.solver_specific[:sigma]
   s = isa(solver.subsolver, R2NSolver) ? solver.subsolver.s1 : solver.subsolver.s
