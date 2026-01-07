@@ -169,7 +169,7 @@ function SolverCore.solve!(
   β2::T = T(0.1),
   β3::T = 1e-4/τ,
   β4::T = eps(T),
-  feasibility_mode = :kkt,
+  feasibility_mode = :prox,
 ) where {T, V, F <: Function}
   reset!(stats)
   reset!(solver)
