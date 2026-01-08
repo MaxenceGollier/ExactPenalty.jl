@@ -172,7 +172,7 @@ function SolverCore.solve!(
   isa(solver.subsolver, R2NSolver) && (solver.subsolver.v0 .= (isodd.(eachindex(solver.subsolver.v0)) .* -2 .+ 1) ./ sqrt(length(solver.subsolver.v0))) # FIXME
   #This should be done in RegularizedOptimization, when calling reset!(::R2NSolver)
 
-  @assert feasibility_mode ∈ [:prox, :kkt]
+  @assert (feasibility_mode == :prox || feasibility_mode == :kkt)
 
   # Retrieve workspace
   sub_h = solver.subpb.h
