@@ -38,7 +38,6 @@ function compute_least_square_multipliers!(solver::L2PenaltySolver{T}) where{T}
 
   set_solver_specific!(solver.substats, sigma_symbol, T(1))
   @. solver.y = - ψ.q
-  solver.subsolver.subsolver.x1[length(s)+1:end] .= ψ.q
 end
 
 function update_constraint_multipliers!(solver::L2PenaltySolver{T}) where{T}
