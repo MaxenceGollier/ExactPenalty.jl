@@ -37,15 +37,15 @@ function compute_least_square_multipliers!(solver::L2PenaltySolver{T}) where{T}
   ψ.b .= solver.temp_b
 
   set_solver_specific!(solver.substats, sigma_symbol, T(1))
-  @. solver.y = - ψ.q
+  @. solver.y = ψ.q
 end
 
 function update_constraint_multipliers!(solver::L2PenaltySolver{T}) where{T}
   n = length(solver.x)
   if isa(solver.subsolver, R2NSolver)
-    @. solver.y = - solver.subsolver.subsolver.x1[n+1:end]
+    @. solver.y = solver.subsolver.subsolver.x1[n+1:end]
   elseif isa(solver.subsolver, R2Solver)
-    @. solver.y = - solver.subsolver.ψ.q * solver.substats.solver_specific[:sigma]
+    @. solver.y = solver.subsolver.ψ.q * solver.substats.solver_specific[:sigma]
   end
 end
 
