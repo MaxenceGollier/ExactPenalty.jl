@@ -14,7 +14,7 @@ function prox_primal_feas!(solver::L2PenaltySolver{T}) where{T}
 end
 
 function kkt_primal_feas!(solver::L2PenaltySolver{T}) where{T}
-  return norm(solver.subsolver.ψ, Inf) 
+  return norm(solver.subsolver.ψ.b, Inf) 
 end
 
 function compute_least_square_multipliers!(solver::L2PenaltySolver{T}) where{T}
