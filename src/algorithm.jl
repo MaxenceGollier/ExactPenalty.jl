@@ -161,7 +161,7 @@ function SolverCore.solve!(
   β2::T = T(0.1),
   β3::T = 1e-4/τ,
   β4::T = eps(T),
-  feasibility_mode = :prox,
+  feasibility_mode = :kkt,
 ) where {T, V, F <: Function}
   reset!(stats)
   reset!(solver)
@@ -340,9 +340,10 @@ function SolverCore.solve!(
 
     solved = feas ≤ atol
 
-    #infeasible = 
-    #  (hx > 1e2*θ) && 
-    #  (sqrt_θ < atol && hx > atol)
+    infeasible = 
+      (hx > 1e2*primal_feas^2) && 
+      (primal_feas < atol && hx > atol) && 
+      (feasibility_mode == :prox) # i.e, √θ ≤ ϵ but ‖c(x)‖ ≫ θ
       
     verbose > 0 &&
       stats.iter % verbose == 0 &&
