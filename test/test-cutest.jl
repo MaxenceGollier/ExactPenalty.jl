@@ -21,7 +21,7 @@ tol = 1e-3
     @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 10*tol
     @test stats.primal_feas == norm(cons(nlp, stats.solution))
     @test norm(stats.multipliers - dual_solution) ≤ 10*tol
-    @test abs(stats.dual_feas - norm(jtprod(nlp, stats.solution, stats.multipliers) - grad(nlp, stats.solution))) ≤ eps(Float64)
+    @test abs(stats.dual_feas - norm(jtprod(nlp, stats.solution, stats.multipliers) - grad(nlp, stats.solution), Inf)) ≤ eps(Float64)
 
     # Test stability and allocations
     solver = L2PenaltySolver(nlp)
@@ -47,7 +47,7 @@ tol = 1e-3
     @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 10*tol
     @test stats.primal_feas == norm(cons(nlp, stats.solution))
     @test norm(stats.multipliers - dual_solution) ≤ 10*tol
-    @test abs(stats.dual_feas - norm(jtprod(nlp, stats.solution, stats.multipliers) - grad(nlp, stats.solution))) ≤ eps(Float64)
+    @test abs(stats.dual_feas - norm(jtprod(nlp, stats.solution, stats.multipliers) - grad(nlp, stats.solution), Inf)) ≤ eps(Float64)
 
     # Test stability and allocations
     solver = L2PenaltySolver(LBFGS_model, subsolver = R2NSolver)

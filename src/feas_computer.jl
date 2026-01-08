@@ -41,12 +41,8 @@ function compute_least_square_multipliers!(solver::L2PenaltySolver{T}) where{T}
 end
 
 function update_constraint_multipliers!(solver::L2PenaltySolver{T}) where{T}
-  n = length(solver.x)
-  if isa(solver.subsolver, R2NSolver)
-    @. solver.y = - @view solver.subsolver.subsolver.x1[n+1:end]
-  elseif isa(solver.subsolver, R2Solver)
-    @. solver.y = solver.subsolver.ψ.q * solver.substats.solver_specific[:sigma]
-  end
+  σ = isa(solver.subsolver, R2NSolver) ? solver.substats.solver_specific[:sigma_cauchy] : solver.substats.solver_specific[:sigma]
+  @. solver.y = solver.subsolver.ψ.q * σ
 end
 
 function prox_dual_feas!(solver::L2PenaltySolver{T}) where{T}
