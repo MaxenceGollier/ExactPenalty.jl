@@ -5,11 +5,10 @@ function prox_primal_feas!(solver::L2PenaltySolver{T}) where{T}
   prox!(solver.s, ψ, solver.s0, ψ.h.lambda)
 
   θ = (norm_cx - ψ(solver.s))/ψ.h.lambda
+  θ < 0 &&
+    error("L2Penalty: prox-gradient step should produce a decrease but θ = $(θ)")
 
   sqrt_θ = θ ≥ 0 ? sqrt(θ) : sqrt(-θ)
-  θ < 0 &&
-    sqrt_θ ≥ neg_tol &&
-    error("L2Penalty: prox-gradient step should produce a decrease but θ = $(θ)")
   return sqrt_θ
 end
 
