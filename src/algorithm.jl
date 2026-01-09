@@ -46,6 +46,7 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T, V}; subsolver = R2Solver) wher
   end
   subpb = RegularizedNLPModel(nlp, sub_h)
   substats = RegularizedExecutionStats(subpb)
+  set_solver_specific!(substats, :ktol, T(0))
 
   return L2PenaltySolver(x, y, dual_res, s, s0, temp_b, solver, subpb, substats)
 end
@@ -141,7 +142,6 @@ function SolverCore.solve!(
   nlp::AbstractNLPModel{T, V},
   stats::GenericExecutionStats{T, V, V};
   callback = (args...) -> nothing,
-  sub_callback::F = (args...) -> nothing,
   x::V = nlp.meta.x0,
   atol::T = √eps(T),
   rtol::T = √eps(T),
@@ -209,6 +209,7 @@ function SolverCore.solve!(
 
   ## Compute Feasibility
 
+  subsolver_callback = feasibility_mode == :prox ? prox_stopping_callback : kkt_stopping_callback
   primal_feas_computer! = feasibility_mode == :prox ? prox_primal_feas! : kkt_primal_feas!
   primal_feas = primal_feas_computer!(solver)
 
@@ -229,6 +230,7 @@ function SolverCore.solve!(
   atol += rtol * feas # make stopping test absolute and relative
 
   ktol = max(sub_rtol*dual_feas + sub_atol, atol) # Keep ϵ₀ ≥ ϵ
+  set_solver_specific!(solver.substats, :ktol, ktol)
   
   solved = feas ≤ atol
   infeasible = false
@@ -260,7 +262,7 @@ function SolverCore.solve!(
         solver.subsolver,
         solver.subpb,
         solver.substats;
-        callback = sub_callback,
+        callback = subsolver_callback,
         x = x,
         atol = ktol,
         rtol = T(0),
@@ -277,7 +279,7 @@ function SolverCore.solve!(
         solver.subsolver,
         solver.subpb,
         solver.substats;
-        callback = sub_callback,
+        callback = subsolver_callback,
         qn_update_y! = _qn_lag_update_y!,
         qn_copy! = _qn_lag_copy!,
         x = x,
@@ -296,7 +298,7 @@ function SolverCore.solve!(
         solver.subsolver,
         solver.subpb,
         solver.substats;
-        callback = sub_callback,
+        callback = subsolver_callback,
         x = x,
         atol = ktol,
         rtol = T(0),
@@ -329,6 +331,7 @@ function SolverCore.solve!(
     else
       n_iter_since_decrease = 0
       ktol = max(sub_rtol*dual_feas + sub_atol, atol)
+      set_solver_specific!(solver.substats, :ktol, ktol)
       νsub = 1/solver.substats.solver_specific[:sigma]
     end
     if primal_feas > ktol && hx_prev ≥ hx
