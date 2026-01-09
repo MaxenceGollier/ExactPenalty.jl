@@ -209,7 +209,6 @@ function SolverCore.solve!(
 
   ## Compute Feasibility
 
-  subsolver_callback = feasibility_mode == :prox ? prox_stopping_callback : kkt_stopping_callback
   primal_feas_computer! = feasibility_mode == :prox ? prox_primal_feas! : kkt_primal_feas!
   primal_feas = primal_feas_computer!(solver)
 
@@ -262,7 +261,7 @@ function SolverCore.solve!(
         solver.subsolver,
         solver.subpb,
         solver.substats;
-        callback = subsolver_callback,
+        callback = (args...) -> subsolver_callback(args...; feasibility_mode = feasibility_mode),
         x = x,
         atol = ktol,
         rtol = T(0),
@@ -279,7 +278,7 @@ function SolverCore.solve!(
         solver.subsolver,
         solver.subpb,
         solver.substats;
-        callback = subsolver_callback,
+        callback = (args...) -> subsolver_callback(args...; feasibility_mode = feasibility_mode),
         qn_update_y! = _qn_lag_update_y!,
         qn_copy! = _qn_lag_copy!,
         x = x,
@@ -298,7 +297,7 @@ function SolverCore.solve!(
         solver.subsolver,
         solver.subpb,
         solver.substats;
-        callback = subsolver_callback,
+        callback = (args...) -> subsolver_callback(args...; feasibility_mode = feasibility_mode),
         x = x,
         atol = ktol,
         rtol = T(0),
