@@ -1,0 +1,939 @@
+
+List of options:
+
+                                    Name   Value                # times used
+                                max_iter = 1                         1
+                             output_file = ipopt                     1
+                             print_level = 12                        2
+This is Ipopt version 3.14.19, running with linear solver MUMPS 5.8.1.
+
+Number of nonzeros in equality constraint Jacobian...:        2
+Number of nonzeros in inequality constraint Jacobian.:        0
+Number of nonzeros in Lagrangian Hessian.............:        2
+
+Scaling parameter for objective function = 1.000000e+00
+objective scaling factor = 1
+No x scaling provided
+No c scaling provided
+No d scaling provided
+DenseVector "original x_L unscaled" with 0 elements:
+DenseVector "original x_U unscaled" with 0 elements:
+DenseVector "original d_L unscaled" with 0 elements:
+DenseVector "original d_U unscaled" with 0 elements:
+DenseVector "modified x_L scaled" with 0 elements:
+DenseVector "modified x_U scaled" with 0 elements:
+DenseVector "modified d_L scaled" with 0 elements:
+DenseVector "modified d_U scaled" with 0 elements:
+DenseVector "initial x unscaled" with 2 elements:
+initial x unscaled[    1]= 8.0000000000000002e-02
+initial x unscaled[    2]= 5.9999999999999998e-02
+Initial values of x sufficiently inside the bounds.
+Initial values of s sufficiently inside the bounds.
+
+CompoundVector "RHS[ 0]" with 4 components:
+
+Component 1:
+  DenseVector "RHS[ 0][0]" with 2 elements:
+  RHS[ 0][0][    1]=-1.5000000000000000e+01
+  RHS[ 0][0][    2]=-1.2000000000000000e+01
+
+Component 2:
+  DenseVector "RHS[ 0][1]" with 0 elements:
+
+Component 3:
+  DenseVector "RHS[ 0][2]" with 1 elements:
+  Homogeneous vector, all elements have value  0.0000000000000000e+00
+
+Component 4:
+  DenseVector "RHS[ 0][3]" with 0 elements:
+  Homogeneous vector, all elements have value  0.0000000000000000e+00
+
+CompoundSymMatrix "KKT" with 4 rows and columns components:
+Component for row 0 and column 0:
+
+  SumSymMatrix "KKT[0][0]" of dimension 2 with 2 terms:
+  Term 0 with factor  0.0000000000000000e+00 and the following matrix:
+
+    SymTMatrix "Term: 0" of dimension 2 with 2 nonzero elements:
+    Uninitialized!
+  Term 1 with factor  1.0000000000000000e+00 and the following matrix:
+
+    DiagMatrix "Term: 1" with 2 rows and columns, and with diagonal elements:
+      DenseVector "Term: 1" with 2 elements:
+      Homogeneous vector, all elements have value  1.0000000000000000e+00
+Component for row 1 and column 0:
+This component has not been set.
+Component for row 1 and column 1:
+
+  DiagMatrix "KKT[1][1]" with 0 rows and columns, and with diagonal elements:
+    DenseVector "KKT[1][1]" with 0 elements:
+    Homogeneous vector, all elements have value  1.0000000000000000e+00
+Component for row 2 and column 0:
+
+  GenTMatrix "KKT[2][0]" of dimension 1 by 2 with 2 nonzero elements:
+  KKT[2][0][    1,    1]= 1.6000000000000000e-01  (0)
+  KKT[2][0][    1,    2]= 1.2000000000000000e-01  (1)
+Component for row 2 and column 1:
+This component has not been set.
+Component for row 2 and column 2:
+
+  DiagMatrix "KKT[2][2]" with 1 rows and columns, and with diagonal elements:
+    DenseVector "KKT[2][2]" with 1 elements:
+    Homogeneous vector, all elements have value -0.0000000000000000e+00
+Component for row 3 and column 0:
+
+  GenTMatrix "KKT[3][0]" of dimension 0 by 2 with 0 nonzero elements:
+Component for row 3 and column 1:
+
+  IdentityMatrix "KKT[3][1]" with 0 rows and columns and the factor -1.0000000000000000e+00.
+Component for row 3 and column 2:
+This component has not been set.
+Component for row 3 and column 3:
+
+  DiagMatrix "KKT[3][3]" with 0 rows and columns, and with diagonal elements:
+    DenseVector "KKT[3][3]" with 0 elements:
+    Homogeneous vector, all elements have value -0.0000000000000000e+00
+Right hand side 0 in TSymLinearSolver:
+Trhs[    0,    0] = -1.5000000000000000e+01
+Trhs[    0,    1] = -1.2000000000000000e+01
+Trhs[    0,    2] =  0.0000000000000000e+00
+Calling MUMPS-1 for symbolic factorization.
+Done with MUMPS-1 for symbolic factorization.
+MUMPS used permuting_scaling 5 and pivot_order 2.
+           scaling will be 77.
+Calling MUMPS-2 for numerical factorization.
+Done with MUMPS-2 for numerical factorization.
+Number of doubles for MUMPS to hold factorization (INFO(9)) = 9
+Number of integers for MUMPS to hold factorization (INFO(10)) = 26
+Calling MUMPS-3 for solve.
+Done with MUMPS-3 for solve.
+Solution 0 in TSymLinearSolver:
+Tsol[    0,    0] =  3.6000000000000082e-01
+Tsol[    0,    1] = -4.8000000000000115e-01
+Tsol[    0,    2] = -9.6000000000000000e+01
+Factorization successful.
+
+CompoundVector "SOL[ 0]" with 4 components:
+
+Component 1:
+  DenseVector "SOL[ 0][0]" with 2 elements:
+  SOL[ 0][0][    1]= 3.6000000000000082e-01
+  SOL[ 0][0][    2]=-4.8000000000000115e-01
+
+Component 2:
+  DenseVector "SOL[ 0][1]" with 0 elements:
+
+Component 3:
+  DenseVector "SOL[ 0][2]" with 1 elements:
+  SOL[ 0][2][    1]=-9.6000000000000000e+01
+
+Component 4:
+  DenseVector "SOL[ 0][3]" with 0 elements:
+Least square estimates max(y_c) = 9.600000e+01, max(y_d) = 0.000000e+00
+Total number of variables............................:        2
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:        0
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:        1
+Total number of inequality constraints...............:        0
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:        0
+        inequality constraints with only upper bounds:        0
+
+Convergence Check:
+  overall_error =  9.8999999999999999e-01   IpData().tol()   =  1.0000000000000000e-08
+  dual_inf      =  4.8000000000000043e-01   dual_inf_tol_    =  1.0000000000000000e+00
+  constr_viol   =  9.8999999999999999e-01   constr_viol_tol_ =  1.0000000000000000e-04
+  compl_inf     =  0.0000000000000000e+00   compl_inf_tol_   =  1.0000000000000000e-04
+Acceptable Check:
+  overall_error =  9.8999999999999999e-01   acceptable_tol_             =  9.9999999999999995e-07
+  dual_inf      =  4.8000000000000043e-01   acceptable_dual_inf_tol_    =  1.0000000000000000e+10
+  constr_viol   =  9.8999999999999999e-01   acceptable_constr_viol_tol_ =  1.0000000000000000e-02
+  compl_inf     =  0.0000000000000000e+00   acceptable_compl_inf_tol_   =  1.0000000000000000e-02
+  curr_obj_val_ = -9.9079999999999998e+01   last_obj_val                = -1.0000000000000001e+50
+  std::abs(curr_obj_val_-last_obj_val_)/Max(1., std::abs(curr_obj_val_)) =  1.0092854259184499e+48 acceptable_obj_change_tol_ =  1.0000000000000000e+20
+
+**************************************************
+*** Update HessianMatrix for Iteration 0:
+**************************************************
+
+
+
+**************************************************
+*** Summary of Iteration: 0:
+**************************************************
+
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+   0 -9.9080000e+01 9.90e-01 4.80e-01  -1.0 0.00e+00    -  0.00e+00 0.00e+00   0 y
+
+**************************************************
+*** Beginning Iteration 0 from the following point:
+**************************************************
+
+Current barrier parameter mu = 1.0000000000000001e-01
+Current fraction-to-the-boundary parameter tau = 9.8999999999999999e-01
+
+||curr_x||_inf   = 8.0000000000000002e-02
+||curr_s||_inf   = 0.0000000000000000e+00
+||curr_y_c||_inf = 9.6000000000000000e+01
+||curr_y_d||_inf = 0.0000000000000000e+00
+||curr_z_L||_inf = 0.0000000000000000e+00
+||curr_z_U||_inf = 0.0000000000000000e+00
+||curr_v_L||_inf = 0.0000000000000000e+00
+||curr_v_U||_inf = 0.0000000000000000e+00
+
+No search direction has been computed yet.
+DenseVector "curr_x" with 2 elements:
+curr_x[    1]= 8.0000000000000002e-02
+curr_x[    2]= 5.9999999999999998e-02
+DenseVector "curr_s" with 0 elements:
+Homogeneous vector, all elements have value  0.0000000000000000e+00
+DenseVector "curr_y_c" with 1 elements:
+curr_y_c[    1]=-9.6000000000000000e+01
+DenseVector "curr_y_d" with 0 elements:
+DenseVector "curr_slack_x_L" with 0 elements:
+DenseVector "curr_slack_x_U" with 0 elements:
+DenseVector "curr_z_L" with 0 elements:
+Homogeneous vector, all elements have value  1.0000000000000000e+00
+DenseVector "curr_z_U" with 0 elements:
+Homogeneous vector, all elements have value  1.0000000000000000e+00
+DenseVector "curr_slack_s_L" with 0 elements:
+DenseVector "curr_slack_s_U" with 0 elements:
+DenseVector "curr_v_L" with 0 elements:
+Homogeneous vector, all elements have value  1.0000000000000000e+00
+DenseVector "curr_v_U" with 0 elements:
+Homogeneous vector, all elements have value  1.0000000000000000e+00
+DenseVector "curr_grad_lag_x" with 2 elements:
+curr_grad_lag_x[    1]=-3.5999999999999943e-01
+curr_grad_lag_x[    2]= 4.8000000000000043e-01
+DenseVector "curr_grad_lag_s" with 0 elements:
+
+
+***Current NLP Values for Iteration 0:
+
+                                   (scaled)                 (unscaled)
+Objective...............:  -9.9079999999999998e+01   -9.9079999999999998e+01
+Dual infeasibility......:   4.8000000000000043e-01    4.8000000000000043e-01
+Constraint violation....:   9.8999999999999999e-01    9.8999999999999999e-01
+Complementarity.........:   0.0000000000000000e+00    0.0000000000000000e+00
+Overall NLP error.......:   9.8999999999999999e-01    9.8999999999999999e-01
+
+DenseVector "grad_f" with 2 elements:
+grad_f[    1]= 1.5000000000000000e+01
+grad_f[    2]= 1.2000000000000000e+01
+DenseVector "curr_c" with 1 elements:
+curr_c[    1]=-9.8999999999999999e-01
+DenseVector "curr_d" with 0 elements:
+Homogeneous vector, all elements have value  0.0000000000000000e+00
+DenseVector "curr_d - curr_s" with 0 elements:
+Homogeneous vector, all elements have value  0.0000000000000000e+00
+
+GenTMatrix "jac_c" of dimension 1 by 2 with 2 nonzero elements:
+jac_c[    1,    1]= 1.6000000000000000e-01  (0)
+jac_c[    1,    2]= 1.2000000000000000e-01  (1)
+
+GenTMatrix "jac_d" of dimension 0 by 2 with 0 nonzero elements:
+
+SymTMatrix "W" of dimension 2 with 2 nonzero elements:
+W[    1,    1]= 8.0000000000000000e+00  (0)
+W[    2,    2]= 8.0000000000000000e+00  (1)
+
+
+
+**************************************************
+*** Update Barrier Parameter for Iteration 0:
+**************************************************
+
+Optimality Error for Barrier Sub-problem = 9.900000e-01
+  sub_problem_error < kappa_eps * mu (1.000000e+00)
+Updating mu=   1.0000000000000001e-01 and tau=   9.8999999999999999e-01 to new_mu=   2.0000000000000004e-02 and new_tau=   9.8999999999999999e-01
+Barrier Parameter: 2.000000e-02
+
+**************************************************
+*** Solving the Primal Dual System for Iteration 0:
+**************************************************
+
+Solving system with delta_x=0.000000e+00 delta_s=0.000000e+00
+                    delta_c=0.000000e+00 delta_d=0.000000e+00
+
+CompoundVector "RHS[ 0]" with 4 components:
+
+Component 1:
+  DenseVector "RHS[ 0][0]" with 2 elements:
+  RHS[ 0][0][    1]=-3.5999999999999943e-01
+  RHS[ 0][0][    2]= 4.8000000000000043e-01
+
+Component 2:
+  DenseVector "RHS[ 0][1]" with 0 elements:
+
+Component 3:
+  DenseVector "RHS[ 0][2]" with 1 elements:
+  RHS[ 0][2][    1]=-9.8999999999999999e-01
+
+Component 4:
+  DenseVector "RHS[ 0][3]" with 0 elements:
+  Homogeneous vector, all elements have value  0.0000000000000000e+00
+
+CompoundSymMatrix "KKT" with 4 rows and columns components:
+Component for row 0 and column 0:
+
+  SumSymMatrix "KKT[0][0]" of dimension 2 with 2 terms:
+  Term 0 with factor  1.0000000000000000e+00 and the following matrix:
+
+    SymTMatrix "Term: 0" of dimension 2 with 2 nonzero elements:
+    Term: 0[    1,    1]= 8.0000000000000000e+00  (0)
+    Term: 0[    2,    2]= 8.0000000000000000e+00  (1)
+  Term 1 with factor  1.0000000000000000e+00 and the following matrix:
+
+    DiagMatrix "Term: 1" with 2 rows and columns, and with diagonal elements:
+      DenseVector "Term: 1" with 2 elements:
+      Term: 1[    1]= 0.0000000000000000e+00
+      Term: 1[    2]= 0.0000000000000000e+00
+Component for row 1 and column 0:
+This component has not been set.
+Component for row 1 and column 1:
+
+  DiagMatrix "KKT[1][1]" with 0 rows and columns, and with diagonal elements:
+    DenseVector "KKT[1][1]" with 0 elements:
+Component for row 2 and column 0:
+
+  GenTMatrix "KKT[2][0]" of dimension 1 by 2 with 2 nonzero elements:
+  KKT[2][0][    1,    1]= 1.6000000000000000e-01  (0)
+  KKT[2][0][    1,    2]= 1.2000000000000000e-01  (1)
+Component for row 2 and column 1:
+This component has not been set.
+Component for row 2 and column 2:
+
+  DiagMatrix "KKT[2][2]" with 1 rows and columns, and with diagonal elements:
+    DenseVector "KKT[2][2]" with 1 elements:
+    Homogeneous vector, all elements have value -0.0000000000000000e+00
+Component for row 3 and column 0:
+
+  GenTMatrix "KKT[3][0]" of dimension 0 by 2 with 0 nonzero elements:
+Component for row 3 and column 1:
+
+  IdentityMatrix "KKT[3][1]" with 0 rows and columns and the factor -1.0000000000000000e+00.
+Component for row 3 and column 2:
+This component has not been set.
+Component for row 3 and column 3:
+
+  DiagMatrix "KKT[3][3]" with 0 rows and columns, and with diagonal elements:
+    DenseVector "KKT[3][3]" with 0 elements:
+    Homogeneous vector, all elements have value -0.0000000000000000e+00
+Right hand side 0 in TSymLinearSolver:
+Trhs[    0,    0] = -3.5999999999999943e-01
+Trhs[    0,    1] =  4.8000000000000043e-01
+Trhs[    0,    2] = -9.8999999999999999e-01
+Calling MUMPS-2 for numerical factorization.
+Done with MUMPS-2 for numerical factorization.
+Number of doubles for MUMPS to hold factorization (INFO(9)) = 9
+Number of integers for MUMPS to hold factorization (INFO(10)) = 26
+Calling MUMPS-3 for solve.
+Done with MUMPS-3 for solve.
+Solution 0 in TSymLinearSolver:
+Tsol[    0,    0] = -4.0049999999999990e+00
+Tsol[    0,    1] = -2.9100000000000001e+00
+Tsol[    0,    2] =  1.9799999999999997e+02
+Factorization successful.
+
+CompoundVector "SOL[ 0]" with 4 components:
+
+Component 1:
+  DenseVector "SOL[ 0][0]" with 2 elements:
+  SOL[ 0][0][    1]=-4.0049999999999990e+00
+  SOL[ 0][0][    2]=-2.9100000000000001e+00
+
+Component 2:
+  DenseVector "SOL[ 0][1]" with 0 elements:
+
+Component 3:
+  DenseVector "SOL[ 0][2]" with 1 elements:
+  SOL[ 0][2][    1]= 1.9799999999999997e+02
+
+Component 4:
+  DenseVector "SOL[ 0][3]" with 0 elements:
+Number of trial factorizations performed: 1
+Perturbation parameters: delta_x=0.000000e+00 delta_s=0.000000e+00
+                         delta_c=0.000000e+00 delta_d=0.000000e+00
+
+CompoundVector "resid" with 8 components:
+
+Component 1:
+  DenseVector "resid[0]" with 2 elements:
+  resid[0][    1]= 3.5527136788005009e-15
+  resid[0][    2]=-7.1054273576010019e-15
+
+Component 2:
+  DenseVector "resid[1]" with 0 elements:
+
+Component 3:
+  DenseVector "resid[2]" with 1 elements:
+  resid[2][    1]= 2.2204460492503131e-16
+
+Component 4:
+  DenseVector "resid[3]" with 0 elements:
+  Homogeneous vector, all elements have value  0.0000000000000000e+00
+
+Component 5:
+  DenseVector "resid[4]" with 0 elements:
+  Homogeneous vector, all elements have value  0.0000000000000000e+00
+
+Component 6:
+  DenseVector "resid[5]" with 0 elements:
+  Homogeneous vector, all elements have value  0.0000000000000000e+00
+
+Component 7:
+  DenseVector "resid[6]" with 0 elements:
+  Homogeneous vector, all elements have value  0.0000000000000000e+00
+
+Component 8:
+  DenseVector "resid[7]" with 0 elements:
+  Homogeneous vector, all elements have value  0.0000000000000000e+00
+max-norm resid_x  7.105427e-15
+max-norm resid_s  0.000000e+00
+max-norm resid_c  2.220446e-16
+max-norm resid_d  0.000000e+00
+max-norm resid_zL 0.000000e+00
+max-norm resid_zU 0.000000e+00
+max-norm resid_vL 0.000000e+00
+max-norm resid_vU 0.000000e+00
+nrm_rhs = 9.90e-01 nrm_sol = 1.98e+02 nrm_resid = 7.11e-15
+residual_ratio = 3.570746e-17
+
+CompoundVector "RHS[ 0]" with 4 components:
+
+Component 1:
+  DenseVector "RHS[ 0][0]" with 2 elements:
+  RHS[ 0][0][    1]= 3.5527136788005009e-15
+  RHS[ 0][0][    2]=-7.1054273576010019e-15
+
+Component 2:
+  DenseVector "RHS[ 0][1]" with 0 elements:
+
+Component 3:
+  DenseVector "RHS[ 0][2]" with 1 elements:
+  RHS[ 0][2][    1]= 2.2204460492503131e-16
+
+Component 4:
+  DenseVector "RHS[ 0][3]" with 0 elements:
+  Homogeneous vector, all elements have value  0.0000000000000000e+00
+
+CompoundSymMatrix "KKT" with 4 rows and columns components:
+Component for row 0 and column 0:
+
+  SumSymMatrix "KKT[0][0]" of dimension 2 with 2 terms:
+  Term 0 with factor  1.0000000000000000e+00 and the following matrix:
+
+    SymTMatrix "Term: 0" of dimension 2 with 2 nonzero elements:
+    Term: 0[    1,    1]= 8.0000000000000000e+00  (0)
+    Term: 0[    2,    2]= 8.0000000000000000e+00  (1)
+  Term 1 with factor  1.0000000000000000e+00 and the following matrix:
+
+    DiagMatrix "Term: 1" with 2 rows and columns, and with diagonal elements:
+      DenseVector "Term: 1" with 2 elements:
+      Term: 1[    1]= 0.0000000000000000e+00
+      Term: 1[    2]= 0.0000000000000000e+00
+Component for row 1 and column 0:
+This component has not been set.
+Component for row 1 and column 1:
+
+  DiagMatrix "KKT[1][1]" with 0 rows and columns, and with diagonal elements:
+    DenseVector "KKT[1][1]" with 0 elements:
+Component for row 2 and column 0:
+
+  GenTMatrix "KKT[2][0]" of dimension 1 by 2 with 2 nonzero elements:
+  KKT[2][0][    1,    1]= 1.6000000000000000e-01  (0)
+  KKT[2][0][    1,    2]= 1.2000000000000000e-01  (1)
+Component for row 2 and column 1:
+This component has not been set.
+Component for row 2 and column 2:
+
+  DiagMatrix "KKT[2][2]" with 1 rows and columns, and with diagonal elements:
+    DenseVector "KKT[2][2]" with 1 elements:
+    Homogeneous vector, all elements have value -0.0000000000000000e+00
+Component for row 3 and column 0:
+
+  GenTMatrix "KKT[3][0]" of dimension 0 by 2 with 0 nonzero elements:
+Component for row 3 and column 1:
+
+  IdentityMatrix "KKT[3][1]" with 0 rows and columns and the factor -1.0000000000000000e+00.
+Component for row 3 and column 2:
+This component has not been set.
+Component for row 3 and column 3:
+
+  DiagMatrix "KKT[3][3]" with 0 rows and columns, and with diagonal elements:
+    DenseVector "KKT[3][3]" with 0 elements:
+    Homogeneous vector, all elements have value -0.0000000000000000e+00
+Right hand side 0 in TSymLinearSolver:
+Trhs[    0,    0] =  3.5527136788005009e-15
+Trhs[    0,    1] = -7.1054273576010019e-15
+Trhs[    0,    2] =  2.2204460492503131e-16
+Calling MUMPS-3 for solve.
+Done with MUMPS-3 for solve.
+Solution 0 in TSymLinearSolver:
+Tsol[    0,    0] =  1.4743761767022078e-15
+Tsol[    0,    1] = -1.1546319456101641e-16
+Tsol[    0,    2] = -5.1514348342607257e-14
+Factorization successful.
+
+CompoundVector "SOL[ 0]" with 4 components:
+
+Component 1:
+  DenseVector "SOL[ 0][0]" with 2 elements:
+  SOL[ 0][0][    1]= 1.4743761767022078e-15
+  SOL[ 0][0][    2]=-1.1546319456101641e-16
+
+Component 2:
+  DenseVector "SOL[ 0][1]" with 0 elements:
+
+Component 3:
+  DenseVector "SOL[ 0][2]" with 1 elements:
+  SOL[ 0][2][    1]=-5.1514348342607257e-14
+
+Component 4:
+  DenseVector "SOL[ 0][3]" with 0 elements:
+
+CompoundVector "resid" with 8 components:
+
+Component 1:
+  DenseVector "resid[0]" with 2 elements:
+  resid[0][    1]= 0.0000000000000000e+00
+  resid[0][    2]= 0.0000000000000000e+00
+
+Component 2:
+  DenseVector "resid[1]" with 0 elements:
+
+Component 3:
+  DenseVector "resid[2]" with 1 elements:
+  resid[2][    1]=-2.2204460492503131e-16
+
+Component 4:
+  DenseVector "resid[3]" with 0 elements:
+  Homogeneous vector, all elements have value  0.0000000000000000e+00
+
+Component 5:
+  DenseVector "resid[4]" with 0 elements:
+  Homogeneous vector, all elements have value  0.0000000000000000e+00
+
+Component 6:
+  DenseVector "resid[5]" with 0 elements:
+  Homogeneous vector, all elements have value  0.0000000000000000e+00
+
+Component 7:
+  DenseVector "resid[6]" with 0 elements:
+  Homogeneous vector, all elements have value  0.0000000000000000e+00
+
+Component 8:
+  DenseVector "resid[7]" with 0 elements:
+  Homogeneous vector, all elements have value  0.0000000000000000e+00
+max-norm resid_x  0.000000e+00
+max-norm resid_s  0.000000e+00
+max-norm resid_c  2.220446e-16
+max-norm resid_d  0.000000e+00
+max-norm resid_zL 0.000000e+00
+max-norm resid_zU 0.000000e+00
+max-norm resid_vL 0.000000e+00
+max-norm resid_vU 0.000000e+00
+nrm_rhs = 9.90e-01 nrm_sol = 1.98e+02 nrm_resid = 2.22e-16
+residual_ratio = 1.115858e-18
+*** Step Calculated for Iteration: 0
+
+CompoundVector "delta" with 8 components:
+
+Component 1:
+  DenseVector "delta[0]" with 2 elements:
+  delta[0][    1]= 4.0050000000000008e+00
+  delta[0][    2]= 2.9100000000000001e+00
+
+Component 2:
+  DenseVector "delta[1]" with 0 elements:
+  Homogeneous vector, all elements have value -0.0000000000000000e+00
+
+Component 3:
+  DenseVector "delta[2]" with 1 elements:
+  delta[2][    1]=-1.9800000000000003e+02
+
+Component 4:
+  DenseVector "delta[3]" with 0 elements:
+  Homogeneous vector, all elements have value -0.0000000000000000e+00
+
+Component 5:
+  DenseVector "delta[4]" with 0 elements:
+  Homogeneous vector, all elements have value -0.0000000000000000e+00
+
+Component 6:
+  DenseVector "delta[5]" with 0 elements:
+  Homogeneous vector, all elements have value -0.0000000000000000e+00
+
+Component 7:
+  DenseVector "delta[6]" with 0 elements:
+  Homogeneous vector, all elements have value -0.0000000000000000e+00
+
+Component 8:
+  DenseVector "delta[7]" with 0 elements:
+  Homogeneous vector, all elements have value -0.0000000000000000e+00
+
+**************************************************
+*** Finding Acceptable Trial Point for Iteration 0:
+**************************************************
+
+--> Starting line search in iteration 0 <--
+Mu has changed in line search - resetting watchdog counters.
+Acceptable Check:
+  overall_error =  9.8999999999999999e-01   acceptable_tol_             =  9.9999999999999995e-07
+  dual_inf      =  4.8000000000000043e-01   acceptable_dual_inf_tol_    =  1.0000000000000000e+10
+  constr_viol   =  9.8999999999999999e-01   acceptable_constr_viol_tol_ =  1.0000000000000000e-02
+  compl_inf     =  0.0000000000000000e+00   acceptable_compl_inf_tol_   =  1.0000000000000000e-02
+  curr_obj_val_ = -9.9079999999999998e+01   last_obj_val                = -1.0000000000000001e+50
+  std::abs(curr_obj_val_-last_obj_val_)/Max(1., std::abs(curr_obj_val_)) =  1.0092854259184499e+48 acceptable_obj_change_tol_ =  1.0000000000000000e+20
+The current filter has 0 entries.
+Relative step size for delta_x = 3.708333e+00
+minimal step size ALPHA_MIN = 5.000000E-07
+Starting checks for alpha (primal) = 1.00e+00
+trial_max is initialized to 1.000000e+04
+trial_min is initialized to 1.000000e-04
+Checking acceptability for trial step size alpha_primal_test= 1.000000e+00:
+  New values of barrier function     =  2.4467275000000009e+03  (reference -9.9079999999999998e+01):
+  New values of constraint violation =  2.4508125000000010e+01  (reference  9.8999999999999999e-01):
+reference_theta = 9.900000e-01 reference_gradBarrTDelta = 9.499500e+01
+Checking sufficient reduction...
+Failed...
+Trying second order correction number 1
+
+CompoundVector "RHS[ 0]" with 4 components:
+
+Component 1:
+  DenseVector "RHS[ 0][0]" with 2 elements:
+  RHS[ 0][0][    1]=-3.5999999999999943e-01
+  RHS[ 0][0][    2]= 4.8000000000000043e-01
+
+Component 2:
+  DenseVector "RHS[ 0][1]" with 0 elements:
+
+Component 3:
+  DenseVector "RHS[ 0][2]" with 1 elements:
+  RHS[ 0][2][    1]= 2.3518125000000012e+01
+
+Component 4:
+  DenseVector "RHS[ 0][3]" with 0 elements:
+  Homogeneous vector, all elements have value  0.0000000000000000e+00
+
+CompoundSymMatrix "KKT" with 4 rows and columns components:
+Component for row 0 and column 0:
+
+  SumSymMatrix "KKT[0][0]" of dimension 2 with 2 terms:
+  Term 0 with factor  1.0000000000000000e+00 and the following matrix:
+
+    SymTMatrix "Term: 0" of dimension 2 with 2 nonzero elements:
+    Term: 0[    1,    1]= 8.0000000000000000e+00  (0)
+    Term: 0[    2,    2]= 8.0000000000000000e+00  (1)
+  Term 1 with factor  1.0000000000000000e+00 and the following matrix:
+
+    DiagMatrix "Term: 1" with 2 rows and columns, and with diagonal elements:
+      DenseVector "Term: 1" with 2 elements:
+      Term: 1[    1]= 0.0000000000000000e+00
+      Term: 1[    2]= 0.0000000000000000e+00
+Component for row 1 and column 0:
+This component has not been set.
+Component for row 1 and column 1:
+
+  DiagMatrix "KKT[1][1]" with 0 rows and columns, and with diagonal elements:
+    DenseVector "KKT[1][1]" with 0 elements:
+Component for row 2 and column 0:
+
+  GenTMatrix "KKT[2][0]" of dimension 1 by 2 with 2 nonzero elements:
+  KKT[2][0][    1,    1]= 1.6000000000000000e-01  (0)
+  KKT[2][0][    1,    2]= 1.2000000000000000e-01  (1)
+Component for row 2 and column 1:
+This component has not been set.
+Component for row 2 and column 2:
+
+  DiagMatrix "KKT[2][2]" with 1 rows and columns, and with diagonal elements:
+    DenseVector "KKT[2][2]" with 1 elements:
+    Homogeneous vector, all elements have value -0.0000000000000000e+00
+Component for row 3 and column 0:
+
+  GenTMatrix "KKT[3][0]" of dimension 0 by 2 with 0 nonzero elements:
+Component for row 3 and column 1:
+
+  IdentityMatrix "KKT[3][1]" with 0 rows and columns and the factor -1.0000000000000000e+00.
+Component for row 3 and column 2:
+This component has not been set.
+Component for row 3 and column 3:
+
+  DiagMatrix "KKT[3][3]" with 0 rows and columns, and with diagonal elements:
+    DenseVector "KKT[3][3]" with 0 elements:
+    Homogeneous vector, all elements have value -0.0000000000000000e+00
+Right hand side 0 in TSymLinearSolver:
+Trhs[    0,    0] = -3.5999999999999943e-01
+Trhs[    0,    1] =  4.8000000000000043e-01
+Trhs[    0,    2] =  2.3518125000000012e+01
+Calling MUMPS-3 for solve.
+Done with MUMPS-3 for solve.
+Solution 0 in TSymLinearSolver:
+Tsol[    0,    0] =  9.4027500000000046e+01
+Tsol[    0,    1] =  7.0614375000000024e+01
+Tsol[    0,    2] = -4.7036250000000018e+03
+Factorization successful.
+
+CompoundVector "SOL[ 0]" with 4 components:
+
+Component 1:
+  DenseVector "SOL[ 0][0]" with 2 elements:
+  SOL[ 0][0][    1]= 9.4027500000000046e+01
+  SOL[ 0][0][    2]= 7.0614375000000024e+01
+
+Component 2:
+  DenseVector "SOL[ 0][1]" with 0 elements:
+
+Component 3:
+  DenseVector "SOL[ 0][2]" with 1 elements:
+  SOL[ 0][2][    1]=-4.7036250000000018e+03
+
+Component 4:
+  DenseVector "SOL[ 0][3]" with 0 elements:
+
+CompoundVector "resid" with 8 components:
+
+Component 1:
+  DenseVector "resid[0]" with 2 elements:
+  resid[0][    1]= 9.9475983006414026e-14
+  resid[0][    2]= 1.7763568394002505e-14
+
+Component 2:
+  DenseVector "resid[1]" with 0 elements:
+
+Component 3:
+  DenseVector "resid[2]" with 1 elements:
+  resid[2][    1]= 0.0000000000000000e+00
+
+Component 4:
+  DenseVector "resid[3]" with 0 elements:
+  Homogeneous vector, all elements have value  0.0000000000000000e+00
+
+Component 5:
+  DenseVector "resid[4]" with 0 elements:
+  Homogeneous vector, all elements have value  0.0000000000000000e+00
+
+Component 6:
+  DenseVector "resid[5]" with 0 elements:
+  Homogeneous vector, all elements have value  0.0000000000000000e+00
+
+Component 7:
+  DenseVector "resid[6]" with 0 elements:
+  Homogeneous vector, all elements have value  0.0000000000000000e+00
+
+Component 8:
+  DenseVector "resid[7]" with 0 elements:
+  Homogeneous vector, all elements have value  0.0000000000000000e+00
+max-norm resid_x  9.947598e-14
+max-norm resid_s  0.000000e+00
+max-norm resid_c  0.000000e+00
+max-norm resid_d  0.000000e+00
+max-norm resid_zL 0.000000e+00
+max-norm resid_zU 0.000000e+00
+max-norm resid_vL 0.000000e+00
+max-norm resid_vU 0.000000e+00
+trial_theta = 1.380305e+04 is larger than theta_max = 1.000000e+04
+Starting checks for alpha (primal) = 5.00e-01
+Checking acceptability for trial step size alpha_primal_test= 5.000000e-01:
+  New values of barrier function     =  5.6112062500000025e+02  (reference -9.9079999999999998e+01):
+  New values of constraint violation =  5.6320312500000025e+00  (reference  9.8999999999999999e-01):
+reference_theta = 9.900000e-01 reference_gradBarrTDelta = 9.499500e+01
+Checking sufficient reduction...
+Failed...
+Starting checks for alpha (primal) = 2.50e-01
+Checking acceptability for trial step size alpha_primal_test= 2.500000e-01:
+  New values of barrier function     =  7.7844531250000074e+01  (reference -9.9079999999999998e+01):
+  New values of constraint violation =  7.8925781250000071e-01  (reference  9.8999999999999999e-01):
+reference_theta = 9.900000e-01 reference_gradBarrTDelta = 9.499500e+01
+Checking sufficient reduction...
+Succeeded...
+Checking filter acceptability...
+Succeeded...
+reference_theta = 9.900000e-01 reference_gradBarrTDelta = 9.499500e+01
+Convergence Check:
+  overall_error =  6.8311855670103100e+01   IpData().tol()   =  1.0000000000000000e-08
+  dual_inf      =  9.9393750000000011e+01   dual_inf_tol_    =  1.0000000000000000e+00
+  constr_viol   =  7.8925781250000071e-01   constr_viol_tol_ =  1.0000000000000000e-04
+  compl_inf     =  0.0000000000000000e+00   compl_inf_tol_   =  1.0000000000000000e-04
+Acceptable Check:
+  overall_error =  6.8311855670103100e+01   acceptable_tol_             =  9.9999999999999995e-07
+  dual_inf      =  9.9393750000000011e+01   acceptable_dual_inf_tol_    =  1.0000000000000000e+10
+  constr_viol   =  7.8925781250000071e-01   acceptable_constr_viol_tol_ =  1.0000000000000000e-02
+  compl_inf     =  0.0000000000000000e+00   acceptable_compl_inf_tol_   =  1.0000000000000000e-02
+  curr_obj_val_ =  7.7844531250000074e+01   last_obj_val                = -9.9079999999999998e+01
+  std::abs(curr_obj_val_-last_obj_val_)/Max(1., std::abs(curr_obj_val_)) =  2.2727933280476900e+00 acceptable_obj_change_tol_ =  1.0000000000000000e+20
+
+
+**************************************************
+*** Summary of Iteration: 1:
+**************************************************
+
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+   1  7.7844531e+01 7.89e-01 9.94e+01  -1.7 4.01e+00    -  1.00e+00 2.50e-01h  3 Tmax
+
+**************************************************
+*** Beginning Iteration 1 from the following point:
+**************************************************
+
+Current barrier parameter mu = 2.0000000000000004e-02
+Current fraction-to-the-boundary parameter tau = 9.8999999999999999e-01
+
+||curr_x||_inf   = 1.0812500000000003e+00
+||curr_s||_inf   = 0.0000000000000000e+00
+||curr_y_c||_inf = 1.4550000000000000e+02
+||curr_y_d||_inf = 0.0000000000000000e+00
+||curr_z_L||_inf = 0.0000000000000000e+00
+||curr_z_U||_inf = 0.0000000000000000e+00
+||curr_v_L||_inf = 0.0000000000000000e+00
+||curr_v_U||_inf = 0.0000000000000000e+00
+
+||delta_x||_inf   = 4.0050000000000008e+00
+||delta_s||_inf   = 0.0000000000000000e+00
+||delta_y_c||_inf = 1.9800000000000003e+02
+||delta_y_d||_inf = 0.0000000000000000e+00
+||delta_z_L||_inf = 0.0000000000000000e+00
+||delta_z_U||_inf = 0.0000000000000000e+00
+||delta_v_L||_inf = 0.0000000000000000e+00
+||delta_v_U||_inf = 0.0000000000000000e+00
+DenseVector "curr_x" with 2 elements:
+curr_x[    1]= 1.0812500000000003e+00
+curr_x[    2]= 7.8750000000000009e-01
+DenseVector "curr_s" with 0 elements:
+Homogeneous vector, all elements have value  0.0000000000000000e+00
+DenseVector "curr_y_c" with 1 elements:
+curr_y_c[    1]=-1.4550000000000000e+02
+DenseVector "curr_y_d" with 0 elements:
+Homogeneous vector, all elements have value  0.0000000000000000e+00
+DenseVector "curr_slack_x_L" with 0 elements:
+DenseVector "curr_slack_x_U" with 0 elements:
+DenseVector "curr_z_L" with 0 elements:
+Homogeneous vector, all elements have value  0.0000000000000000e+00
+DenseVector "curr_z_U" with 0 elements:
+Homogeneous vector, all elements have value  0.0000000000000000e+00
+DenseVector "curr_slack_s_L" with 0 elements:
+DenseVector "curr_slack_s_U" with 0 elements:
+DenseVector "curr_v_L" with 0 elements:
+Homogeneous vector, all elements have value  0.0000000000000000e+00
+DenseVector "curr_v_U" with 0 elements:
+Homogeneous vector, all elements have value  0.0000000000000000e+00
+DenseVector "curr_grad_lag_x" with 2 elements:
+curr_grad_lag_x[    1]=-9.9393750000000011e+01
+curr_grad_lag_x[    2]=-7.1662499999999994e+01
+DenseVector "curr_grad_lag_s" with 0 elements:
+
+CompoundVector "delta" with 8 components:
+
+Component 1:
+  DenseVector "delta[0]" with 2 elements:
+  delta[0][    1]= 4.0050000000000008e+00
+  delta[0][    2]= 2.9100000000000001e+00
+
+Component 2:
+  DenseVector "delta[1]" with 0 elements:
+  Homogeneous vector, all elements have value -0.0000000000000000e+00
+
+Component 3:
+  DenseVector "delta[2]" with 1 elements:
+  delta[2][    1]=-1.9800000000000003e+02
+
+Component 4:
+  DenseVector "delta[3]" with 0 elements:
+  Homogeneous vector, all elements have value -0.0000000000000000e+00
+
+Component 5:
+  DenseVector "delta[4]" with 0 elements:
+  Homogeneous vector, all elements have value -0.0000000000000000e+00
+
+Component 6:
+  DenseVector "delta[5]" with 0 elements:
+  Homogeneous vector, all elements have value -0.0000000000000000e+00
+
+Component 7:
+  DenseVector "delta[6]" with 0 elements:
+  Homogeneous vector, all elements have value -0.0000000000000000e+00
+
+Component 8:
+  DenseVector "delta[7]" with 0 elements:
+  Homogeneous vector, all elements have value -0.0000000000000000e+00
+
+
+***Current NLP Values for Iteration 1:
+
+                                   (scaled)                 (unscaled)
+Objective...............:   7.7844531250000074e+01    7.7844531250000074e+01
+Dual infeasibility......:   9.9393750000000011e+01    9.9393750000000011e+01
+Constraint violation....:   7.8925781250000071e-01    7.8925781250000071e-01
+Complementarity.........:   0.0000000000000000e+00    0.0000000000000000e+00
+Overall NLP error.......:   6.8311855670103100e+01    9.9393750000000011e+01
+
+DenseVector "grad_f" with 2 elements:
+grad_f[    1]= 2.1525000000000006e+02
+grad_f[    2]= 1.5750000000000003e+02
+DenseVector "curr_c" with 1 elements:
+curr_c[    1]= 7.8925781250000071e-01
+DenseVector "curr_d" with 0 elements:
+Homogeneous vector, all elements have value  0.0000000000000000e+00
+DenseVector "curr_d - curr_s" with 0 elements:
+Homogeneous vector, all elements have value  0.0000000000000000e+00
+
+GenTMatrix "jac_c" of dimension 1 by 2 with 2 nonzero elements:
+jac_c[    1,    1]= 2.1625000000000005e+00  (0)
+jac_c[    1,    2]= 1.5750000000000002e+00  (1)
+
+GenTMatrix "jac_d" of dimension 0 by 2 with 0 nonzero elements:
+
+SymTMatrix "W" of dimension 2 with 2 nonzero elements:
+W[    1,    1]= 8.0000000000000000e+00  (0)
+W[    2,    2]= 8.0000000000000000e+00  (1)
+
+
+
+Number of Iterations....: 1
+
+                                   (scaled)                 (unscaled)
+Objective...............:   7.7844531250000074e+01    7.7844531250000074e+01
+Dual infeasibility......:   9.9393750000000011e+01    9.9393750000000011e+01
+Constraint violation....:   7.8925781250000071e-01    7.8925781250000071e-01
+Variable bound violation:   0.0000000000000000e+00    0.0000000000000000e+00
+Complementarity.........:   0.0000000000000000e+00    0.0000000000000000e+00
+Overall NLP error.......:   6.8311855670103100e+01    9.9393750000000011e+01
+
+DenseVector "x" with 2 elements:
+x[    1]= 1.0812500000000003e+00
+x[    2]= 7.8750000000000009e-01
+DenseVector "y_c" with 1 elements:
+y_c[    1]=-1.4550000000000000e+02
+DenseVector "y_d" with 0 elements:
+Homogeneous vector, all elements have value  0.0000000000000000e+00
+DenseVector "z_L" with 0 elements:
+Homogeneous vector, all elements have value  0.0000000000000000e+00
+DenseVector "z_U" with 0 elements:
+Homogeneous vector, all elements have value  0.0000000000000000e+00
+DenseVector "v_L" with 0 elements:
+Homogeneous vector, all elements have value  0.0000000000000000e+00
+DenseVector "v_U" with 0 elements:
+Homogeneous vector, all elements have value  0.0000000000000000e+00
+
+Number of objective function evaluations             = 4
+Number of objective gradient evaluations             = 2
+Number of equality constraint evaluations            = 5
+Number of inequality constraint evaluations          = 0
+Number of equality constraint Jacobian evaluations   = 2
+Number of inequality constraint Jacobian evaluations = 0
+Number of Lagrangian Hessian evaluations             = 1
+Total seconds in IPOPT                               = 1.393
+
+EXIT: Maximum Number of Iterations Exceeded.
+DenseVector "final x unscaled" with 2 elements:
+final x unscaled[    1]= 1.0812500000000003e+00
+final x unscaled[    2]= 7.8750000000000009e-01
+DenseVector "final y_c unscaled" with 1 elements:
+final y_c unscaled[    1]=-1.4550000000000000e+02
+DenseVector "final y_d unscaled" with 0 elements:
+Homogeneous vector, all elements have value  0.0000000000000000e+00
+DenseVector "final z_L unscaled" with 0 elements:
+Homogeneous vector, all elements have value  0.0000000000000000e+00
+DenseVector "final z_U unscaled" with 0 elements:
+Homogeneous vector, all elements have value  0.0000000000000000e+00
