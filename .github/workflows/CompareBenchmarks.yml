@@ -65,6 +65,12 @@ jobs:
             --name cutest-benchmark-stats \
             --dir artifacts/reference
 
+      - name: Unzip benchmark artifacts
+        shell: bash
+        run: |
+          unzip -o artifacts/current/cutest-benchmark-stats.zip -d artifacts/current/cutest-benchmark-stats
+          unzip -o artifacts/reference/cutest-benchmark-stats.zip -d artifacts/reference/cutest-benchmark-stats
+
       - name: Compare benchmarks
         run: |
           julia --project=benchmark -e '
