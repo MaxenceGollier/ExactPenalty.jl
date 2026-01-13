@@ -7,20 +7,6 @@ using Plots
 
 const METHODS = (:exact, :lbfgs, :r2)
 
-folder = "artifacts/reference"
-
-println("Contents of $folder:")
-for f in sort(readdir(folder; join=true))
-    println(f)
-end
-
-folder = "artifacts/current"
-
-println("Contents of $folder:")
-for f in sort(readdir(folder; join=true))
-    println(f)
-end
-
 function load_stats(dir::AbstractString, stats, suffix = "")
 
   for method in METHODS
@@ -71,8 +57,8 @@ function pairwise_plot(stats, keys)
   savefig(p, "benchmark/result/"*String(parts_1[2])*"_"*String(parts_1[3])*"_comparison.png")
 end
 
-current_dir   = joinpath("artifacts", "current", "cutest-benchmark-stats")
-reference_dir = joinpath("artifacts", "reference", "cutest-benchmark-stats")
+current_dir   = joinpath("artifacts", "current")
+reference_dir = joinpath("artifacts", "reference")
 
 stats = Dict{Symbol, DataFrame}()
 
