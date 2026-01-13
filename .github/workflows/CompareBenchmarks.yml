@@ -73,3 +73,8 @@ jobs:
             Pkg.instantiate()
             include("benchmark/compare-benchmarks.jl")
           '
+      - name: Upload benchmark plots
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-plots
+          path: benchmark/result/*.png
