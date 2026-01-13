@@ -68,5 +68,7 @@ jobs:
       - name: Compare benchmarks
         run: |
           julia --project=benchmark -e '
+            using Pkg
+            Pkg.instantiate()
             include("benchmark/compare-benchmarks.jl")
           '
