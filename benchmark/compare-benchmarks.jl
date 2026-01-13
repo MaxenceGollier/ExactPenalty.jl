@@ -7,6 +7,20 @@ using Plots
 
 const METHODS = (:exact, :lbfgs, :r2)
 
+folder = "artifacts/reference"
+
+println("Contents of $folder:")
+for f in sort(readdir(folder; join=true))
+    println(f)
+end
+
+folder = "artifacts/current"
+
+println("Contents of $folder:")
+for f in sort(readdir(folder; join=true))
+    println(f)
+end
+
 function load_stats(dir::AbstractString, stats, suffix = "")
 
   for method in METHODS
