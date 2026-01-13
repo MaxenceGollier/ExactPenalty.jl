@@ -1,0 +1,14 @@
+name: Compare Benchmarks
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  placeholder:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Placeholder
+        run: |
+          echo "CompareBenchmarks workflow placeholder"
+          echo "This workflow will be implemented in a future update."
