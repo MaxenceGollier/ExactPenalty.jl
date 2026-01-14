@@ -31,7 +31,7 @@ function pairwise_plot(stats, keys)
   solved(df) = (df.status .== :first_order) # TODO: add infeasible problems
   costs = [df -> .!solved(df) * Inf + df.elapsed_time, 
             df -> .!solved(df) * Inf + df.neval_obj, df -> .!solved(df) * Inf + df.neval_grad]
-  costnames = ["\nCPU Time", "\n# Objective Evals", "\n# Gradient Evals"]
+  costnames = ["CPU Time", "# Objective Evals", "# Gradient Evals"]
 
   stats_subset = filter(kv -> kv[1] in keys, stats)
 
@@ -43,8 +43,8 @@ function pairwise_plot(stats, keys)
   models = Dict(:exact => "∇²f(x)", :lbfgs => "BFGS", :r2 => "σI")
   precision = Dict(:imprecise => "1e-3", :precise => "1e-9")
 
-  suptitle = "Hessian model: Bₖ(x) = " * models[parts_1[2]] * "; Tolerance: ϵ = " * precision[parts_1[3]]
-  p = profile_solvers(stats_subset, costs, costnames; suptitle = suptitle, topmargin = 5mm)
+  suptitle = "\nHessian model: Bₖ(x) = " * models[parts_1[2]] * "; Tolerance: ϵ = " * precision[parts_1[3]]
+  p = profile_solvers(stats_subset, costs, costnames; suptitle = suptitle, xlabel = "", ylabel = "")
   p.subplots[2][:legend_position] = :bottomright
   p.subplots[3][:legend_position] = :bottomright  
   p.series_list[1][:label] = Symbol.(split(string(p.series_list[1][:label]), "_"))[end] == :current ? :current : :main
@@ -54,11 +54,18 @@ function pairwise_plot(stats, keys)
   p.series_list[5][:label] = Symbol.(split(string(p.series_list[5][:label]), "_"))[end] == :current ? :current : :main
   p.series_list[6][:label] = Symbol.(split(string(p.series_list[6][:label]), "_"))[end] == :current ? :current : :main
 
-  savefig(p, "benchmark/result/"*String(parts_1[2])*"_"*String(parts_1[3])*"_comparison.png")
+  p.series_list[1][:linecolor] = Symbol.(split(string(p.series_list[1][:label]), "_"))[end] == :current ? :blue : :red
+  p.series_list[2][:linecolor] = Symbol.(split(string(p.series_list[2][:label]), "_"))[end] == :current ? :blue : :red
+  p.series_list[3][:linecolor] = Symbol.(split(string(p.series_list[3][:label]), "_"))[end] == :current ? :blue : :red
+  p.series_list[4][:linecolor] = Symbol.(split(string(p.series_list[4][:label]), "_"))[end] == :current ? :blue : :red
+  p.series_list[5][:linecolor] = Symbol.(split(string(p.series_list[5][:label]), "_"))[end] == :current ? :blue : :red
+  p.series_list[6][:linecolor] = Symbol.(split(string(p.series_list[6][:label]), "_"))[end] == :current ? :blue : :red
+
+  return p
 end
 
-current_dir   = joinpath("artifacts", "current")
-reference_dir = joinpath("artifacts", "reference")
+current_dir   = joinpath("artifacts", "current", "cutest-benchmark-stats")
+reference_dir = joinpath("artifacts", "reference", "cutest-benchmark-stats")
 
 stats = Dict{Symbol, DataFrame}()
 
@@ -68,9 +75,13 @@ load_stats(current_dir, stats, "_current")
 @info "Loading reference benchmark results"
 load_stats(reference_dir, stats, "_reference")
 
-p = pairwise_plot(stats, [:l2penalty_exact_imprecise_reference, :l2penalty_exact_imprecise_current])
-p = pairwise_plot(stats, [:l2penalty_exact_precise_reference, :l2penalty_exact_precise_current])
-p = pairwise_plot(stats, [:l2penalty_lbfgs_imprecise_reference, :l2penalty_lbfgs_imprecise_current])
-p = pairwise_plot(stats, [:l2penalty_lbfgs_precise_reference, :l2penalty_lbfgs_precise_current])
-p = pairwise_plot(stats, [:l2penalty_r2_imprecise_reference, :l2penalty_r2_imprecise_current])
-p = pairwise_plot(stats, [:l2penalty_r2_precise_reference, :l2penalty_r2_precise_current])
+p = plot(
+  pairwise_plot(stats, [:l2penalty_exact_imprecise_reference, :l2penalty_exact_imprecise_current]),
+  pairwise_plot(stats, [:l2penalty_exact_precise_reference, :l2penalty_exact_precise_current]),
+  pairwise_plot(stats, [:l2penalty_lbfgs_imprecise_reference, :l2penalty_lbfgs_imprecise_current]),
+  pairwise_plot(stats, [:l2penalty_lbfgs_precise_reference, :l2penalty_lbfgs_precise_current]),
+  pairwise_plot(stats, [:l2penalty_r2_imprecise_reference, :l2penalty_r2_imprecise_current]),
+  pairwise_plot(stats, [:l2penalty_r2_precise_reference, :l2penalty_r2_precise_current]),
+  layout = (3, 2), size = (1920, 1080))
+
+savefig(p, "benchmark/result/benchmark_comparison.svg")
