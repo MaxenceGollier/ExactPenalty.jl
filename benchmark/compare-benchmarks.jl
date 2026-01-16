@@ -64,8 +64,8 @@ function pairwise_plot(stats, keys)
   return p
 end
 
-current_dir   = joinpath("artifacts", "current", "cutest-benchmark-stats")
-reference_dir = joinpath("artifacts", "reference", "cutest-benchmark-stats")
+current_dir   = joinpath("artifacts", "current")
+reference_dir = joinpath("artifacts", "reference")
 
 stats = Dict{Symbol, DataFrame}()
 
