@@ -12,7 +12,7 @@ precise_tol = 1e-9
 solvers = Dict(
   :l2penalty_exact_imprecise =>
     nlp -> L2Penalty(
-      LBFGSModel(nlp),
+      nlp,
       verbose   = 0,
       atol      = imprecise_tol,
       rtol      = imprecise_tol,
@@ -20,7 +20,7 @@ solvers = Dict(
     ),
   :l2penalty_exact_precise =>
     nlp -> L2Penalty(
-      LBFGSModel(nlp),
+      nlp,
       verbose   = 0,
       atol      = precise_tol,
       rtol      = precise_tol,
