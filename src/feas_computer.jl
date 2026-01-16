@@ -1,10 +1,14 @@
-function decr_primal_feas!(solver::L2PenaltySolver{T}) where{T}
+function compute_θ!(solver::L2PenaltySolver{T}) where{T}
+  ## Computes a model decrease for the feasbility problem minₓ ‖c(x)‖₂
   ψ = solver.subsolver.ψ
-
   norm_cx = ψ.h(ψ.b)  
   prox!(solver.s, ψ, solver.s0, ψ.h.lambda)
-
   θ = (norm_cx - ψ(solver.s))/ψ.h.lambda
+  return θ
+end
+
+function decr_primal_feas!(solver::L2PenaltySolver{T}) where{T}
+  θ = compute_θ!(solver)
   θ < 0 &&
     error("L2Penalty: prox-gradient step should produce a decrease but θ = $(θ)")
 

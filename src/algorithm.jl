@@ -347,10 +347,10 @@ function SolverCore.solve!(
 
     solved = feas ≤ atol
 
+    θ = primal_feasibility_mode == :decrease ? primal_feas^2 : compute_θ!(solver)
     infeasible = 
-      (hx > 1e2*primal_feas^2) && 
-      (primal_feas < atol && hx > atol) && 
-      (primal_feasibility_mode == :decrease) # i.e, √θ ≤ ϵ but ‖c(x)‖ ≫ θ
+      (hx > 1e2*θ) && 
+      (primal_feas < atol && hx > atol) # i.e, √θ ≤ ϵ but ‖c(x)‖ ≫ θ
       
     verbose > 0 &&
       stats.iter % verbose == 0 &&
