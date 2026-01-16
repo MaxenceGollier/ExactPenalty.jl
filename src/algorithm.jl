@@ -183,6 +183,7 @@ function SolverCore.solve!(
   sub_h = solver.subpb.h
   ψ = solver.subsolver.ψ
 
+
   x = solver.x .= x
   shift!(ψ, x)
   fx = obj(nlp, x) #TODO: this call is redundant with the first evaluation of the objective function of R2N. We can remove this and rely on the lines in the while loop below.
@@ -320,6 +321,7 @@ function SolverCore.solve!(
     fx = solver.substats.solver_specific[:smooth_obj]
     hx_prev = copy(hx)
     hx = solver.substats.solver_specific[:nonsmooth_obj]/τ
+    update_constraint_multipliers!(solver)
 
     ## Compute feasibility 
 
@@ -352,20 +354,19 @@ function SolverCore.solve!(
         colsep = 1,
       )
 
-    set_iter!(stats, stats.iter + 1)
-    rem_eval = max_eval - neval_obj(nlp)
-    set_time!(stats, time() - start_time)
-    set_objective!(stats, fx)
-    set_residuals!(stats, primal_feas, dual_feas)
-    update_constraint_multipliers!(solver)
-    set_constraint_multipliers!(stats, solver.y)
-    
     solved = feas ≤ atol
 
     θ = primal_feasibility_mode == :decrease ? primal_feas^2 : compute_θ!(solver)
     infeasible = 
       (hx > 1e2*θ) && 
       (primal_feas < atol && hx > atol) # i.e, √θ ≤ ϵ but ‖c(x)‖ ≫ θ
+    
+    set_iter!(stats, stats.iter + 1)
+    rem_eval = max_eval - neval_obj(nlp)
+    set_time!(stats, time() - start_time)
+    set_objective!(stats, fx)
+    set_residuals!(stats, primal_feas, dual_feas)
+    set_constraint_multipliers!(stats, solver.y)
 
     set_status!(
       stats,
