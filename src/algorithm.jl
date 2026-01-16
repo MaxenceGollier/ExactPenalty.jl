@@ -96,6 +96,7 @@ For advanced usage, first define a solver "L2PenaltySolver" to preallocate the m
 - `verbose::Int = 0`: if > 0, display iteration details every `verbose` iteration;
 - `sub_verbose::Int = 0`: if > 0, display subsolver iteration details every `verbose` iteration;
 - `τ::T = T(100)`: initial penalty parameter;
+- `β1::T = T(1)`: minimal penalty parameter increase,
 - `β3::T = 1/τ`: initial regularization parameter σ₀ = β3/τₖ at each iteration;
 - `β4::T = eps(T)`: minimal regularization parameter σ for `R2`;
 - `primal_feasibility_mode::Symbol = :kkt`: describes how the primal feasibility is computed during the outer iterations. 
@@ -162,6 +163,7 @@ function SolverCore.solve!(
   verbose::Int = 0,
   sub_verbose::Int = 0,
   τ::T = T(100),
+  β1::T = T(1),
   β3::T = 1e-4/τ,
   β4::T = eps(T),
   primal_feasibility_mode::Symbol = :kkt,
@@ -222,7 +224,6 @@ function SolverCore.solve!(
   compute_least_square_multipliers!(solver)
 
   τ = max(norm(solver.y, 1), T(1))
-  β1 = τ
   sub_h.h = NormL2(τ)
   ψ.h = NormL2(τ)
   νsub = 1/max(β4, β3*τ)
@@ -339,7 +340,8 @@ function SolverCore.solve!(
 
 
     if primal_feas > ktol #FIXME
-      τ = τ + β1
+      compute_least_square_multipliers!(solver)
+      τ = max(τ + β1, norm(solver.y, 1))
       sub_h.h = NormL2(τ)
       ψ.h = NormL2(τ)
       νsub = 1/max(β4, β3*τ)
