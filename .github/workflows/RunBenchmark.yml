@@ -56,3 +56,12 @@ jobs:
           path: benchmark/result
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  Compare:
+    needs: Benchmark
+    if: >
+      github.event_name == 'pull_request' &&
+      contains(github.event.pull_request.labels.*.name, 'run CUTEst benchmark')
+    uses: ./.github/workflows/CompareBenchmarks.yml
+    secrets: inherit
+
+
