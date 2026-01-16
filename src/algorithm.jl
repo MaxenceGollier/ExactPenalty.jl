@@ -165,7 +165,7 @@ function SolverCore.solve!(
   β3::T = 1e-4/τ,
   β4::T = eps(T),
   primal_feasibility_mode::Symbol = :kkt,
-  dual_feasibility_mode::Symbol = :kkt,
+  dual_feasibility_mode::Symbol = :decrease,
 ) where {T, V}
   reset!(stats)
   reset!(solver)
