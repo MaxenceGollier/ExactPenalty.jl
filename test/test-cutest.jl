@@ -19,9 +19,9 @@ tol = 1e-3
     @test stats.status == :first_order
     @test norm(primal_solution - stats.solution) ≤ 10*tol
     @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 10*tol
-    @test stats.primal_feas == norm(cons(nlp, stats.solution))
+    @test stats.primal_feas == norm(cons(nlp, stats.solution), Inf)
     @test norm(stats.multipliers - dual_solution) ≤ 10*tol
-    @test abs(stats.dual_feas - norm(jtprod(nlp, stats.solution, stats.multipliers) - grad(nlp, stats.solution))) ≤ eps(Float64)
+    @test abs(stats.dual_feas - norm(jtprod(nlp, stats.solution, stats.multipliers) - grad(nlp, stats.solution), Inf)) ≤ eps(Float64)
 
     # Test stability and allocations
     solver = L2PenaltySolver(nlp)
@@ -36,6 +36,30 @@ tol = 1e-3
     @test all(stats_optimized.multipliers .== stats.multipliers)
     @test all(stats_optimized.solution .== stats.solution)
     @test stats_optimized.iter == stats.iter
+
+    stats = L2Penalty(nlp, atol = tol, rtol = tol, primal_feasibility_mode = :decrease, dual_feasibility_mode = :decrease)
+
+    # Test whether the outputs are well defined
+    @test stats.status == :first_order
+    @test norm(primal_solution - stats.solution) ≤ 10*tol
+    @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 10*tol
+    @test norm(stats.multipliers - dual_solution) ≤ 10*tol
+
+    # Test stability and allocations
+    solver = L2PenaltySolver(nlp)
+    stats_optimized = ExactPenaltyExecutionStats(nlp)
+    
+    @test @wrappedallocs(solve!(solver, nlp, stats_optimized, atol = 1e-3, rtol = 1e-3, primal_feasibility_mode = :decrease, dual_feasibility_mode = :decrease)) == 0
+
+    # Test that the second calling form gives the same output
+    @test stats_optimized.status == stats.status
+    @test stats_optimized.objective == stats.objective
+    @test stats_optimized.primal_feas == stats.primal_feas
+    @test stats_optimized.dual_feas == stats.dual_feas
+    @test all(stats_optimized.multipliers .== stats.multipliers)
+    @test all(stats_optimized.solution .== stats.solution)
+    @test stats_optimized.iter == stats.iter
+    
   end
   # Test with R2N
   @testset "R2N (LBFGS)" begin
@@ -45,14 +69,35 @@ tol = 1e-3
     @test stats.status == :first_order
     @test norm(primal_solution - stats.solution) ≤ 10*tol
     @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 10*tol
-    @test stats.primal_feas == norm(cons(nlp, stats.solution))
+    @test stats.primal_feas == norm(cons(nlp, stats.solution), Inf)
     @test norm(stats.multipliers - dual_solution) ≤ 10*tol
-    @test abs(stats.dual_feas - norm(jtprod(nlp, stats.solution, stats.multipliers) - grad(nlp, stats.solution))) ≤ eps(Float64)
+    @test abs(stats.dual_feas - norm(jtprod(nlp, stats.solution, stats.multipliers) - grad(nlp, stats.solution), Inf)) ≤ eps(Float64)
 
     # Test stability and allocations
     solver = L2PenaltySolver(LBFGS_model, subsolver = R2NSolver)
     stats_optimized = ExactPenaltyExecutionStats(LBFGS_model)
     @test @wrappedallocs(solve!(solver, LBFGS_model, stats_optimized, atol = 1e-3, rtol = 1e-3)) == 0
+    
+    # Test that the second calling form gives the same output
+    @test stats_optimized.status == stats.status
+    @test stats_optimized.objective == stats.objective
+    @test stats_optimized.primal_feas == stats.primal_feas
+    @test stats_optimized.dual_feas == stats.dual_feas
+    @test all(stats_optimized.multipliers .== stats.multipliers)
+    @test all(stats_optimized.solution .== stats.solution)
+    @test stats_optimized.iter == stats.iter
+
+    stats = L2Penalty(LBFGS_model, atol = tol, rtol = tol, subsolver = R2NSolver, primal_feasibility_mode = :decrease, dual_feasibility_mode = :decrease)
+
+    @test stats.status == :first_order
+    @test norm(primal_solution - stats.solution) ≤ 10*tol
+    @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 10*tol
+    @test norm(stats.multipliers - dual_solution) ≤ 10*tol
+
+    # Test stability and allocations
+    solver = L2PenaltySolver(LBFGS_model, subsolver = R2NSolver)
+    stats_optimized = ExactPenaltyExecutionStats(LBFGS_model)
+    @test @wrappedallocs(solve!(solver, LBFGS_model, stats_optimized, atol = 1e-3, rtol = 1e-3, primal_feasibility_mode = :decrease, dual_feasibility_mode = :decrease)) == 0
     
     # Test that the second calling form gives the same output
     @test stats_optimized.status == stats.status

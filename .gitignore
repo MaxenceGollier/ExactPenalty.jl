@@ -11,3 +11,7 @@ docs/build/
 env
 node_modules
 *.mem
+*.jld2
+*.png
+*.svg
+untracked

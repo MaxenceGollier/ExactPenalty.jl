@@ -7,16 +7,13 @@ mutable struct L2PenaltySolver{
   V <: AbstractVector{T},
   S <: AbstractOptimizationSolver,
   PB <: AbstractRegularizedNLPModel,
-  G1 <: ShiftedCompositeNormL2{T},
-  G2 <: CompositeNormL2{T}
 } <: AbstractOptimizationSolver
   x::V
   y::V
   dual_res::V
   s::V
   s0::V
-  ψ::G1
-  sub_h::G2
+  temp_b::V
   subsolver::S
   subpb::PB
   substats::GenericExecutionStats{T, V, V, T}
@@ -27,6 +24,7 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T, V}; subsolver = R2Solver) wher
   x = similar(x0)
   s = similar(x0)
   y = similar(x0, nlp.meta.ncon)
+  temp_b = similar(y)
   dual_res = similar(x0)
   s0 = zero(x0)
 
@@ -35,15 +33,6 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T, V}; subsolver = R2Solver) wher
   vals = similar(rows, eltype(x0))
   A = SparseMatrixCOO(nlp.meta.ncon, nlp.meta.nvar, rows, cols, vals)
   b = similar(x0, eltype(x0), nlp.meta.ncon)
-
-  # Allocate ψ = ||c(x) + J(x)s|| to compute θ
-  ψ = ShiftedCompositeNormL2(
-    one(T),
-    (c, x) -> cons!(nlp, x, c),
-    (j, x) -> jac_coord!(nlp, x, j.vals),
-    A,
-    b,
-  )
 
   # Allocate sub_h = ||c(x)|| to solve min f(x) + τ||c(x)||
   store_previous_jacobian = isa(nlp, QuasiNewtonModel) ? true : false
@@ -57,8 +46,9 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T, V}; subsolver = R2Solver) wher
   end
   subpb = RegularizedNLPModel(nlp, sub_h)
   substats = RegularizedExecutionStats(subpb)
+  set_solver_specific!(substats, :ktol, T(0))
 
-  return L2PenaltySolver(x, y, dual_res, s, s0, ψ, sub_h, solver, subpb, substats)
+  return L2PenaltySolver(x, y, dual_res, s, s0, temp_b, solver, subpb, substats)
 end
 
 """
@@ -93,6 +83,8 @@ For advanced usage, first define a solver "L2PenaltySolver" to preallocate the m
 - `x::V = nlp.meta.x0`: the initial guess;
 - `atol::T = √eps(T)`: absolute tolerance;
 - `rtol::T = √eps(T)`: relative tolerance;
+- `sub_atol::T = zero(T)`: absolute tolerance given to the subsolver;
+- `sub_rtol::T = T(1e-2)`: relative tolerance given to the subsolver;
 - `neg_tol::T = eps(T)^(1 / 4)`: negative tolerance
 - `ktol::T = eps(T)^(1 / 4)`: the initial tolerance sent to the subsolver
 - `max_eval::Int = -1`: maximum number of evaluation of the objective function (negative number means unlimited);
@@ -104,10 +96,16 @@ For advanced usage, first define a solver "L2PenaltySolver" to preallocate the m
 - `verbose::Int = 0`: if > 0, display iteration details every `verbose` iteration;
 - `sub_verbose::Int = 0`: if > 0, display subsolver iteration details every `verbose` iteration;
 - `τ::T = T(100)`: initial penalty parameter;
-- `β1::T = τ`: penalty update parameter: τₖ <- τₖ + β1;	
-- `β2::T = T(0.1)`: tolerance decreasing factor, at each iteration, ktol <- β2*ktol;
 - `β3::T = 1/τ`: initial regularization parameter σ₀ = β3/τₖ at each iteration;
 - `β4::T = eps(T)`: minimal regularization parameter σ for `R2`;
+- `primal_feasibility_mode::Symbol = :kkt`: describes how the primal feasibility is computed during the outer iterations. 
+                                            With `:kkt`, the primal feasibility is the infinity norm of the residual ‖c(xₖ)‖∞.
+                                            With `:decrease`, the primal feasibility is computed as a model decrease of the feasibility problem.
+- `dual_feasibility_mode::Symbol = :kkt`: describes how the dual feasibility is computed during the outer and inner iterations. 
+                                          With `:kkt`, the dual feasibility is the infinity norm of the residual ‖∇fₖ + Jₖᵀyₖ‖∞, where yₖ 
+                                          is resulting from the computation of the Cauchy point of the subproblem.  
+                                          With `:decrease`, the dual feasibility is computed as a model decrease with respect to the Cauchy point. 
+
 other 'kwargs' are passed to `R2` (see `R2` for more information).
 
 The algorithm stops either when `√θₖ < atol + rtol*√θ₀ ` or `θₖ < 0` and `√(-θₖ) < neg_tol` where θₖ := ‖c(xₖ)‖₂ - ‖c(xₖ) + J(xₖ)sₖ‖₂, and √θₖ is a stationarity measure.
@@ -150,12 +148,11 @@ function SolverCore.solve!(
   nlp::AbstractNLPModel{T, V},
   stats::GenericExecutionStats{T, V, V};
   callback = (args...) -> nothing,
-  sub_callback::F = (args...) -> nothing,
   x::V = nlp.meta.x0,
   atol::T = √eps(T),
   rtol::T = √eps(T),
-  neg_tol = eps(T)^(1/4),
-  ktol::T = eps(T)^(1/4),
+  sub_rtol = 1e-2,
+  sub_atol = zero(T),
   max_iter::Int = 10000,
   sub_max_iter::Int = 10000,
   max_time::T = T(30.0),
@@ -165,11 +162,11 @@ function SolverCore.solve!(
   verbose::Int = 0,
   sub_verbose::Int = 0,
   τ::T = T(100),
-  β1::T = τ,
-  β2::T = T(0.1),
   β3::T = 1e-4/τ,
   β4::T = eps(T),
-) where {T, V, F <: Function}
+  primal_feasibility_mode::Symbol = :kkt,
+  dual_feasibility_mode::Symbol = :kkt,
+) where {T, V}
   reset!(stats)
   reset!(solver)
   reset!(solver.substats)
@@ -179,30 +176,29 @@ function SolverCore.solve!(
   isa(solver.subsolver, R2NSolver) && (solver.subsolver.v0 .= (isodd.(eachindex(solver.subsolver.v0)) .* -2 .+ 1) ./ sqrt(length(solver.subsolver.v0))) # FIXME
   #This should be done in RegularizedOptimization, when calling reset!(::R2NSolver)
 
+  @assert (primal_feasibility_mode == :decrease || primal_feasibility_mode == :kkt)
+  @assert (dual_feasibility_mode == :decrease || dual_feasibility_mode == :kkt)
+
   # Retrieve workspace
-  ψ = solver.ψ
-  sub_h = solver.sub_h
-  sub_h.h = NormL2(τ)
-  solver.subsolver.ψ.h = NormL2(τ)
+  sub_h = solver.subpb.h
+  ψ = solver.subsolver.ψ
+
 
   x = solver.x .= x
-  s = solver.s
-  s0 = solver.s0
   shift!(ψ, x)
   fx = obj(nlp, x) #TODO: this call is redundant with the first evaluation of the objective function of R2N. We can remove this and rely on the lines in the while loop below.
   hx = norm(ψ.b)
 
   if verbose > 0
     @info log_header(
-      [:iter, :sub_iter, :fx, :hx, :theta, :xi, :epsk, :tau, :normx],
+      [:iter, :sub_iter, :fx, :pr_feas, :du_feas, :epsk, :tau, :normx],
       [Int, Int, Float64, Float64, Float64, Float64, Float64, Float64, Float64],
       hdr_override = Dict{Symbol, String}(   # TODO: Add this as constant dict elsewhere
         :iter => "outer",
         :sub_iter => "inner",
         :fx => "f(x)",
-        :hx => "‖c(x)‖₂",
-        :theta => "√θ",
-        :xi => "√(ξ/ν)",
+        :pr_feas => "pr_feas",
+        :du_feas => "du_feas",
         :epsk => "ϵₖ",
         :tau => "τ",
         :normx => "‖x‖",
@@ -217,23 +213,53 @@ function SolverCore.solve!(
   set_time!(stats, 0.0)
   set_objective!(stats, fx)
 
-  local θ::T
-  prox!(s, ψ, s0, T(1))
-  θ = hx - ψ(s)
+  ## Compute Feasibility
 
-  sqrt_θ = θ ≥ 0 ? sqrt(θ) : sqrt(-θ)
-  θ < 0 &&
-    sqrt_θ ≥ neg_tol &&
-    error("L2Penalty: prox-gradient step should produce a decrease but θ = $(θ)")
+  primal_feas_computer! = primal_feasibility_mode == :decrease ? decr_primal_feas! : kkt_primal_feas!
+  primal_feas = primal_feas_computer!(solver)
 
-  atol += rtol * sqrt_θ # make stopping test absolute and relative
-  ktol = max(ktol, atol) # Keep ϵ₀ ≥ ϵ
-  tol_init = ktol # store value of ϵ₀ 
+  grad!(nlp, x, solver.subsolver.∇fk)
+  compute_least_square_multipliers!(solver)
 
-  done = false
-
-  n_iter_since_decrease = 0
+  τ = max(norm(solver.y, 1), T(1))
+  β1 = τ
+  sub_h.h = NormL2(τ)
+  ψ.h = NormL2(τ)
   νsub = 1/max(β4, β3*τ)
+
+  dual_feas_computer! = dual_feasibility_mode == :decrease ? decr_dual_feas! : kkt_dual_feas!
+  dual_feas = dual_feas_computer!(solver)
+
+  feas = max(primal_feas, dual_feas) 
+
+  atol += rtol * feas # make stopping test absolute and relative
+
+  ktol = max(sub_rtol*dual_feas + sub_atol, atol) # Keep ϵ₀ ≥ ϵ
+  set_solver_specific!(solver.substats, :ktol, ktol)
+  
+  solved = feas ≤ atol
+  infeasible = false
+  n_iter_since_decrease = 0
+
+  set_status!(
+      stats,
+      get_status(
+        nlp,
+        elapsed_time = stats.elapsed_time,
+        n_iter_since_decrease = n_iter_since_decrease,
+        iter = stats.iter,
+        optimal = solved,
+        infeasible = infeasible,
+        max_eval = max_eval,
+        max_time = max_time,
+        max_iter = max_iter,
+        max_decreas_iter = max_decreas_iter,
+      ),
+    )
+  
+  callback(nlp, solver, stats)
+
+  done = stats.status != :unknown
 
   while !done
     if isa(solver.subsolver, R2Solver)
@@ -241,11 +267,11 @@ function SolverCore.solve!(
         solver.subsolver,
         solver.subpb,
         solver.substats;
-        callback = sub_callback,
+        callback = (args...) -> subsolver_callback(args...; feasibility_mode = dual_feasibility_mode),
         x = x,
         atol = ktol,
         rtol = T(0),
-        neg_tol = neg_tol,
+        neg_tol = T(0),
         verbose = sub_verbose,
         max_iter = sub_max_iter,
         max_time = max_time - stats.elapsed_time,
@@ -258,13 +284,13 @@ function SolverCore.solve!(
         solver.subsolver,
         solver.subpb,
         solver.substats;
-        callback = sub_callback,
+        callback = (args...) -> subsolver_callback(args...; feasibility_mode = dual_feasibility_mode),
         qn_update_y! = _qn_lag_update_y!,
         qn_copy! = _qn_lag_copy!,
         x = x,
         atol = ktol,
         rtol = T(0),
-        neg_tol = neg_tol,
+        neg_tol = T(0),
         verbose = sub_verbose,
         max_iter = sub_max_iter,
         max_time = max_time - stats.elapsed_time,
@@ -277,11 +303,11 @@ function SolverCore.solve!(
         solver.subsolver,
         solver.subpb,
         solver.substats;
-        callback = sub_callback,
+        callback = (args...) -> subsolver_callback(args...; feasibility_mode = dual_feasibility_mode),
         x = x,
         atol = ktol,
         rtol = T(0),
-        neg_tol = neg_tol,
+        neg_tol = T(0),
         verbose = sub_verbose,
         max_iter = sub_max_iter,
         max_time = max_time - stats.elapsed_time,
@@ -295,65 +321,52 @@ function SolverCore.solve!(
     fx = solver.substats.solver_specific[:smooth_obj]
     hx_prev = copy(hx)
     hx = solver.substats.solver_specific[:nonsmooth_obj]/τ
-    sqrt_ξ_νInv = solver.substats.dual_feas
+    update_constraint_multipliers!(solver)
 
-    shift!(ψ, x)
-    prox!(s, ψ, s0, T(1))
+    ## Compute feasibility 
 
-    θ = hx - ψ(s)
-    sqrt_θ = θ ≥ 0 ? sqrt(θ) : sqrt(-θ)
-    θ < 0 &&
-      sqrt_θ ≥ neg_tol &&
-      error("L2Penalty: prox-gradient step should produce a decrease but θ = $(θ)")
+    primal_feas = primal_feas_computer!(solver)
+    dual_feas = dual_feas_computer!(solver)
+    feas = max(primal_feas, dual_feas)
 
-    if sqrt_θ > ktol
+    if primal_feas > ktol #FIXME
       τ = τ + β1
       sub_h.h = NormL2(τ)
-      solver.subsolver.ψ.h = NormL2(τ)
+      ψ.h = NormL2(τ)
       νsub = 1/max(β4, β3*τ)
     else
       n_iter_since_decrease = 0
-      ktol = max(β2*ktol, atol)
+      ktol = max(sub_rtol*dual_feas + sub_atol, atol)
+      set_solver_specific!(solver.substats, :ktol, ktol)
       νsub = 1/solver.substats.solver_specific[:sigma]
     end
-    if sqrt_θ > ktol && hx_prev ≥ hx
+    if primal_feas > ktol && hx_prev ≥ hx
       n_iter_since_decrease += 1
       β1 *= 10
     else
       n_iter_since_decrease = 0
     end
-
-    solved =
-      (sqrt_θ ≤ atol && solver.substats.status == :first_order) ||
-      (θ < 0 && sqrt_θ ≤ neg_tol && solver.substats.status == :first_order)
-    infeasible = 
-      (hx > 1e2*θ) && 
-      (sqrt_θ < atol && hx > atol)
       
-    (θ < 0 && sqrt_θ > neg_tol) &&
-      error("L2Penalty: prox-gradient step should produce a decrease but θ = $(θ)")
-
     verbose > 0 &&
       stats.iter % verbose == 0 &&
       @info log_row(
-        Any[stats.iter, solver.substats.iter, fx, hx, sqrt_θ, sqrt_ξ_νInv, ktol, τ, norm(x)],
+        Any[stats.iter, solver.substats.iter, fx, primal_feas, dual_feas, ktol, τ, norm(x)],
         colsep = 1,
       )
 
+    solved = feas ≤ atol
+
+    θ = primal_feasibility_mode == :decrease ? primal_feas^2 : compute_θ!(solver)
+    infeasible = 
+      (hx > 1e2*θ) && 
+      (primal_feas < atol && hx > atol) # i.e, √θ ≤ ϵ but ‖c(x)‖ ≫ θ
+    
     set_iter!(stats, stats.iter + 1)
     rem_eval = max_eval - neval_obj(nlp)
     set_time!(stats, time() - start_time)
     set_objective!(stats, fx)
-    set_solver_specific!(stats,  :theta, sqrt_θ)
-
-    if isa(solver.subsolver, R2Solver) 
-      set_residuals!(stats, hx, norm(solver.subsolver.s)*solver.substats.solver_specific[:sigma])
-      @. stats.multipliers = solver.subsolver.ψ.q*solver.substats.solver_specific[:sigma]
-    elseif isa(solver.subsolver, R2NSolver) 
-      set_residuals!(stats, hx, norm(solver.subsolver.s1)*solver.substats.solver_specific[:sigma_cauchy])
-      @. stats.multipliers = solver.subsolver.ψ.q*solver.substats.solver_specific[:sigma_cauchy] 
-    end
-    
+    set_residuals!(stats, primal_feas, dual_feas)
+    set_constraint_multipliers!(stats, solver.y)
 
     set_status!(
       stats,

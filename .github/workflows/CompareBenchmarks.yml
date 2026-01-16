@@ -5,10 +5,76 @@ on:
   workflow_call:
 
 jobs:
-  placeholder:
-    runs-on: ubuntu-latest
+  Compare:
+    runs-on: windows-latest
+
     steps:
-      - name: Placeholder
+      - uses: actions/checkout@v4
+
+      - uses: julia-actions/setup-julia@latest
+        with:
+          version: 'lts'
+
+      - name: Download latest RunBenchmark artifact on this branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ github.ref_name }}
+        shell: bash
         run: |
-          echo "CompareBenchmarks workflow placeholder"
-          echo "This workflow will be implemented in a future update."
+          echo "Looking for RunBenchmark artifact on branch: $BRANCH"
+
+          RUN_ID=$(gh run list \
+            --workflow "Run Benchmark" \
+            --branch "$BRANCH" \
+            --status success \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId')
+
+          if [ -z "$RUN_ID" ]; then
+            echo "::error::No successful RunBenchmark run found on branch $BRANCH"
+            exit 1
+          fi
+
+          echo "Found RunBenchmark run id: $RUN_ID"
+
+          gh run download "$RUN_ID" \
+            --name cutest-benchmark-stats \
+            --dir artifacts/current
+
+      - name: Download latest saved benchmark (reference)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          REF_RUN_ID=$(gh run list \
+            --workflow SaveBenchmark.yml \
+            --status success \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId')
+
+          if [ -z "$REF_RUN_ID" ]; then
+            echo "::error::No successful SaveBenchmark.yml run found"
+            exit 1
+          fi
+
+          echo "Found SaveBenchmark run id: $REF_RUN_ID"
+
+          gh run download "$REF_RUN_ID" \
+            --name cutest-benchmark-stats \
+            --dir artifacts/reference
+
+      - name: Compare benchmarks
+        run: |
+          julia --project=benchmark -e '
+            using Pkg
+            Pkg.develop(path=".")
+            Pkg.instantiate()
+            include("benchmark/compare-benchmarks.jl")
+          '
+      - name: Upload benchmark plots
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-plots
+          path: benchmark/result/*.svg
