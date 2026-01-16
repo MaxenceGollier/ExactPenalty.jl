@@ -344,13 +344,6 @@ function SolverCore.solve!(
     else
       n_iter_since_decrease = 0
     end
-
-    solved = feas ≤ atol
-
-    θ = primal_feasibility_mode == :decrease ? primal_feas^2 : compute_θ!(solver)
-    infeasible = 
-      (hx > 1e2*θ) && 
-      (primal_feas < atol && hx > atol) # i.e, √θ ≤ ϵ but ‖c(x)‖ ≫ θ
       
     verbose > 0 &&
       stats.iter % verbose == 0 &&
@@ -366,6 +359,13 @@ function SolverCore.solve!(
     set_residuals!(stats, primal_feas, dual_feas)
     update_constraint_multipliers!(solver)
     set_constraint_multipliers!(stats, solver.y)
+    
+    solved = feas ≤ atol
+
+    θ = primal_feasibility_mode == :decrease ? primal_feas^2 : compute_θ!(solver)
+    infeasible = 
+      (hx > 1e2*θ) && 
+      (primal_feas < atol && hx > atol) # i.e, √θ ≤ ϵ but ‖c(x)‖ ≫ θ
 
     set_status!(
       stats,
