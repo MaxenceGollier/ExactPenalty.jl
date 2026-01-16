@@ -1,8 +1,8 @@
 function subsolver_callback(nlp, solver::S, stats; feasibility_mode = :kkt) where{S <: Union{R2NSolver, R2Solver}}
   if feasibility_mode == :kkt 
     kkt_stopping_callback(nlp, solver, stats)
-  elseif feasibility_mode == :prox
-    prox_stopping_callback(nlp, solver, stats)
+  elseif feasibility_mode == :decrease
+    decr_stopping_callback(nlp, solver, stats)
   end
 end
 function kkt_stopping_callback(nlp, solver::S, stats) where{S <: Union{R2NSolver, R2Solver}}
@@ -19,7 +19,7 @@ function kkt_stopping_callback(nlp, solver::S, stats) where{S <: Union{R2NSolver
   stats.dual_feas ≤ ktol && (stats.status = :user)
 end
 
-function prox_stopping_callback(nlp, solver::S, stats) where{S <: Union{R2NSolver, R2Solver}}
+function decr_stopping_callback(nlp, solver::S, stats) where{S <: Union{R2NSolver, R2Solver}}
   σ = isa(solver, R2NSolver) ? stats.solver_specific[:sigma_cauchy] : stats.solver_specific[:sigma]
   s = isa(solver, R2NSolver) ? solver.s1 : solver.s
 

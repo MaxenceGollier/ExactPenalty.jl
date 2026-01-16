@@ -96,10 +96,16 @@ For advanced usage, first define a solver "L2PenaltySolver" to preallocate the m
 - `verbose::Int = 0`: if > 0, display iteration details every `verbose` iteration;
 - `sub_verbose::Int = 0`: if > 0, display subsolver iteration details every `verbose` iteration;
 - `τ::T = T(100)`: initial penalty parameter;
-- `β1::T = τ`: penalty update parameter: τₖ <- τₖ + β1;	
-- `β2::T = T(0.1)`: tolerance decreasing factor, at each iteration, ktol <- β2*ktol;
 - `β3::T = 1/τ`: initial regularization parameter σ₀ = β3/τₖ at each iteration;
 - `β4::T = eps(T)`: minimal regularization parameter σ for `R2`;
+- `primal_feasibility_mode::Symbol = :kkt`: describes how the primal feasibility is computed during the outer iterations. 
+                                            With `:kkt`, the primal feasibility is the infinity norm of the residual ‖c(xₖ)‖∞.
+                                            With `:decrease`, the primal feasibility is computed as a model decrease of the feasibility problem.
+- `dual_feasibility_mode::Symbol = :kkt`: describes how the dual feasibility is computed during the outer and inner iterations. 
+                                          With `:kkt`, the dual feasibility is the infinity norm of the residual ‖∇fₖ + Jₖᵀyₖ‖∞, where yₖ 
+                                          is resulting from the computation of the Cauchy point of the subproblem.  
+                                          With `:decrease`, the dual feasibility is computed as a model decrease with respect to the Cauchy point. 
+
 other 'kwargs' are passed to `R2` (see `R2` for more information).
 
 The algorithm stops either when `√θₖ < atol + rtol*√θ₀ ` or `θₖ < 0` and `√(-θₖ) < neg_tol` where θₖ := ‖c(xₖ)‖₂ - ‖c(xₖ) + J(xₖ)sₖ‖₂, and √θₖ is a stationarity measure.
@@ -147,7 +153,6 @@ function SolverCore.solve!(
   rtol::T = √eps(T),
   sub_rtol = 1e-2,
   sub_atol = zero(T),
-  ktol::T = eps(T)^(1/4),
   max_iter::Int = 10000,
   sub_max_iter::Int = 10000,
   max_time::T = T(30.0),
@@ -157,11 +162,10 @@ function SolverCore.solve!(
   verbose::Int = 0,
   sub_verbose::Int = 0,
   τ::T = T(100),
-  β1::T = τ,
-  β2::T = T(0.1),
   β3::T = 1e-4/τ,
   β4::T = eps(T),
-  feasibility_mode = :kkt,
+  primal_feasibility_mode::Symbol = :kkt,
+  dual_feasibility_mode::Symbol = :kkt,
 ) where {T, V}
   reset!(stats)
   reset!(solver)
@@ -172,7 +176,8 @@ function SolverCore.solve!(
   isa(solver.subsolver, R2NSolver) && (solver.subsolver.v0 .= (isodd.(eachindex(solver.subsolver.v0)) .* -2 .+ 1) ./ sqrt(length(solver.subsolver.v0))) # FIXME
   #This should be done in RegularizedOptimization, when calling reset!(::R2NSolver)
 
-  @assert (feasibility_mode == :prox || feasibility_mode == :kkt)
+  @assert (primal_feasibility_mode == :decrease || primal_feasibility_mode == :kkt)
+  @assert (dual_feasibility_mode == :decrease || dual_feasibility_mode == :kkt)
 
   # Retrieve workspace
   sub_h = solver.subpb.h
@@ -209,7 +214,7 @@ function SolverCore.solve!(
 
   ## Compute Feasibility
 
-  primal_feas_computer! = feasibility_mode == :prox ? prox_primal_feas! : kkt_primal_feas!
+  primal_feas_computer! = primal_feasibility_mode == :decrease ? decr_primal_feas! : kkt_primal_feas!
   primal_feas = primal_feas_computer!(solver)
 
   grad!(nlp, x, solver.subsolver.∇fk)
@@ -221,7 +226,7 @@ function SolverCore.solve!(
   ψ.h = NormL2(τ)
   νsub = 1/max(β4, β3*τ)
 
-  dual_feas_computer! = feasibility_mode == :prox ? prox_dual_feas! : kkt_dual_feas!
+  dual_feas_computer! = dual_feasibility_mode == :decrease ? decr_dual_feas! : kkt_dual_feas!
   dual_feas = dual_feas_computer!(solver)
 
   feas = max(primal_feas, dual_feas) 
@@ -261,7 +266,7 @@ function SolverCore.solve!(
         solver.subsolver,
         solver.subpb,
         solver.substats;
-        callback = (args...) -> subsolver_callback(args...; feasibility_mode = feasibility_mode),
+        callback = (args...) -> subsolver_callback(args...; feasibility_mode = dual_feasibility_mode),
         x = x,
         atol = ktol,
         rtol = T(0),
@@ -278,7 +283,7 @@ function SolverCore.solve!(
         solver.subsolver,
         solver.subpb,
         solver.substats;
-        callback = (args...) -> subsolver_callback(args...; feasibility_mode = feasibility_mode),
+        callback = (args...) -> subsolver_callback(args...; feasibility_mode = dual_feasibility_mode),
         qn_update_y! = _qn_lag_update_y!,
         qn_copy! = _qn_lag_copy!,
         x = x,
@@ -297,7 +302,7 @@ function SolverCore.solve!(
         solver.subsolver,
         solver.subpb,
         solver.substats;
-        callback = (args...) -> subsolver_callback(args...; feasibility_mode = feasibility_mode),
+        callback = (args...) -> subsolver_callback(args...; feasibility_mode = dual_feasibility_mode),
         x = x,
         atol = ktol,
         rtol = T(0),

@@ -1,4 +1,4 @@
-function prox_primal_feas!(solver::L2PenaltySolver{T}) where{T}
+function decr_primal_feas!(solver::L2PenaltySolver{T}) where{T}
   ψ = solver.subsolver.ψ
 
   norm_cx = ψ.h(ψ.b)  
@@ -44,7 +44,7 @@ function update_constraint_multipliers!(solver::L2PenaltySolver{T}) where{T}
   @. solver.y = solver.subsolver.ψ.q * σ
 end
 
-function prox_dual_feas!(solver::L2PenaltySolver{T}) where{T}
+function decr_dual_feas!(solver::L2PenaltySolver{T}) where{T}
   σ = isa(solver.subsolver, R2NSolver) ? solver.substats.solver_specific[:sigma_cauchy] : solver.substats.solver_specific[:sigma]
   s = isa(solver.subsolver, R2NSolver) ? solver.subsolver.s1 : solver.subsolver.s
 
