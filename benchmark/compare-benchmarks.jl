@@ -84,4 +84,5 @@ p = plot(
   pairwise_plot(stats, [:l2penalty_r2_precise_reference, :l2penalty_r2_precise_current]),
   layout = (3, 2), size = (1920, 1080))
 
+mkpath("benchmark/result")
 savefig(p, "benchmark/result/benchmark_comparison.svg")
