@@ -124,7 +124,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     norm_x1 = norm(@view x1[(n + 1):(n + m)])
 
     @views @. u2[(n + 1):(n + m)] = -x1[(n + 1):(n + m)]
-    minres_qlp!(krylov_workspace, H, u1, atol = eps(T)^0.7, rtol = eps(T)^0.7)
+    minres_qlp!(krylov_workspace, H, u2, atol = eps(T)^0.7, rtol = eps(T)^0.7)
     x2 .= krylov_workspace.x
 
     set_iter!(stats, stats.iter + 1)

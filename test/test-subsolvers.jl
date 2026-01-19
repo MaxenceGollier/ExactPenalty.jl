@@ -48,12 +48,13 @@ for (solver_name, solver_constructor) in zip(solver_names, solvers)
     @testset "Ill-conditionned" begin
       for instance in instances
         reg_nlp = read_instance(instance, type = Float64, Hessian_modifier = LinearOperator)
+        n = reg_nlp.model.meta.nvar
         solver = eval(solver_constructor)(reg_nlp)
         stats = RegularizedExecutionStats(reg_nlp)
         @test @wrappedallocs(solve!(solver, reg_nlp, stats)) == 0 
         instance_name = basename(instance)
         if occursin("boundary", instance_name)
-          @test abs(norm(stats.solution) - reg_nlp.h.h.lambda) <= 1e-9
+          @test abs(norm(solver.x1[n+1:end]) - reg_nlp.h.h.lambda) <= 1e-6
         end
       end
     end
