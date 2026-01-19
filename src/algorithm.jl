@@ -329,6 +329,15 @@ function SolverCore.solve!(
     dual_feas = dual_feas_computer!(solver)
     feas = max(primal_feas, dual_feas)
 
+    ## Log status
+    verbose > 0 &&
+      stats.iter % verbose == 0 &&
+      @info log_row(
+        Any[stats.iter, solver.substats.iter, fx, primal_feas, dual_feas, ktol, τ, norm(x)],
+        colsep = 1,
+      )
+
+
     if primal_feas > ktol #FIXME
       τ = τ + β1
       sub_h.h = NormL2(τ)
@@ -347,13 +356,6 @@ function SolverCore.solve!(
       n_iter_since_decrease = 0
     end
       
-    verbose > 0 &&
-      stats.iter % verbose == 0 &&
-      @info log_row(
-        Any[stats.iter, solver.substats.iter, fx, primal_feas, dual_feas, ktol, τ, norm(x)],
-        colsep = 1,
-      )
-
     solved = feas ≤ atol
 
     θ = primal_feasibility_mode == :decrease ? primal_feas^2 : compute_θ!(solver)
