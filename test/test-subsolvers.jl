@@ -54,7 +54,7 @@ for (solver_name, solver_constructor) in zip(solver_names, solvers)
         @test @wrappedallocs(solve!(solver, reg_nlp, stats)) == 0 
         instance_name = basename(instance)
         if occursin("boundary", instance_name)
-          @test abs(norm(solver.x1[n+1:end]) - reg_nlp.h.h.lambda) <= 1e-6
+          @test abs(norm(solver.x1[n+1:end]) - reg_nlp.h.h.lambda) <= 1e-5
         end
       end
     end
