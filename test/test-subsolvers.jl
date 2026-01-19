@@ -1,7 +1,7 @@
 # Get instances 
 instances = "instances/"
-instances = filter(isfile, joinpath.(instances, readdir(instances)))
-
+instances = filter(f -> isfile(f) && endswith(f, ".txt"),
+                    joinpath.(instances, readdir(instances)))
 # Get subsolvers
 solver_names = ["TRMoreSorensenLinOpSolver"]
 solvers = [TRMoreSorensenLinOpSolver]
@@ -51,6 +51,10 @@ for (solver_name, solver_constructor) in zip(solver_names, solvers)
         solver = eval(solver_constructor)(reg_nlp)
         stats = RegularizedExecutionStats(reg_nlp)
         @test @wrappedallocs(solve!(solver, reg_nlp, stats)) == 0 
+        instance_name = basename(instance)
+        if occursin("boundary", instance_name)
+          @test abs(norm(stats.solution) - reg_nlp.h.h.lambda) <= 1e-9
+        end
       end
     end
   end
