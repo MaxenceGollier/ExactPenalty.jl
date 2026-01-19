@@ -106,3 +106,33 @@ p = plot(
   layout = (2, 2), size = (1920, 1080))
 
 savefig(p, "benchmark/result/benchmark_comparison_ipopt.svg")
+
+@info "Infeasibility results\n"
+
+function infeasibility_pair(stats, keys)
+  df_1 = stats[keys[1]]
+  df_2 = stats[keys[2]]
+  
+  parts_1 = Symbol.(split(string(keys[1]), "_"))
+  parts_2 = Symbol.(split(string(keys[2]), "_"))
+
+  @assert parts_2[1] == :ipopt
+
+  @info "Checking infeasibility results for $(parts_1[2]) Hessian approximation with $(parts_1[3]) tolerance."
+  for i = 1:nrow(df_1)
+    @assert df_1[i, :name] == df_2[i, :name]
+    if df_1[i, :status] == :infeasible && df_2[i, :status] == :infeasible
+      @info "IPOPT and L2Penalty both declared $(df_1[i, :name]) infeasible"
+    elseif df_1[i, :status] == :infeasible
+      @info "L2Penalty declared $(df_1[i, :name]) infeasible, but IPOPT terminated with status $(df_2[i, :status])"
+    elseif df_2[i, :status] == :infeasible
+      @info "IPOPT declared $(df_1[i, :name]) infeasible, but L2Penalty terminated with status $(df_1[i, :status])"
+    end
+  end
+  @info ""
+end
+
+infeasibility_pair(stats, [:l2penalty_exact_imprecise_current, :ipopt_exact_imprecise])
+infeasibility_pair(stats, [:l2penalty_exact_precise_current, :ipopt_exact_precise])
+infeasibility_pair(stats, [:l2penalty_lbfgs_imprecise_current, :ipopt_lbfgs_imprecise])
+infeasibility_pair(stats, [:l2penalty_lbfgs_precise_current, :ipopt_lbfgs_precise])
