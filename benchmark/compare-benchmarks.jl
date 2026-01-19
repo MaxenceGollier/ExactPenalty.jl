@@ -47,12 +47,14 @@ function pairwise_plot(stats, keys)
   p = profile_solvers(stats_subset, costs, costnames; suptitle = suptitle, xlabel = "", ylabel = "")
   p.subplots[2][:legend_position] = :bottomright
   p.subplots[3][:legend_position] = :bottomright  
-  p.series_list[1][:label] = Symbol.(split(string(p.series_list[1][:label]), "_"))[end] == :current ? :current : :main
-  p.series_list[2][:label] = Symbol.(split(string(p.series_list[2][:label]), "_"))[end] == :current ? :current : :main
-  p.series_list[3][:label] = Symbol.(split(string(p.series_list[3][:label]), "_"))[end] == :current ? :current : :main
-  p.series_list[4][:label] = Symbol.(split(string(p.series_list[4][:label]), "_"))[end] == :current ? :current : :main
-  p.series_list[5][:label] = Symbol.(split(string(p.series_list[5][:label]), "_"))[end] == :current ? :current : :main
-  p.series_list[6][:label] = Symbol.(split(string(p.series_list[6][:label]), "_"))[end] == :current ? :current : :main
+
+  compare_with = (parts_1[end] == :main || parts_2[end] == :main) ? :main : :ipopt
+  p.series_list[1][:label] = Symbol.(split(string(p.series_list[1][:label]), "_"))[end] == :current ? :current : compare_with
+  p.series_list[2][:label] = Symbol.(split(string(p.series_list[2][:label]), "_"))[end] == :current ? :current : compare_with
+  p.series_list[3][:label] = Symbol.(split(string(p.series_list[3][:label]), "_"))[end] == :current ? :current : compare_with
+  p.series_list[4][:label] = Symbol.(split(string(p.series_list[4][:label]), "_"))[end] == :current ? :current : compare_with
+  p.series_list[5][:label] = Symbol.(split(string(p.series_list[5][:label]), "_"))[end] == :current ? :current : compare_with
+  p.series_list[6][:label] = Symbol.(split(string(p.series_list[6][:label]), "_"))[end] == :current ? :current : compare_with
 
   p.series_list[1][:linecolor] = Symbol.(split(string(p.series_list[1][:label]), "_"))[end] == :current ? :blue : :red
   p.series_list[2][:linecolor] = Symbol.(split(string(p.series_list[2][:label]), "_"))[end] == :current ? :blue : :red
@@ -86,3 +88,21 @@ p = plot(
 
 mkpath("benchmark/result")
 savefig(p, "benchmark/result/benchmark_comparison.svg")
+
+# Plot IPOPT
+ipopt_dir = joinpath("artifacts", "ipopt")
+
+@info "Loading ipopt benchmark results"
+ipopt_stats = load(joinpath(ipopt_dir, "stats_ipopt.jld2"))["stats"]
+for key in keys(ipopt_stats)
+  stats[key] = ipopt_stats[key]
+end
+
+p = plot(
+  pairwise_plot(stats, [:l2penalty_exact_imprecise_current, :ipopt_exact_imprecise]),
+  pairwise_plot(stats, [:l2penalty_exact_precise_current, :ipopt_exact_precise]),
+  pairwise_plot(stats, [:l2penalty_lbfgs_imprecise_current, :ipopt_lbfgs_imprecise]),
+  pairwise_plot(stats, [:l2penalty_lbfgs_precise_current, :ipopt_lbfgs_precise]),
+  layout = (2, 2), size = (1920, 1080))
+
+savefig(p, "benchmark/result/benchmark_comparison_ipopt.svg")
