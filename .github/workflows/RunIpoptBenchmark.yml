@@ -1,0 +1,42 @@
+name: Run IPOPT Benchmark
+
+on:
+  schedule:
+    - cron: "0 0 1 */2 *"
+  workflow_dispatch:
+
+jobs:
+  Benchmark:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: julia-actions/setup-julia@latest
+        with:
+          version: 'lts'
+
+      - name: Use Julia cache
+        uses: julia-actions/cache@v2
+      
+      - name: Instantiate project
+        run: |
+          julia --project=benchmark -e '
+            using Pkg
+            Pkg.develop(path=".")
+            Pkg.instantiate()
+            mkpath("benchmark/result")
+            '
+      
+      - name: Run Ipopt benchmark
+        run: |
+          julia --project=benchmark -e '
+              include("benchmark/benchmark-ipopt.jl")
+              '
+      
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: cutest-ipopt-benchmark-stats
+          path: benchmark/result
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
