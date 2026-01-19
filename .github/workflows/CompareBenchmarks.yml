@@ -65,6 +65,29 @@ jobs:
             --name cutest-benchmark-stats \
             --dir artifacts/reference
 
+      - name: Download latest ipopt benchmark
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          REF_RUN_ID=$(gh run list \
+            --workflow RunIpoptBenchmark.yml \
+            --status success \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId')
+
+          if [ -z "$REF_RUN_ID" ]; then
+            echo "::error::No successful RunIpoptBenchmark.yml run found"
+            exit 1
+          fi
+
+          echo "Found RunIpoptBenchmark run id: $REF_RUN_ID"
+
+          gh run download "$REF_RUN_ID" \
+            --name cutest-ipopt-benchmark-stats \
+            --dir artifacts/ipopt
+
       - name: Compare benchmarks
         run: |
           julia --project=benchmark -e '
