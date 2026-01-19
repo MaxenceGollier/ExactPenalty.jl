@@ -48,7 +48,7 @@ function pairwise_plot(stats, keys)
   p.subplots[2][:legend_position] = :bottomright
   p.subplots[3][:legend_position] = :bottomright  
 
-  compare_with = (parts_1[end] == :main || parts_2[end] == :main) ? :main : :ipopt
+  compare_with = (parts_1[end] == :reference || parts_2[end] == :reference) ? :main : :ipopt
   p.series_list[1][:label] = Symbol.(split(string(p.series_list[1][:label]), "_"))[end] == :current ? :current : compare_with
   p.series_list[2][:label] = Symbol.(split(string(p.series_list[2][:label]), "_"))[end] == :current ? :current : compare_with
   p.series_list[3][:label] = Symbol.(split(string(p.series_list[3][:label]), "_"))[end] == :current ? :current : compare_with
