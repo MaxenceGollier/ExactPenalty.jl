@@ -240,14 +240,12 @@ function SolverCore.solve!(
   
   solved = feas ≤ atol
   infeasible = false
-  n_iter_since_decrease = 0
 
   set_status!(
       stats,
       get_status(
         nlp,
         elapsed_time = stats.elapsed_time,
-        n_iter_since_decrease = n_iter_since_decrease,
         iter = stats.iter,
         optimal = solved,
         infeasible = infeasible,
@@ -339,23 +337,15 @@ function SolverCore.solve!(
       )
 
 
-    if primal_feas > ktol #FIXME
-      compute_least_square_multipliers!(solver)
-      τ = max(τ + β1, norm(solver.y, 1))
+    if primal_feas > ktol && solver.substats > 0
+      τ = τ + β1
       sub_h.h = NormL2(τ)
       ψ.h = NormL2(τ)
       νsub = 1/max(β4, β3*τ)
     else
-      n_iter_since_decrease = 0
       ktol = max(sub_rtol*dual_feas + sub_atol, atol)
       set_solver_specific!(solver.substats, :ktol, ktol)
       νsub = 1/solver.substats.solver_specific[:sigma]
-    end
-    if primal_feas > ktol && hx_prev ≥ hx
-      n_iter_since_decrease += 1
-      β1 *= 10
-    else
-      n_iter_since_decrease = 0
     end
       
     solved = feas ≤ atol
@@ -377,7 +367,6 @@ function SolverCore.solve!(
       get_status(
         nlp,
         elapsed_time = stats.elapsed_time,
-        n_iter_since_decrease = n_iter_since_decrease,
         iter = stats.iter,
         optimal = solved,
         infeasible = infeasible,
@@ -403,7 +392,6 @@ function get_status(
   iter = 0,
   optimal = false,
   infeasible = false,
-  n_iter_since_decrease = 0,
   max_eval = Inf,
   max_time = Inf,
   max_iter = Inf,
@@ -419,8 +407,6 @@ function get_status(
     :max_time
   elseif neval_obj(nlp) > max_eval && max_eval > -1
     :max_eval
-  elseif n_iter_since_decrease ≥ max_decreas_iter
-    :infeasible
   else
     :unknown
   end
