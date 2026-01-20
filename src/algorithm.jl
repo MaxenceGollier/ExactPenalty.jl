@@ -337,7 +337,7 @@ function SolverCore.solve!(
       )
 
 
-    if primal_feas > ktol && solver.substats > 0
+    if primal_feas > ktol && solver.substats.iter > 0
       τ = τ + β1
       sub_h.h = NormL2(τ)
       ψ.h = NormL2(τ)
