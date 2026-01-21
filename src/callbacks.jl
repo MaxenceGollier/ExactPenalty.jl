@@ -16,10 +16,7 @@ function kkt_stopping_callback(nlp, solver::S, stats) where{S <: Union{R2NSolver
   ktol = stats.solver_specific[:ktol]
 
   set_dual_residual!(stats, norm(s, Inf)*σ)
-
-  # Impose primal feasibility decrease
-  primal_decrease =  stats.solver_specific[:primal_decrease] == 1.0 ? norm(solver.ψ.b, Inf) < stats.solver_specific[:primal_init] : true
-  stats.dual_feas ≤ ktol && primal_decrease && (stats.status = :user)
+  stats.dual_feas ≤ ktol && (stats.status = :user)
 end
 
 function decr_stopping_callback(nlp, solver::S, stats) where{S <: Union{R2NSolver, R2Solver}}
