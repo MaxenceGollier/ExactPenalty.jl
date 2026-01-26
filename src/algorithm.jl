@@ -39,14 +39,20 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T, V}; subsolver = R2Solver) wher
   sub_h =
     CompositeNormL2(one(T), (c, x) -> cons!(nlp, x, c), (j, x) -> jac_coord!(nlp, x, j.vals), A, b, store_previous_jacobian = store_previous_jacobian)
   subnlp = RegularizedNLPModel(nlp, sub_h)
-  if subsolver == R2NSolver
-    solver = subsolver(subnlp, subsolver = TRMoreSorensenLinOpSolver)
-  else
-    solver = subsolver(subnlp)
-  end
+
   subpb = RegularizedNLPModel(nlp, sub_h)
   substats = RegularizedExecutionStats(subpb)
   set_solver_specific!(substats, :ktol, T(0))
+
+  if subsolver == R2NSolver
+    if isa(nlp, QuasiNewtonModel)
+      solver = subsolver(subnlp, subsolver = TRMoreSorensenLinOpSolver)
+    else
+      solver = subsolver(subnlp, subsolver = TRMoreSorensenLinOpSolver, yk = substats.multipliers)
+    end
+  else
+    solver = subsolver(subnlp)
+  end
 
   return L2PenaltySolver(x, y, dual_res, s, s0, temp_b, solver, subpb, substats)
 end
