@@ -5,6 +5,7 @@ function subsolver_callback(nlp, solver::S, stats; feasibility_mode = :kkt) wher
     decr_stopping_callback(nlp, solver, stats)
   end
 end
+
 function kkt_stopping_callback(nlp, solver::S, stats) where{S <: Union{R2NSolver, R2Solver}}
   σ = isa(solver, R2NSolver) ? stats.solver_specific[:sigma_cauchy] : stats.solver_specific[:sigma]
   s = isa(solver, R2NSolver) ? solver.s1 : solver.s
@@ -16,6 +17,7 @@ function kkt_stopping_callback(nlp, solver::S, stats) where{S <: Union{R2NSolver
   ktol = stats.solver_specific[:ktol]
 
   set_dual_residual!(stats, norm(s, Inf)*σ)
+  stats.multipliers .= solver.ψ.q .*( -σ )
   stats.dual_feas ≤ ktol && (stats.status = :user)
 end
 
@@ -36,5 +38,6 @@ function decr_stopping_callback(nlp, solver::S, stats) where{S <: Union{R2NSolve
   end
 
   set_dual_residual!(stats, sqrt(σ*ξ1))
+  stats.multipliers .= solver.ψ.q .*( -σ )
   stats.dual_feas ≤ ktol && (stats.status = :user)
 end
