@@ -16,7 +16,8 @@ function kkt_stopping_callback(nlp, solver::S, stats) where{S <: Union{R2NSolver
   ktol = stats.solver_specific[:ktol]
 
   set_dual_residual!(stats, norm(s, Inf)*σ)
-  stats.dual_feas ≤ ktol && (stats.status = :user)
+  primal_decrease = (stats.solver_specific[:primal_decrease] == typeof(σ)(1)) ? stats.primal_feas < norm(solver.ψ.b) : true
+  stats.dual_feas ≤ ktol && primal_decrease && (stats.status = :user)
 end
 
 function decr_stopping_callback(nlp, solver::S, stats) where{S <: Union{R2NSolver, R2Solver}}

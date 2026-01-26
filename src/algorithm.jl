@@ -47,6 +47,7 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T, V}; subsolver = R2Solver) wher
   subpb = RegularizedNLPModel(nlp, sub_h)
   substats = RegularizedExecutionStats(subpb)
   set_solver_specific!(substats, :ktol, T(0))
+  set_solver_specific!(substats, :primal_decrease, T(0))
 
   return L2PenaltySolver(x, y, dual_res, s, s0, temp_b, solver, subpb, substats)
 end
@@ -336,12 +337,17 @@ function SolverCore.solve!(
         colsep = 1,
       )
 
-
     if primal_feas > atol && solver.substats.iter > 0
-      τ = τ + β1
+      compute_least_square_multipliers!(solver)
+      τ = max(τ + β1, norm(solver.y, 1))
       sub_h.h = NormL2(τ)
       ψ.h = NormL2(τ)
       νsub = 1/max(β4, β3*τ)
+      if ktol == atol 
+        set_solver_specific!(solver.substats, :primal_decrease, T(1))
+        solver.substats.primal_feas = norm(solver.subsolver.ψ.b)
+      end
+      
     else
       ktol = max(sub_rtol*dual_feas + sub_atol, atol)
       set_solver_specific!(solver.substats, :ktol, ktol)
