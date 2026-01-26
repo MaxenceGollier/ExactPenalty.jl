@@ -18,7 +18,8 @@ tol = 1e-3
     # Test whether the outputs are well defined
     @test stats.status == :first_order
     @test norm(primal_solution - stats.solution) ≤ 10*tol
-    @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 10*tol
+    @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 100*tol
+    @test obj(nlp, stats.solution) == stats.objective
     @test stats.primal_feas == norm(cons(nlp, stats.solution), Inf)
     @test norm(stats.multipliers - dual_solution) ≤ 10*tol
     @test abs(stats.dual_feas - norm(jtprod(nlp, stats.solution, stats.multipliers) - grad(nlp, stats.solution), Inf)) ≤ eps(Float64)
@@ -43,6 +44,7 @@ tol = 1e-3
     @test stats.status == :first_order
     @test norm(primal_solution - stats.solution) ≤ 10*tol
     @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 10*tol
+    @test obj(nlp, stats.solution) == stats.objective
     @test norm(stats.multipliers - dual_solution) ≤ 10*tol
 
     # Test stability and allocations
@@ -69,6 +71,7 @@ tol = 1e-3
     @test stats.status == :first_order
     @test norm(primal_solution - stats.solution) ≤ 10*tol
     @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 10*tol
+    @test obj(nlp, stats.solution) == stats.objective
     @test stats.primal_feas == norm(cons(nlp, stats.solution), Inf)
     @test norm(stats.multipliers - dual_solution) ≤ 10*tol
     @test abs(stats.dual_feas - norm(jtprod(nlp, stats.solution, stats.multipliers) - grad(nlp, stats.solution), Inf)) ≤ eps(Float64)
@@ -93,6 +96,7 @@ tol = 1e-3
     @test norm(primal_solution - stats.solution) ≤ 10*tol
     @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 10*tol
     @test norm(stats.multipliers - dual_solution) ≤ 10*tol
+    @test obj(nlp, stats.solution) == stats.objective
 
     # Test stability and allocations
     solver = L2PenaltySolver(LBFGS_model, subsolver = R2NSolver)

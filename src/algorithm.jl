@@ -47,6 +47,7 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T, V}; subsolver = R2Solver) wher
   subpb = RegularizedNLPModel(nlp, sub_h)
   substats = RegularizedExecutionStats(subpb)
   set_solver_specific!(substats, :ktol, T(0))
+  set_solver_specific!(substats, :primal_decrease, T(0))
 
   return L2PenaltySolver(x, y, dual_res, s, s0, temp_b, solver, subpb, substats)
 end
@@ -240,14 +241,12 @@ function SolverCore.solve!(
   
   solved = feas ≤ atol
   infeasible = false
-  n_iter_since_decrease = 0
 
   set_status!(
       stats,
       get_status(
         nlp,
         elapsed_time = stats.elapsed_time,
-        n_iter_since_decrease = n_iter_since_decrease,
         iter = stats.iter,
         optimal = solved,
         infeasible = infeasible,
@@ -338,24 +337,21 @@ function SolverCore.solve!(
         colsep = 1,
       )
 
-
-    if primal_feas > ktol #FIXME
+    if primal_feas > atol && solver.substats.iter > 0
       compute_least_square_multipliers!(solver)
       τ = max(τ + β1, norm(solver.y, 1))
       sub_h.h = NormL2(τ)
       ψ.h = NormL2(τ)
       νsub = 1/max(β4, β3*τ)
+      if ktol == atol 
+        set_solver_specific!(solver.substats, :primal_decrease, T(1))
+        solver.substats.primal_feas = norm(solver.subsolver.ψ.b)
+      end
+      
     else
-      n_iter_since_decrease = 0
       ktol = max(sub_rtol*dual_feas + sub_atol, atol)
       set_solver_specific!(solver.substats, :ktol, ktol)
       νsub = 1/solver.substats.solver_specific[:sigma]
-    end
-    if primal_feas > ktol && hx_prev ≥ hx
-      n_iter_since_decrease += 1
-      β1 *= 10
-    else
-      n_iter_since_decrease = 0
     end
       
     solved = feas ≤ atol
@@ -377,7 +373,6 @@ function SolverCore.solve!(
       get_status(
         nlp,
         elapsed_time = stats.elapsed_time,
-        n_iter_since_decrease = n_iter_since_decrease,
         iter = stats.iter,
         optimal = solved,
         infeasible = infeasible,
@@ -403,7 +398,6 @@ function get_status(
   iter = 0,
   optimal = false,
   infeasible = false,
-  n_iter_since_decrease = 0,
   max_eval = Inf,
   max_time = Inf,
   max_iter = Inf,
@@ -419,8 +413,6 @@ function get_status(
     :max_time
   elseif neval_obj(nlp) > max_eval && max_eval > -1
     :max_eval
-  elseif n_iter_since_decrease ≥ max_decreas_iter
-    :infeasible
   else
     :unknown
   end
