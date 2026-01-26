@@ -5,23 +5,22 @@ expected_status = [:first_order, :first_order, :infeasible, :infeasible]
 
 tol = 1e-3
 
-# Test a simple problem
-@testset "BT1" begin
-  nlp = CUTEstModel("BT1")
-  primal_solution = [1, 0]
-  dual_solution = [99.5]
+function test_problem(name, primal_solution, dual_solution, expected_status)
+  nlp = CUTEstModel(name)
 
   # Test with R2
   @testset "R2" begin
     stats = L2Penalty(nlp, atol = tol, rtol = tol)
 
     # Test whether the outputs are well defined
-    @test stats.status == :first_order
-    @test norm(primal_solution - stats.solution) ≤ 10*tol
-    @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 10*tol
+    @test stats.status == expected_status
+    if expected_status == :first_order
+      @test norm(primal_solution - stats.solution) ≤ 10*tol
+      @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 10*tol
+      @test norm(stats.multipliers - dual_solution) ≤ 10*tol
+      @test abs(stats.dual_feas - norm(jtprod(nlp, stats.solution, stats.multipliers) - grad(nlp, stats.solution), Inf)) ≤ eps(Float64)
+    end
     @test stats.primal_feas == norm(cons(nlp, stats.solution), Inf)
-    @test norm(stats.multipliers - dual_solution) ≤ 10*tol
-    @test abs(stats.dual_feas - norm(jtprod(nlp, stats.solution, stats.multipliers) - grad(nlp, stats.solution), Inf)) ≤ eps(Float64)
 
     # Test stability and allocations
     solver = L2PenaltySolver(nlp)
@@ -40,10 +39,12 @@ tol = 1e-3
     stats = L2Penalty(nlp, atol = tol, rtol = tol, primal_feasibility_mode = :decrease, dual_feasibility_mode = :decrease)
 
     # Test whether the outputs are well defined
-    @test stats.status == :first_order
-    @test norm(primal_solution - stats.solution) ≤ 10*tol
-    @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 10*tol
-    @test norm(stats.multipliers - dual_solution) ≤ 10*tol
+    @test stats.status == expected_status
+    if expected_status == :first_order
+      @test norm(primal_solution - stats.solution) ≤ 10*tol
+      @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 10*tol
+      @test norm(stats.multipliers - dual_solution) ≤ 10*tol
+    end
 
     # Test stability and allocations
     solver = L2PenaltySolver(nlp)
@@ -66,12 +67,14 @@ tol = 1e-3
     LBFGS_model = LBFGSModel(nlp)
     stats = L2Penalty(LBFGS_model, atol = tol, rtol = tol, subsolver = R2NSolver)
 
-    @test stats.status == :first_order
-    @test norm(primal_solution - stats.solution) ≤ 10*tol
-    @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 10*tol
+    @test stats.status == expected_status
+    if expected_status == :first_order
+      @test norm(primal_solution - stats.solution) ≤ 10*tol
+      @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 10*tol
+      @test norm(stats.multipliers - dual_solution) ≤ 10*tol
+      @test abs(stats.dual_feas - norm(jtprod(nlp, stats.solution, stats.multipliers) - grad(nlp, stats.solution), Inf)) ≤ eps(Float64)
+    end
     @test stats.primal_feas == norm(cons(nlp, stats.solution), Inf)
-    @test norm(stats.multipliers - dual_solution) ≤ 10*tol
-    @test abs(stats.dual_feas - norm(jtprod(nlp, stats.solution, stats.multipliers) - grad(nlp, stats.solution), Inf)) ≤ eps(Float64)
 
     # Test stability and allocations
     solver = L2PenaltySolver(LBFGS_model, subsolver = R2NSolver)
@@ -89,10 +92,12 @@ tol = 1e-3
 
     stats = L2Penalty(LBFGS_model, atol = tol, rtol = tol, subsolver = R2NSolver, primal_feasibility_mode = :decrease, dual_feasibility_mode = :decrease)
 
-    @test stats.status == :first_order
-    @test norm(primal_solution - stats.solution) ≤ 10*tol
-    @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 10*tol
-    @test norm(stats.multipliers - dual_solution) ≤ 10*tol
+    @test stats.status == expected_status
+    if expected_status == :first_order
+      @test norm(primal_solution - stats.solution) ≤ 10*tol
+      @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 10*tol
+      @test norm(stats.multipliers - dual_solution) ≤ 10*tol
+    end
 
     # Test stability and allocations
     solver = L2PenaltySolver(LBFGS_model, subsolver = R2NSolver)
@@ -111,8 +116,17 @@ tol = 1e-3
 
   finalize(nlp)
 end
+# Test a simple problem
+@testset "BT1" begin
+  primal_solution = [1, 0]
+  dual_solution = [99.5]
 
-# Test an infeasible problem
+  test_problem("BT1", primal_solution, dual_solution, :first_order)
+end
+
+@testset "VANDANIUMS" begin
+  test_problem("VANDANIUMS", Float64[], Float64[], :infeasible)
+end
 
 # Test an ill-conditionned problem
 # TODO: Add MSS1
