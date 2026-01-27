@@ -29,7 +29,7 @@ jobs:
             Pkg.develop(path=".")
             Pkg.instantiate()
             Pkg.rm("RegularizedOptimization")
-            Pkg.add("https://github.com/MaxenceGollier/RegularizedOptimization.jl.git#recomputation")
+            Pkg.add(url = "https://github.com/MaxenceGollier/RegularizedOptimization.jl.git", rev = "recomputation")
             mkpath("benchmark/result")
             '
       
