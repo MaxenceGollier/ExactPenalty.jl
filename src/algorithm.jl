@@ -220,6 +220,7 @@ function SolverCore.solve!(
   primal_feas_computer! = primal_feasibility_mode == :decrease ? decr_primal_feas! : kkt_primal_feas!
   primal_feas = primal_feas_computer!(solver)
 
+  set_solver_specific!(solver.substats, :smooth_obj, obj(nlp, x))
   grad!(nlp, x, solver.subsolver.∇fk)
   compute_least_square_multipliers!(solver)
 
@@ -278,7 +279,9 @@ function SolverCore.solve!(
         max_time = max_time - stats.elapsed_time,
         max_eval = min(rem_eval, sub_max_eval),
         σmin = β4,
-        ν = νsub
+        ν = νsub,
+        compute_obj = false,
+        compute_grad = false
       )
     elseif isa(nlp, QuasiNewtonModel)
       solve!(
@@ -298,6 +301,8 @@ function SolverCore.solve!(
         max_eval = min(rem_eval, sub_max_eval),
         σmin = β4,
         σk = 1/νsub,
+        compute_obj = false,
+        compute_grad = false
       )
     else 
       solve!(
@@ -315,6 +320,8 @@ function SolverCore.solve!(
         max_eval = min(rem_eval, sub_max_eval),
         σmin = β4,
         σk = 1/νsub,
+        compute_obj = false,
+        compute_grad = false
       )
     end
 
