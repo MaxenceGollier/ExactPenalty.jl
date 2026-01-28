@@ -223,7 +223,7 @@ function SolverCore.solve!(
   grad!(nlp, x, solver.subsolver.∇fk)
   compute_least_square_multipliers!(solver)
 
-  τ = max(norm(solver.y, 1), T(1))
+  τ = max(norm(solver.y, 2), T(1))
   sub_h.h = NormL2(τ)
   ψ.h = NormL2(τ)
   νsub = 1/max(β4, β3*τ)
@@ -341,7 +341,7 @@ function SolverCore.solve!(
 
     if primal_feas > ktol #FIXME
       compute_least_square_multipliers!(solver)
-      τ = max(τ + β1, norm(solver.y, 1))
+      τ = max(τ + β1, norm(solver.y, 2))
       sub_h.h = NormL2(τ)
       ψ.h = NormL2(τ)
       νsub = 1/max(β4, β3*τ)
