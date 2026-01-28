@@ -1,6 +1,6 @@
-mutable struct L2PenalizedProblem{T, S, M <: AbstractNLPModel{T, S}, V <: AbstractVector, I} <: AbstractPenalizedProblem{T, S}
+mutable struct L2PenalizedProblem{T, S, M <: AbstractNLPModel{T, S}, H <: CompositeNormL2, V <: AbstractVector, I} <: AbstractPenalizedProblem{T, S}
   model::M
-  h::CompositeNormL2
+  h::H
   selected::I
   y::V
 end
