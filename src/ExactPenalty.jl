@@ -7,6 +7,7 @@ using Krylov, LinearOperators, ProximalOperators, QRMumps, ShiftedProximalOperat
 import SolverCore.reset!
 
 abstract type AbstractPenalizedProblemSolver <: AbstractOptimizationSolver end
+abstract type AbstractPenalizedProblem{T, S} <: AbstractRegularizedNLPModel{T, S} end
 
 include("ExactPenaltyExecutionStats.jl")
 
@@ -21,5 +22,6 @@ include("algorithm.jl")
 
 include("callbacks.jl")
 include("feas_computer.jl")
+include("types.jl")
 
 end
