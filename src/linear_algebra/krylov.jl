@@ -1,25 +1,34 @@
-function construct_minres_qlp_workspace(H::M, u1::V) where{M <: AbstractLinearOperator, V <: AbstractVector}
-  return MinresQlpWorkspace(H, u1)
+struct PenaltyKrylovWorkspace{WP <: KrylovWorkspace, OP <: OpK2}
+  M::WP
+  H::OP
+  n::Int
+  m::Int
 end
 
-function update_workspace!(solver_workspace::KrylovWorkspace, H, B, A, σ, α)
-  H.α = α
-  H.σ = σ
+function construct_minres_qlp_workspace(H::M, u1::V, n, m) where{M <: OpK2, V <: AbstractVector}
+  return PenaltyKrylovWorkspace(MinresQlpWorkspace(H, u1), H, n, m)
 end
 
-function update_workspace!(solver_workspace::KrylovWorkspace, H, m, α)
-  H.α = α
+function update_workspace!(solver_workspace::PenaltyKrylovWorkspace, B, A, σ, α)
+  solver_workspace.H.B = B
+  solver_workspace.H.A = A
+  solver_workspace.H.α = α
+  solver_workspace.H.σ = σ
 end
 
-function solve_system!(workspace::KrylovWorkspace, H::M, u::V; kwargs...) where{M <: AbstractLinearOperator, V <: AbstractVector}
-  krylov_solve!(workspace, H, u; kwargs...)
+function update_workspace!(solver_workspace::PenaltyKrylovWorkspace, α)
+  solver_workspace.H.α = α
 end
 
-function get_solution!(x::V, workspace::KrylovWorkspace) where{V <: AbstractVector}
-  x .= workspace.x
+function solve_system!(workspace::PenaltyKrylovWorkspace, u::V) where{V <: AbstractVector}
+  krylov_solve!(workspace.M, workspace.H, u)
 end
 
-function get_status(workspace::KrylovWorkspace)
-  workspace.stats.solved && return :success
+function get_solution!(x::V, workspace::PenaltyKrylovWorkspace) where{V <: AbstractVector}
+  x .= workspace.M.x
+end
+
+function get_status(workspace::PenaltyKrylovWorkspace)
+  workspace.M.stats.solved && return :success
   return :failed
 end
