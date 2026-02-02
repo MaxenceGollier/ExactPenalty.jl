@@ -21,7 +21,8 @@ function update_workspace!(solver_workspace::PenaltyKrylovWorkspace, α)
 end
 
 function solve_system!(workspace::PenaltyKrylovWorkspace, u::V) where{V <: AbstractVector}
-  krylov_solve!(workspace.M, workspace.H, u)
+  T = eltype(u)
+  krylov_solve!(workspace.M, workspace.H, u, atol = eps(T)^0.8, rtol = eps(T)^0.8, Artol  = eps(T)^0.7)
 end
 
 function get_solution!(x::V, workspace::PenaltyKrylovWorkspace) where{V <: AbstractVector}
