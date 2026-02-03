@@ -10,6 +10,10 @@ abstract type AbstractPenalizedProblemSolver <: AbstractOptimizationSolver end
 
 include("ExactPenaltyExecutionStats.jl")
 
+include("linear_algebra/K2.jl")
+include("linear_algebra/construct_workspace.jl")
+include("linear_algebra/krylov.jl")
+
 include("subsolvers/tr_ms_linearop.jl")
 include("subsolvers/tr_ms_sparse.jl")
 

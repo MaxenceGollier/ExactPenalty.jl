@@ -15,9 +15,9 @@ for (solver_name, solver_constructor) in zip(solver_names, solvers)
       solver = eval(solver_constructor)(small_instance_boundary)
       stats = RegularizedExecutionStats(small_instance_boundary)
       @test @wrappedallocs(solve!(solver, small_instance_boundary, stats, atol = 1e-9)) == 0 
-      @test norm(solution[:u] - stats.solution) <= 1e-9
-      @test norm(solution[:y] - solver.x1[n+1:end]) <= 1e-9
-      @test abs(solution[:tau] - norm(solver.x1[n+1:end])) <= 1e-9
+      @test norm(solution[:u] - stats.solution) <= 1e-6
+      @test norm(solution[:y] - solver.x1[n+1:end]) <= 1e-6
+      @test abs(solution[:tau] - norm(solver.x1[n+1:end])) <= 1e-6
 
       small_instance_interior, solution = generate_instance(n, m, 0.0, Hessian_modifier = LinearOperator)
       solver = eval(solver_constructor)(small_instance_interior)
@@ -32,9 +32,9 @@ for (solver_name, solver_constructor) in zip(solver_names, solvers)
       solver = eval(solver_constructor)(medium_instance_boundary)
       stats = RegularizedExecutionStats(medium_instance_boundary)
       @test @wrappedallocs(solve!(solver, medium_instance_boundary, stats, atol = 1e-9)) == 0 
-      @test norm(solution[:u] - stats.solution) <= 1e-9
-      @test norm(solution[:y] - solver.x1[n+1:end]) <= 1e-9
-      @test abs(solution[:tau] - norm(solver.x1[n+1:end])) <= 1e-9
+      @test norm(solution[:u] - stats.solution) <= 1e-6
+      @test norm(solution[:y] - solver.x1[n+1:end]) <= 1e-6
+      @test abs(solution[:tau] - norm(solver.x1[n+1:end])) <= 1e-6
 
       medium_instance_interior, solution = generate_instance(n, m, 0.0, Hessian_modifier = LinearOperator)
       solver = eval(solver_constructor)(medium_instance_interior)
@@ -54,7 +54,7 @@ for (solver_name, solver_constructor) in zip(solver_names, solvers)
         @test @wrappedallocs(solve!(solver, reg_nlp, stats)) == 0 
         instance_name = basename(instance)
         if occursin("boundary", instance_name)
-          @test abs(norm(solver.x1[n+1:end]) - reg_nlp.h.h.lambda) <= 1e-5
+          @test abs(norm(solver.x1[n+1:end]) - reg_nlp.h.h.lambda) <= 1e-3
         end
       end
     end

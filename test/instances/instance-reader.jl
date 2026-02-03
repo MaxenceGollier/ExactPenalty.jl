@@ -27,7 +27,7 @@ function read_instance(file::String; type = Float64, Hessian_modifier = H -> H)
     end
   end
   x0 = zeros(type, length(data["nabla"]))
-  model = R2NModel(Symmetric(Hessian_modifier(data["Q"]), :L), data["nabla"], data["sigma"], x0)
+  model = R2NModel(Hessian_modifier((data["Q"] + data["Q"]')/2), data["nabla"], data["sigma"], x0)
 
   c! = let c = data["c"] 
     (b, x) -> 
