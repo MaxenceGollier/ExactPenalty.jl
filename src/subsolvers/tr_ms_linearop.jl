@@ -2,6 +2,7 @@ export TRMoreSorensenLinOpSolver
 import Base.show
 
 mutable struct TRMoreSorensenLinOpSolver{T <: Real, V <: AbstractVector{T}, L <: Union{AbstractLinearOperator, AbstractMatrix}, W} <: AbstractPenalizedProblemSolver
+  u::V
   u1::V
   u2::V
   x1::V
@@ -14,6 +15,7 @@ function TRMoreSorensenLinOpSolver(reg_nlp::AbstractRegularizedNLPModel{T, V}; s
   x0 = reg_nlp.model.meta.x0
   n = reg_nlp.model.meta.nvar
   m = length(reg_nlp.h.b)
+  u = similar(x0, n)
   u1 = similar(x0, n+m)
   u2 = zeros(eltype(x0), n+m)
   x1 = zeros(eltype(x0), n+m)
@@ -22,7 +24,7 @@ function TRMoreSorensenLinOpSolver(reg_nlp::AbstractRegularizedNLPModel{T, V}; s
   H = K2(n, m, n+m, n+m, zero(T), reg_nlp.model.σ, reg_nlp.h.A, reg_nlp.model.B)
   workspace = construct_workspace(H, u1, n, m; solver = solver)
 
-  return TRMoreSorensenLinOpSolver(u1, u2, x1, x2, H, workspace)
+  return TRMoreSorensenLinOpSolver(u, u1, u2, x1, x2, H, workspace)
 end
 
 function SolverCore.solve!( #TODO add verbose and kwargs
@@ -43,24 +45,41 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   m = length(reg_nlp.h.b)
   Δ = reg_nlp.h.h.lambda
 
-  u1, u2, x1, x2 = solver.u1, solver.u2, solver.x1, solver.x2
+  u, u1, u2, x1, x2 = solver.u, solver.u1, solver.u2, solver.x1, solver.x2
   solver_workspace = solver.workspace
 
   # Create problem
   @. u1[1:n] = -reg_nlp.model.∇f
   @. u1[(n + 1):(n + m)] = -reg_nlp.h.b
 
-  α = zero(T)
+  norm_c = norm(reg_nlp.h.b)
+  α = norm_c / Δ
   update_workspace!(solver_workspace, reg_nlp.model.B, reg_nlp.h.A, reg_nlp.model.σ, α)
 
   αmin = eps(T)^(0.5)
   θ = 0.8
 
-  # [ H + σI Aᵀ][x] = -[∇f]
-  # [   A    0 ][y] = -[c] 
+  # [ H + σI  Aᵀ     ][x] = -[∇f]
+  # [   A    -‖c‖/ΔI ][y] = -[c] 
   solve_system!(solver_workspace, u1)
   get_solution!(x1, solver_workspace)
   status = get_status(solver_workspace)
+
+  # Check if ‖c‖ > 0 and perform explicit step.
+  if norm_c > eps(T)^0.5
+    # [ H + σI  Aᵀ     ][x'] = -[0]
+    # [   A    -‖c‖/ΔI ][y'] = -[c/√(Δ‖c‖)]
+    @views @. u2[(n + 1):(n + m)] = -reg_nlp.h.b/sqrt(norm_c*Δ)
+    solve_system!(solver_workspace, u2)
+    get_solution!(x2, solver_workspace)
+
+    mul!(u, reg_nlp.h.A', reg_nlp.h.b)
+    @. u *= sqrt(Δ/norm_c)/norm_c
+    @views @. x1[1:n] += x2[1:n]*dot(x1[1:n], u)/(1 - dot(x2[1:n], u))
+    set_solution!(stats, @view x1[1:n])
+
+    return
+  end
 
   if norm(@view x1[n+1:n+m]) <= Δ && status == :success
 		set_solution!(stats, @view x1[1:n])
