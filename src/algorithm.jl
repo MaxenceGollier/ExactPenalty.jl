@@ -350,6 +350,7 @@ function SolverCore.solve!(
         stats.status = :not_desc
       else
         νsub /= 10
+        isa(nlp, QuasiNewtonModel) && LinearOperators.reset!(solver.subsolver.subpb.model.B)
         continue
       end
     end
