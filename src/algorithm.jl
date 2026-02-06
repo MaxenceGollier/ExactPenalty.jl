@@ -13,6 +13,7 @@ mutable struct L2PenaltySolver{
   dual_res::V
   s::V
   s0::V
+  ∇fk::V
   temp_b::V
   subsolver::S
   subpb::PB
@@ -27,6 +28,7 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T, V}; subsolver = R2Solver) wher
   temp_b = similar(y)
   dual_res = similar(x0)
   s0 = zero(x0)
+  ∇fk = similar(x0)
 
   # Allocating variables for the ShiftedProximalOperator structure
   (rows, cols) = jac_structure(nlp)
@@ -54,7 +56,7 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T, V}; subsolver = R2Solver) wher
     solver = subsolver(subpb)
   end
 
-  return L2PenaltySolver(x, y, dual_res, s, s0, temp_b, solver, subpb, substats)
+  return L2PenaltySolver(x, y, dual_res, s, s0, ∇fk, temp_b, solver, subpb, substats)
 end
 
 """
@@ -227,7 +229,9 @@ function SolverCore.solve!(
   primal_feas = primal_feas_computer!(solver)
 
   set_solver_specific!(solver.substats, :smooth_obj, obj(nlp, x))
+  fx = solver.substats.solver_specific[:smooth_obj]
   grad!(nlp, x, solver.subsolver.∇fk)
+  solver.∇fk .= solver.subsolver.∇fk
   compute_least_square_multipliers!(solver)
 
   τ = max(norm(solver.y, 1), T(1))
@@ -331,10 +335,21 @@ function SolverCore.solve!(
       )
     end
 
+    if solver.substats.status == :unbounded
+      τ *= 10
+      sub_h.h = NormL2(τ)
+      ψ.h = NormL2(τ)
+      νsub = 1/max(β4, β3*τ)
+      solver.subsolver.∇fk .= solver.∇fk
+      set_solver_specific!(solver.substats, :smooth_obj, fx)
+      continue
+    end
+
     x .= solver.substats.solution
     fx = solver.substats.solver_specific[:smooth_obj]
     hx_prev = copy(hx)
     hx = solver.substats.solver_specific[:nonsmooth_obj]/τ
+    solver.∇fk .= solver.subsolver.∇fk
     update_constraint_multipliers!(solver)
 
     ## Compute feasibility 
