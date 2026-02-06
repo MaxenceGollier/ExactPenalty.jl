@@ -124,6 +124,14 @@ end
   test_problem("BT1", primal_solution, dual_solution, :first_order)
 end
 
+# Test a problem where the function f is unbounded from below
+@testset "MARATOS" begin
+  primal_solution = [1, 0]
+  dual_solution = [-0.499999]
+
+  test_problem("MARATOS", primal_solution, dual_solution, :first_order)
+end
+
 @testset "VANDANIUMS" begin
   test_problem("VANDANIUMS", Float64[], Float64[], :infeasible)
 end

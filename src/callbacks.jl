@@ -14,6 +14,10 @@ function kkt_stopping_callback(nlp, solver::S, stats) where{S <: Union{R2NSolver
     stats.status = :small_step
   end
 
+  if stats.objective < -1e16
+    stats.status = :unbounded
+  end
+
   ktol = stats.solver_specific[:ktol]
 
   set_dual_residual!(stats, norm(s, Inf)*σ)
@@ -35,6 +39,10 @@ function decr_stopping_callback(nlp, solver::S, stats) where{S <: Union{R2NSolve
   end
   if norm(s) < eps(eltype(s)) && stats.iter > 1
     stats.status = :small_step
+  end
+
+  if stats.objective < -1e16
+    stats.status = :unbounded
   end
 
   set_dual_residual!(stats, sqrt(σ*ξ1))
