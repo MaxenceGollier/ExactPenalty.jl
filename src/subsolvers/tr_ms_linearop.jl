@@ -35,6 +35,9 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   max_time = T(30),
   max_iter = 10,
 ) where {T <: Real, V <: AbstractVector{T}}
+
+  reset!(stats)
+
   start_time = time()
   set_time!(stats, 0.0)
   set_iter!(stats, 0)

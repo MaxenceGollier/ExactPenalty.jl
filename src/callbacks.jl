@@ -63,7 +63,7 @@ function decr_stopping_callback(nlp, solver::S, stats) where{S <: Union{R2NSolve
     end
   end
 
-  set_dual_residual!(stats, sqrt(σ*ξ1))
+  stats.status != :not_desc && set_dual_residual!(stats, sqrt(σ*ξ1))
   stats.multipliers .= solver.ψ.q .*( -σ )
   stats.dual_feas ≤ ktol && (stats.status = :user)
 end

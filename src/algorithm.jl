@@ -349,8 +349,10 @@ function SolverCore.solve!(
       if νsub < eps(T)
         stats.status = :not_desc
       else
+        solver.substats.status = :unknown
+        solver.subsolver.substats.status = :unknown
         νsub /= 10
-        isa(nlp, QuasiNewtonModel) && LinearOperators.reset!(solver.subsolver.subpb.model.B)
+        isa(nlp, QuasiNewtonModel) && isa(solver.subsolver, R2NSolver) && LinearOperators.reset!(solver.subsolver.subpb.model.B)
         continue
       end
     end
