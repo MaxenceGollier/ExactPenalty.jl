@@ -350,9 +350,11 @@ function SolverCore.solve!(
         stats.status = :not_desc
       else
         solver.substats.status = :unknown
-        solver.subsolver.substats.status = :unknown
-        νsub /= 10
-        isa(nlp, QuasiNewtonModel) && isa(solver.subsolver, R2NSolver) && LinearOperators.reset!(solver.subsolver.subpb.model.B)
+        if isa(solver.subsolver, R2NSolver)
+          solver.subsolver.substats.status = :unknown
+          isa(nlp, QuasiNewtonModel) && LinearOperators.reset!(solver.subsolver.subpb.model.B)
+        end
+        νsub = 1/(10*solver.substats.solver_specific[:sigma])
         continue
       end
     end
