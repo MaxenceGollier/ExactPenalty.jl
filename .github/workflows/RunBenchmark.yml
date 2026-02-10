@@ -12,6 +12,8 @@ jobs:
     if: >
       github.event_name != 'pull_request' ||
       contains(github.event.pull_request.labels.*.name, 'run CUTEst benchmark')
+    env:
+      JULIA_NUM_THREADS: 4
     steps:
       - uses: actions/checkout@v4
 
@@ -24,7 +26,6 @@ jobs:
       
       - name: Instantiate project
         run: |
-          export JULIA_NUM_THREADS=4
           julia --project=benchmark -e '
             using Pkg
             Pkg.develop(path=".")
