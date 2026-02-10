@@ -24,10 +24,13 @@ jobs:
       
       - name: Instantiate project
         run: |
+          export JULIA_NUM_THREADS=4
           julia --project=benchmark -e '
             using Pkg
             Pkg.develop(path=".")
             Pkg.instantiate()
+            Pkg.rm("SolverBenchmark")
+            Pkg.add(url = "https://github.com/MaxenceGollier/SolverBenchmark.jl.git", rev = "parallel")
             mkpath("benchmark/result")
             '
       
