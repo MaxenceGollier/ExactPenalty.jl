@@ -375,10 +375,12 @@ function SolverCore.solve!(
       if isa(solver.subsolver, R2NSolver) 
         extrapolate!(x, solver, τ₊, τ)
         fx_new = obj(nlp, x)
-        solver.temp_b .= cons(nlp, x) # FIXME
-        if fx_new + τ₊*norm(solver.temp_b) < fx + τ₊*hx
+        cons!(nlp, x, solver.temp_b) # FIXME
+        hx_new = norm(solver.temp_b)
+        if fx_new + τ₊*hx_new < fx + τ₊*hx
           set_solver_specific!(solver.substats, :smooth_obj, fx_new)
           fx = fx_new
+          hx = hx_new
           grad!(nlp, x, solver.subsolver.∇fk)
         else
           x .= solver.substats.solution
