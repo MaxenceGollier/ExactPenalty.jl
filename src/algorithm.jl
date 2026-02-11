@@ -383,6 +383,12 @@ function SolverCore.solve!(
           hx = hx_new
           grad!(nlp, x, solver.subsolver.∇fk)
           shift!(solver.subsolver.ψ, x)
+          
+          ### Recompute Feasibility
+          primal_feas = primal_feas_computer!(solver)
+          dual_feas = dual_feas_computer!(solver)
+          feas = max(primal_feas, dual_feas)
+
         else
           x .= solver.substats.solution
         end
