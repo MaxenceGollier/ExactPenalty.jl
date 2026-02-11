@@ -369,7 +369,23 @@ function SolverCore.solve!(
 
     if primal_feas > ktol #FIXME
       compute_least_square_multipliers!(solver)
-      τ = max(τ + β1, norm(solver.y, 1))
+      τ₊ = max(τ + β1, norm(solver.y, 1))
+
+      ## Extrapolation technique
+      if isa(solver.subsolver, R2NSolver) 
+        extrapolate!(x, solver, τ₊, τ)
+        fx_new = obj(nlp, x)
+        solver.temp_b .= cons(nlp, x) # FIXME
+        if fx_new + τ₊*norm(solver.temp_b) < fx + τ₊*hx
+          set_solver_specific!(solver.substats, :smooth_obj, fx_new)
+          fx = fx_new
+          grad!(nlp, x, solver.subsolver.∇fk)
+        else
+          x .= solver.substats.solution
+        end
+      end
+
+      τ = τ₊
       sub_h.h = NormL2(τ)
       ψ.h = NormL2(τ)
       νsub = 1/max(β4, β3*τ)
