@@ -382,6 +382,7 @@ function SolverCore.solve!(
           fx = fx_new
           hx = hx_new
           grad!(nlp, x, solver.subsolver.∇fk)
+          shift!(solver.subsolver.ψ, x)
         else
           x .= solver.substats.solution
         end
