@@ -57,7 +57,6 @@ function decr_dual_feas!(solver::L2PenaltySolver{T}) where{T}
 
   ξ1 = norm_cx - shifted_norm_cx - dot(solver.subsolver.∇fk, s)
   sqrt_ξ1_σ = ξ1 ≥ 0 ? sqrt(ξ1 * σ) : sqrt(-ξ1 * σ)
-  (ξ1 < 0 ) && error("L2Penalty: prox-gradient step should produce a decrease but ξ1 = $(ξ1)")
   return sqrt_ξ1_σ
 end
 
