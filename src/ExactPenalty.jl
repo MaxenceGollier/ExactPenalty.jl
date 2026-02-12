@@ -1,8 +1,8 @@
 module ExactPenalty
 
-using LinearAlgebra
+using LinearAlgebra, SparseArrays
 using NLPModels, NLPModelsModifiers, RegularizedProblems, RegularizedOptimization
-using Krylov, LinearOperators, ProximalOperators, QRMumps, ShiftedProximalOperators, SolverCore, SparseMatricesCOO
+using Krylov, LinearOperators, LDLFactorizations, ProximalOperators, QRMumps, ShiftedProximalOperators, SolverCore, SparseMatricesCOO
 
 import SolverCore.reset!
 
@@ -14,6 +14,7 @@ include("ExactPenaltyExecutionStats.jl")
 include("linear_algebra/K2.jl")
 include("linear_algebra/construct_workspace.jl")
 include("linear_algebra/krylov.jl")
+include("linear_algebra/ldlt.jl")
 
 include("subsolvers/tr_ms_linearop.jl")
 include("subsolvers/tr_ms_sparse.jl")

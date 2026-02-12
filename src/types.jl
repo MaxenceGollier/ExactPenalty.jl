@@ -19,3 +19,7 @@ end
 function NLPModels.hess_op(nlp::L2PenalizedProblem, xk::AbstractVector)
   return hess_op(nlp.model, xk, nlp.y)
 end
+
+function NLPModels.hess(nlp::L2PenalizedProblem, xk::AbstractVector)
+  return hess(nlp.model, xk, nlp.y)
+end

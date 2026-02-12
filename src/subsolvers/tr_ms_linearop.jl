@@ -20,6 +20,8 @@ function TRMoreSorensenLinOpSolver(reg_nlp::AbstractRegularizedNLPModel{T, V}; s
   x2 = zeros(eltype(x0), n+m)
 
   H = K2(n, m, n+m, n+m, zero(T), reg_nlp.model.σ, reg_nlp.h.A, reg_nlp.model.B)
+
+  solver = isa(H, AbstractLinearOperator) ? :minres_qlp : :ldlt
   workspace = construct_workspace(H, u1, n, m; solver = solver)
 
   return TRMoreSorensenLinOpSolver(u1, u2, x1, x2, H, workspace)
