@@ -31,3 +31,7 @@ function NLPModels.hess_op(nlp::L2PenalizedProblem, xk::AbstractVector)
   isa(nlp.model, QuasiNewtonModel) && return hess_op(nlp.model, xk)
   return hess_op(nlp.model, xk, nlp.y)
 end
+
+function NLPModels.hess(nlp::L2PenalizedProblem, xk::AbstractVector)
+  return hess(nlp.model, xk, nlp.y)
+end
