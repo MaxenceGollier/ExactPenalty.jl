@@ -9,6 +9,11 @@ mutable struct OpK2{T <:  Real, M1, M2 <:AbstractLinearOperator} <: AbstractLine
   B::M2
 end
 
+function CscK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2) where{T, M1, M2}
+  α_temp = iszero(α) ? eps(T) : α
+  return Symmetric([B.data+σ*sparse(I, n, n) spzeros(n, m); A -α_temp*sparse(I, m, m)])
+end
+
 function LinearAlgebra.mul!(y::AbstractVector{T}, H::OpK2{T}, x::AbstractVector{T}, α::T, β::T) where T
     n, m = H.n, H.m
     @views mul!(y[1:n], H.B, x[1:n], α, β)
@@ -29,9 +34,6 @@ function K2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2) wh
   if M2 <: AbstractLinearOperator
     return OpK2(n, m, nrow, ncol, α, σ, A, B)
   elseif M2 <: AbstractMatrix
-    # For some reason, doing this in one line results in a SparseMatrixCSC instead of SparseMatrixCOO...
-    H1 = [B+σ*I(n) coo_spzeros(T, n, m);]
-    H2 = [A (-one(T))*I]
-    return [H1; H2] 
+    return CscK2(n, m, nrow, ncol, α, σ, A, B)
   end
 end
