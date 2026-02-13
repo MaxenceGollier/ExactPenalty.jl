@@ -59,6 +59,10 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T, V}; subsolver = R2Solver) wher
   return L2PenaltySolver(x, y, dual_res, s, s0, ∇fk, temp_b, solver, subpb, substats)
 end
 
+function SolverCore.reset!(solver::L2PenaltySolver)
+  SolverCore.reset!(solver.subsolver)
+end
+
 """
     L2Penalty(nlp; kwargs…)
 
@@ -178,14 +182,7 @@ function SolverCore.solve!(
   dual_feasibility_mode::Symbol = :kkt,
 ) where {T, V}
   reset!(stats)
-  reset!(solver)
-  reset!(solver.substats)
-  reset!(solver.subsolver)
-  reset_data!(nlp)
-
-  isa(solver.subsolver, R2NSolver) && (solver.subsolver.v0 .= (isodd.(eachindex(solver.subsolver.v0)) .* -2 .+ 1) ./ sqrt(length(solver.subsolver.v0))) # FIXME
-  #This should be done in RegularizedOptimization, when calling reset!(::R2NSolver)
-
+  
   @assert (primal_feasibility_mode == :decrease || primal_feasibility_mode == :kkt)
   @assert (dual_feasibility_mode == :decrease || dual_feasibility_mode == :kkt)
 

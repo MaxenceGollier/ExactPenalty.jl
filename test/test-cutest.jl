@@ -90,6 +90,7 @@ function test_problem(name, primal_solution, dual_solution, expected_status)
     @test all(stats_optimized.solution .== stats.solution)
     @test stats_optimized.iter == stats.iter
 
+    reset_data!(LBFGS_model)
     stats = L2Penalty(LBFGS_model, atol = tol, rtol = tol, subsolver = R2NSolver, primal_feasibility_mode = :decrease, dual_feasibility_mode = :decrease)
 
     @test stats.status == expected_status
