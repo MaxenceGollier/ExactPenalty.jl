@@ -34,6 +34,7 @@ macro wrappedallocs(expr)
   quote
     function g($(argnames...); kwargs_dict...)
       $(Expr(expr.head, argnames..., kwargs...))
+      SolverCore.reset!($(argnames[2]))
       @allocated $(Expr(expr.head, argnames..., kwargs...))
     end
     $(Expr(:call, :g, [esc(a) for a in args]...))
