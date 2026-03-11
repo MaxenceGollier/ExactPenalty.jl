@@ -50,7 +50,7 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T, V}; subsolver = R2Solver) wher
     if isa(nlp, QuasiNewtonModel)
       solver = subsolver(subpb, subsolver = TRMoreSorensenLinOpSolver)
     else
-      solver = subsolver(subpb, subsolver = TRMoreSorensenLinOpSolver)
+      solver = subsolver(subpb, subsolver = TRMoreSorensenLinOpSolver, sparse = true)
     end
   else
     solver = subsolver(subpb)

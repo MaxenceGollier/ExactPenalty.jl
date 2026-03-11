@@ -19,7 +19,9 @@ function TRMoreSorensenLinOpSolver(reg_nlp::AbstractRegularizedNLPModel{T, V}; s
   x1 = zeros(eltype(x0), n+m)
   x2 = zeros(eltype(x0), n+m)
 
-  H = K2(n, m, n+m, n+m, zero(T), reg_nlp.model.σ, reg_nlp.h.A, reg_nlp.model.B)
+  H = K2(n, m, n+m, n+m, zero(T), reg_nlp.model.data.σ, reg_nlp.h.A, reg_nlp.model.data.H)
+
+  solver = isa(H, AbstractLinearOperator) ? :minres_qlp : :ldlt
   workspace = construct_workspace(H, u1, n, m; solver = solver)
 
   return TRMoreSorensenLinOpSolver(u1, u2, x1, x2, H, workspace)
@@ -47,11 +49,11 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   solver_workspace = solver.workspace
 
   # Create problem
-  @. u1[1:n] = -reg_nlp.model.∇f
+  @. u1[1:n] = -reg_nlp.model.data.c
   @. u1[(n + 1):(n + m)] = -reg_nlp.h.b
 
   α = zero(T)
-  update_workspace!(solver_workspace, reg_nlp.model.B, reg_nlp.h.A, reg_nlp.model.σ, α)
+  update_workspace!(solver_workspace, reg_nlp.model.data.H, reg_nlp.h.A, reg_nlp.model.data.σ, α)
 
   αmin = eps(T)^(0.5)
   θ = 0.8
@@ -67,7 +69,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     if reg_nlp.h.h.lambda*norm(reg_nlp.h.b) - obj(reg_nlp, @view x1[1:n]) < 0
       # FIXME: just throw "not_desc" in this case, and let R2N do its thing...
       set_solution!(stats, x)
-      isa(reg_nlp.model.B, AbstractQuasiNewtonOperator) && LinearOperators.reset!(reg_nlp.model.B)
+      isa(reg_nlp.model.data.H, AbstractQuasiNewtonOperator) && LinearOperators.reset!(reg_nlp.model.data.H)
     end
 	  return
   end
@@ -111,11 +113,11 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     α == αmin && break
   end
 
-  (stats.iter >= max_iter && isa(reg_nlp.model, AbstractQuasiNewtonOperator)) && reset!(reg_nlp.model.B)
+  (stats.iter >= max_iter && isa(reg_nlp.model.data.H, AbstractQuasiNewtonOperator)) && reset!(reg_nlp.model.data.H)
   # FIXME: just throw "max_iter" and let R2N do its thing...
   set_solution!(stats, @view x1[1:n])
   if Δ*norm(reg_nlp.h.b) - obj(reg_nlp, @view x1[1:n]) < 0 || any(isnan, x1) # FIXME: just throw "not_desc" in this case, and let R2N do its thing...
     set_solution!(stats, x)
-    isa(reg_nlp.model.B, AbstractQuasiNewtonOperator) && LinearOperators.reset!(reg_nlp.model.B)
+    isa(reg_nlp.model.data.H, AbstractQuasiNewtonOperator) && LinearOperators.reset!(reg_nlp.model.data.H)
   end
 end
