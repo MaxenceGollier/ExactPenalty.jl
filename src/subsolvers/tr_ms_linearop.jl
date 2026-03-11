@@ -35,6 +35,9 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   max_time = T(30),
   max_iter = 10,
 ) where {T <: Real, V <: AbstractVector{T}}
+
+  reset!(stats)
+
   start_time = time()
   set_time!(stats, 0.0)
   set_iter!(stats, 0)
@@ -64,10 +67,9 @@ function SolverCore.solve!( #TODO add verbose and kwargs
 
   if norm(@view x1[n+1:n+m]) <= Δ && status == :success
 		set_solution!(stats, @view x1[1:n])
-    if reg_nlp.h.h.lambda*norm(reg_nlp.h.b) - obj(reg_nlp, @view x1[1:n]) < 0
-      # FIXME: just throw "not_desc" in this case, and let R2N do its thing...
+    if reg_nlp.h.h.lambda*norm(reg_nlp.h.b) - obj(reg_nlp, @view x1[1:n]) < 0 || any(isnan, x1)
+      set_status!(stats, :not_desc)
       set_solution!(stats, x)
-      isa(reg_nlp.model.B, AbstractQuasiNewtonOperator) && LinearOperators.reset!(reg_nlp.model.B)
     end
 	  return
   end
@@ -111,11 +113,10 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     α == αmin && break
   end
 
-  (stats.iter >= max_iter && isa(reg_nlp.model, AbstractQuasiNewtonOperator)) && reset!(reg_nlp.model.B)
-  # FIXME: just throw "max_iter" and let R2N do its thing...
+  (stats.iter >= max_iter && set_status!(stats, :max_iter))
   set_solution!(stats, @view x1[1:n])
-  if Δ*norm(reg_nlp.h.b) - obj(reg_nlp, @view x1[1:n]) < 0 || any(isnan, x1) # FIXME: just throw "not_desc" in this case, and let R2N do its thing...
+  if Δ*norm(reg_nlp.h.b) - obj(reg_nlp, @view x1[1:n]) < 0 || any(isnan, x1)
+    set_status!(stats, :not_desc)
     set_solution!(stats, x)
-    isa(reg_nlp.model.B, AbstractQuasiNewtonOperator) && LinearOperators.reset!(reg_nlp.model.B)
   end
 end

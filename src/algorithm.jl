@@ -283,7 +283,7 @@ function SolverCore.solve!(
         x = x,
         atol = ktol,
         rtol = T(0),
-        neg_tol = T(0),
+        neg_tol = T(Inf),
         verbose = sub_verbose,
         max_iter = sub_max_iter,
         max_time = max_time - stats.elapsed_time,
@@ -304,7 +304,7 @@ function SolverCore.solve!(
         x = x,
         atol = ktol,
         rtol = T(0),
-        neg_tol = T(0),
+        neg_tol = T(Inf),
         verbose = sub_verbose,
         max_iter = sub_max_iter,
         max_time = max_time - stats.elapsed_time,
@@ -323,7 +323,7 @@ function SolverCore.solve!(
         x = x,
         atol = ktol,
         rtol = T(0),
-        neg_tol = T(0),
+        neg_tol = T(Inf),
         verbose = sub_verbose,
         max_iter = sub_max_iter,
         max_time = max_time - stats.elapsed_time,
@@ -343,6 +343,18 @@ function SolverCore.solve!(
       solver.subsolver.∇fk .= solver.∇fk
       set_solver_specific!(solver.substats, :smooth_obj, fx)
       continue
+    end
+
+    if solver.substats.status == :not_desc
+      if νsub < eps(T)
+        stats.status = :not_desc
+      else
+        solver.substats.status = :unknown
+        solver.subsolver.substats.status = :unknown
+        νsub /= 10
+        isa(nlp, QuasiNewtonModel) && isa(solver.subsolver, R2NSolver) && LinearOperators.reset!(solver.subsolver.subpb.model.B)
+        continue
+      end
     end
 
     x .= solver.substats.solution
