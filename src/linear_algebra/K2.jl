@@ -11,7 +11,7 @@ end
 
 function CscK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2) where{T, M1, M2}
   α_temp = iszero(α) ? eps(T) : α
-  return Symmetric(copy(transpose([B.data+σ*sparse(I, n, n) spzeros(n, m); A -α_temp*sparse(I, m, m)])))
+  return Symmetric(copy(transpose([B+σ*sparse(I, n, n) spzeros(n, m); A -α_temp*sparse(I, m, m)])))
 end
 
 function LinearAlgebra.mul!(y::AbstractVector{T}, H::OpK2{T}, x::AbstractVector{T}, α::T, β::T) where T

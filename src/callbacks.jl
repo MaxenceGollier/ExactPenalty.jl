@@ -34,10 +34,6 @@ function kkt_stopping_callback(nlp, solver::S, stats) where {S<:Union{R2NSolver,
   set_dual_residual!(stats, norm(s, Inf)*σ)
   stats.multipliers .= solver.ψ.q .* (-σ)
   stats.dual_feas ≤ ktol && (stats.status = :user)
-
-  if isa(solver, R2NSolver) && !isa(nlp, QuasiNewtonModel)
-    hess_coord!(nlp.model, solver.xk, stats.multipliers, solver.subpb.model.B.data.nzval)
-  end
 end
 
 function decr_stopping_callback(nlp, solver::S, stats) where {S<:Union{R2NSolver,R2Solver}}
@@ -70,8 +66,4 @@ function decr_stopping_callback(nlp, solver::S, stats) where {S<:Union{R2NSolver
   set_dual_residual!(stats, sqrt(σ*ξ1))
   stats.multipliers .= solver.ψ.q .* (-σ)
   stats.dual_feas ≤ ktol && (stats.status = :user)
-
-  if isa(solver, R2NSolver) && !isa(nlp, QuasiNewtonModel)
-    hess_coord!(nlp.model, solver.xk, stats.multipliers, solver.subpb.model.B.data.nzval)
-  end
 end
