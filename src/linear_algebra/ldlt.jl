@@ -18,7 +18,7 @@ function update_workspace!(solver_workspace::PenaltyLDLTWorkspace, B, A, σ, α)
   n, m = solver_workspace.n, solver_workspace.m
   H = solver_workspace.H.data
 
-  @views H[1:n, 1:n] .= B.data'
+  @views H[1:n, 1:n] .= B'
   @inbounds for i in 1:n
     H[i,i] += σ
   end
