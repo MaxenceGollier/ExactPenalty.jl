@@ -285,7 +285,7 @@ function SolverCore.solve!(
         x = x,
         atol = dual_ktol,
         rtol = T(0),
-        neg_tol = T(Inf),
+        neg_tol = T(0),
         verbose = sub_verbose,
         max_iter = sub_max_iter,
         max_time = max_time - stats.elapsed_time,
@@ -306,7 +306,7 @@ function SolverCore.solve!(
         x = x,
         atol = dual_ktol,
         rtol = T(0),
-        neg_tol = T(Inf),
+        neg_tol = T(0),
         verbose = sub_verbose,
         max_iter = sub_max_iter,
         max_time = max_time - stats.elapsed_time,
@@ -325,7 +325,7 @@ function SolverCore.solve!(
         x = x,
         atol = dual_ktol,
         rtol = T(0),
-        neg_tol = T(Inf),
+        neg_tol = T(0),
         verbose = sub_verbose,
         max_iter = sub_max_iter,
         max_time = max_time - stats.elapsed_time,
@@ -374,11 +374,6 @@ function SolverCore.solve!(
       τ = max(τ + β1, norm(solver.y, 1))
       sub_h.h = NormL2(τ)
       ψ.h = NormL2(τ)
-
-      # Reset dual tolerance
-      dual_feas_update = dual_feas_computer!(solver)
-      dual_ktol = dual_ktol = max(sub_rtol*dual_feas_update + sub_atol, dual_tol)
-      set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
 
       # Initialize regularization parameter
       νsub = 1/max(β4, β3*τ)
