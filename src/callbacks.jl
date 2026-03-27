@@ -35,8 +35,8 @@ function decr_stopping_callback(nlp, solver::S, stats) where{S <: Union{R2NSolve
 
   if ξ1 < 0
     stats.status = :not_desc
-    return
   end
+
   if norm(s) < eps(eltype(s)) && stats.iter > 1
     stats.status = :small_step
   end
