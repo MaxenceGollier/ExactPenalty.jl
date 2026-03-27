@@ -367,8 +367,7 @@ function SolverCore.solve!(
         colsep = 1,
       )
 
-
-    if primal_feas > primal_ktol || dual_ktol ≤ dual_tol
+    if primal_feas > primal_ktol || (dual_ktol ≤ dual_tol && primal_feas > primal_tol)
       # Update penalty parameter
       compute_least_square_multipliers!(solver)
       τ = max(τ + β1, norm(solver.y, 1))
