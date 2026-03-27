@@ -10,6 +10,10 @@ function kkt_stopping_callback(nlp, solver::S, stats) where{S <: Union{R2NSolver
   σ = isa(solver, R2NSolver) ? stats.solver_specific[:sigma_cauchy] : stats.solver_specific[:sigma]
   s = isa(solver, R2NSolver) ? solver.s1 : solver.s
 
+  # We remove the subsolver capacity to make a decision with respect to first order stationarity.
+  # The subsolver should only stop on a `:user` condition (see below).
+  stats.status == :first_order && set_status!(stats, :unknown)
+
   if norm(s) < eps(eltype(s)) && stats.iter > 1
     stats.status = :small_step
   end
@@ -19,8 +23,8 @@ function kkt_stopping_callback(nlp, solver::S, stats) where{S <: Union{R2NSolver
   end
 
   ξ1 = solver.ψ.h.lambda*norm(solver.ψ.b) - solver.ψ(s) - dot(s, solver.∇fk)
-  
-  if ξ1 < 0
+
+  if ξ1 < 0 || 1 / σ < eps(eltype(s))
     stats.status = :not_desc
   end
 
@@ -40,6 +44,10 @@ end
 function decr_stopping_callback(nlp, solver::S, stats) where{S <: Union{R2NSolver, R2Solver}}
   σ = isa(solver, R2NSolver) ? stats.solver_specific[:sigma_cauchy] : stats.solver_specific[:sigma]
   s = isa(solver, R2NSolver) ? solver.s1 : solver.s
+
+  # We remove the subsolver capacity to make a decision with respect to first order stationarity.
+  # The subsolver should only stop on a `:user` condition (see below).
+  stats.status == :first_order && set_status!(stats, :unknown)
 
   ktol = stats.solver_specific[:ktol]
 
