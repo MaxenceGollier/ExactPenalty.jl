@@ -9,6 +9,63 @@ mutable struct OpK2{T <:  Real, M1, M2 <:AbstractLinearOperator} <: AbstractLine
   B::M2
 end
 
+mutable struct CooK2{T <: Real, I <: Integer} <: AbstractSparseMatrixCOO{T, I}
+  m::Int
+  n::Int
+  nnz_B::Int
+  nnz_A::Int
+  rows::Vector{Ti}
+  cols::Vector{Ti}
+  vals::Vector{Tv}
+end
+
+function set_B!(M::CooK2, B::M2) where{M2 <: AbstractSparseMatrixCOO}
+  nnz_B = M.nnz_B
+  @views M.vals[1:nnz_B] .= B.vals
+end
+
+function set_A!(M::CooK2, A::M1) where{M1 <: AbstractSparseMatrixCOO}
+  nnz_B = M.nnz_B
+  @views M.vals[nnz_B+1:end] .= A.vals
+end
+
+function set_σ!(M::CooK2, σ::T) where{T}
+  nnz_B = M.nnz_B
+  nnz_A = M.nnz_A
+  @views M.vals[nnz_B+nnz_A+1:nnz_B+nnz_A+M.n] .= σ
+end
+
+function set_α!(M::CooK2, α::T) where{T}
+  nnz_B = M.nnz_B
+  nnz_A = M.nnz_A
+  @views M.vals[nnz_B+nnz_A+M.n+1:end] .= -α
+end
+
+function CooK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2) where{T, M1 <: AbstractSparseMatrixCOO, M2 <: AbstractSparseMatrixCOO}
+  
+  nnz_B = length(B.rows)
+  nnz_A = length(A.rows)
+  rows = zeros(Int, nnz_B + nnz_A + n + m)
+  cols = zeros(Int, nnz_B + nnz_A + n + m)
+  vals = zeros(T, nnz_B + nnz_A + n + m)
+      
+
+  @views rows[1:nnz_B] .= B.rows
+  @views cols[1:nnz_B] .= B.cols
+  @views vals[1:nnz_B] .= B.vals
+
+  @views rows[nnz_B+1:nnz_B+nnz_A] .= A.rows .+ n
+  @views cols[nnz_B+1:nnz_B+nnz_A] .= A.cols
+  @views vals[nnz_B+1:nnz_B+nnz_A] .= A.vals
+
+  @views rows[nnz_B+nnz_A+1:end] .= 1:(n+m)
+  @views cols[nnz_B+nnz_A+1:end] .= 1:(n+m)
+  @views vals[nnz_B+nnz_A+1:nnz_B+nnz_A+n] .= σ
+  @views vals[nnz_B+nnz_A+n+1:end] .= -α
+
+  return CooK2(n, m, nnz_B, nnz_A, rows, cols, vals) 
+end
+
 function LinearAlgebra.mul!(y::AbstractVector{T}, H::OpK2{T}, x::AbstractVector{T}, α::T, β::T) where T
     n, m = H.n, H.m
     @views mul!(y[1:n], H.B, x[1:n], α, β)
@@ -28,10 +85,9 @@ end
 function K2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2) where{T, M1, M2}
   if M2 <: AbstractLinearOperator
     return OpK2(n, m, nrow, ncol, α, σ, A, B)
-  elseif M2 <: AbstractMatrix
-    # For some reason, doing this in one line results in a SparseMatrixCSC instead of SparseMatrixCOO...
-    H1 = [B+σ*I(n) coo_spzeros(T, n, m);]
-    H2 = [A (-one(T))*I]
-    return [H1; H2] 
+  elseif M2 <: AbstractSparseMatrixCOO && M1 <: AbstractSparseMatrixCOO
+    return CooK2(n, m, nrow, ncol, α, σ, A, B) 
+  else
+    error("K2: currently only supports the case where A and B are either both sparse COO or B is a linear operator.")
   end
 end
