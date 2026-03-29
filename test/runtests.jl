@@ -1,5 +1,11 @@
 using ExactPenalty
-using LinearOperators, RegularizedOptimization, QuadraticModels, RegularizedProblems, ShiftedProximalOperators, SolverCore, SparseMatricesCOO
+using LinearOperators,
+  RegularizedOptimization,
+  QuadraticModels,
+  RegularizedProblems,
+  ShiftedProximalOperators,
+  SolverCore,
+  SparseMatricesCOO
 using LinearAlgebra, Random, Test
 
 include("allocations-macro.jl")

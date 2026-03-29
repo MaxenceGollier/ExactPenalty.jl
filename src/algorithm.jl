@@ -3,10 +3,10 @@ export L2Penalty, L2PenaltySolver, solve!
 import SolverCore.solve!
 
 mutable struct L2PenaltySolver{
-  T <: Real,
-  V <: AbstractVector{T},
-  S <: AbstractOptimizationSolver,
-  PB <: AbstractRegularizedNLPModel,
+  T<:Real,
+  V<:AbstractVector{T},
+  S<:AbstractOptimizationSolver,
+  PB<:AbstractRegularizedNLPModel,
 } <: AbstractOptimizationSolver
   x::V
   y::V
@@ -17,10 +17,10 @@ mutable struct L2PenaltySolver{
   temp_b::V
   subsolver::S
   subpb::PB
-  substats::GenericExecutionStats{T, V, V, T}
+  substats::GenericExecutionStats{T,V,V,T}
 end
 
-function L2PenaltySolver(nlp::AbstractNLPModel{T, V}; subsolver = R2Solver) where {T, V}
+function L2PenaltySolver(nlp::AbstractNLPModel{T,V}; subsolver = R2Solver) where {T,V}
   x0 = nlp.meta.x0
   x = similar(x0)
   s = similar(x0)
@@ -38,8 +38,14 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T, V}; subsolver = R2Solver) wher
 
   # Allocate sub_h = ||c(x)|| to solve min f(x) + τ||c(x)||
   store_previous_jacobian = isa(nlp, QuasiNewtonModel) ? true : false
-  sub_h =
-    CompositeNormL2(one(T), (c, x) -> cons!(nlp, x, c), (j, x) -> jac_coord!(nlp, x, j.vals), A, b, store_previous_jacobian = store_previous_jacobian)
+  sub_h = CompositeNormL2(
+    one(T),
+    (c, x) -> cons!(nlp, x, c),
+    (j, x) -> jac_coord!(nlp, x, j.vals),
+    A,
+    b,
+    store_previous_jacobian = store_previous_jacobian,
+  )
   subnlp = RegularizedNLPModel(nlp, sub_h)
   substats = RegularizedExecutionStats(subnlp)
 
@@ -143,10 +149,10 @@ Notably, you can access, and modify, the following:
 You can also use the `sub_callback` keyword argument which has exactly the same structure and in sent to `R2`.
 """
 function L2Penalty(
-  nlp::AbstractNLPModel{T, V};
+  nlp::AbstractNLPModel{T,V};
   subsolver = R2Solver,
-  kwargs...
-) where {T <: Real, V}
+  kwargs...,
+) where {T<:Real,V}
   if !equality_constrained(nlp)
     error("L2Penalty: This algorithm only works for equality contrained problems.")
   end
@@ -157,9 +163,9 @@ function L2Penalty(
 end
 
 function SolverCore.solve!(
-  solver::L2PenaltySolver{T, V},
-  nlp::AbstractNLPModel{T, V},
-  stats::GenericExecutionStats{T, V, V};
+  solver::L2PenaltySolver{T,V},
+  nlp::AbstractNLPModel{T,V},
+  stats::GenericExecutionStats{T,V,V};
   callback = (args...) -> nothing,
   x::V = nlp.meta.x0,
   atol::T = √eps(T),
@@ -181,9 +187,9 @@ function SolverCore.solve!(
   β4::T = eps(T),
   primal_feasibility_mode::Symbol = :kkt,
   dual_feasibility_mode::Symbol = :kkt,
-) where {T, V}
+) where {T,V}
   reset!(stats)
-  
+
   @assert (primal_feasibility_mode == :decrease || primal_feasibility_mode == :kkt)
   @assert (dual_feasibility_mode == :decrease || dual_feasibility_mode == :kkt)
 
@@ -201,7 +207,7 @@ function SolverCore.solve!(
     @info log_header(
       [:iter, :sub_iter, :fx, :pr_feas, :pr_feas_k, :du_feas, :du_feas_k, :tau, :normx],
       [Int, Int, Float64, Float64, Float64, Float64, Float64, Float64, Float64],
-      hdr_override = Dict{Symbol, String}(   # TODO: Add this as constant dict elsewhere
+      hdr_override = Dict{Symbol,String}(   # TODO: Add this as constant dict elsewhere
         :iter => "outer",
         :sub_iter => "inner",
         :fx => "f(x)",
@@ -224,7 +230,8 @@ function SolverCore.solve!(
 
   ## Compute Feasibility
 
-  primal_feas_computer! = primal_feasibility_mode == :decrease ? decr_primal_feas! : kkt_primal_feas!
+  primal_feas_computer! =
+    primal_feasibility_mode == :decrease ? decr_primal_feas! : kkt_primal_feas!
   primal_feas = primal_feas_computer!(solver)
 
   set_solver_specific!(solver.substats, :smooth_obj, obj(nlp, x))
@@ -238,7 +245,8 @@ function SolverCore.solve!(
   ψ.h = NormL2(τ)
   νsub = 1/max(β4, β3*τ)
 
-  dual_feas_computer! = dual_feasibility_mode == :decrease ? decr_dual_feas! : kkt_dual_feas!
+  dual_feas_computer! =
+    dual_feasibility_mode == :decrease ? decr_dual_feas! : kkt_dual_feas!
   dual_feas = dual_feas_computer!(solver)
 
   primal_tol = atol + rtol * primal_feas
@@ -257,22 +265,22 @@ function SolverCore.solve!(
   n_iter_since_decrease = 0
 
   set_status!(
-      stats,
-      get_status(
-        nlp,
-        elapsed_time = stats.elapsed_time,
-        n_iter_since_decrease = n_iter_since_decrease,
-        iter = stats.iter,
-        optimal = solved,
-        infeasible = infeasible,
-        not_desc = not_desc,
-        max_eval = max_eval,
-        max_time = max_time,
-        max_iter = max_iter,
-        max_decreas_iter = max_decreas_iter,
-      ),
-    )
-  
+    stats,
+    get_status(
+      nlp,
+      elapsed_time = stats.elapsed_time,
+      n_iter_since_decrease = n_iter_since_decrease,
+      iter = stats.iter,
+      optimal = solved,
+      infeasible = infeasible,
+      not_desc = not_desc,
+      max_eval = max_eval,
+      max_time = max_time,
+      max_iter = max_iter,
+      max_decreas_iter = max_decreas_iter,
+    ),
+  )
+
   callback(nlp, solver, stats)
 
   done = stats.status != :unknown
@@ -283,7 +291,8 @@ function SolverCore.solve!(
         solver.subsolver,
         solver.subpb,
         solver.substats;
-        callback = (args...) -> subsolver_callback(args...; feasibility_mode = dual_feasibility_mode),
+        callback = (args...) ->
+          subsolver_callback(args...; feasibility_mode = dual_feasibility_mode),
         x = x,
         atol = T(0),
         rtol = T(0),
@@ -295,14 +304,15 @@ function SolverCore.solve!(
         σmin = β4,
         ν = νsub,
         compute_obj = false,
-        compute_grad = false
+        compute_grad = false,
       )
     elseif isa(nlp, QuasiNewtonModel)
       solve!(
         solver.subsolver,
         solver.subpb,
         solver.substats;
-        callback = (args...) -> subsolver_callback(args...; feasibility_mode = dual_feasibility_mode),
+        callback = (args...) ->
+          subsolver_callback(args...; feasibility_mode = dual_feasibility_mode),
         qn_update_y! = _qn_lag_update_y!,
         qn_copy! = _qn_lag_copy!,
         x = x,
@@ -316,14 +326,15 @@ function SolverCore.solve!(
         σmin = β4,
         σk = 1/νsub,
         compute_obj = false,
-        compute_grad = false
+        compute_grad = false,
       )
-    else 
+    else
       solve!(
         solver.subsolver,
         solver.subpb,
         solver.substats;
-        callback = (args...) -> subsolver_callback(args...; feasibility_mode = dual_feasibility_mode),
+        callback = (args...) ->
+          subsolver_callback(args...; feasibility_mode = dual_feasibility_mode),
         x = x,
         atol = T(0),
         rtol = T(0),
@@ -335,7 +346,7 @@ function SolverCore.solve!(
         σmin = β4,
         σk = 1/νsub,
         compute_obj = false,
-        compute_grad = false
+        compute_grad = false,
       )
     end
 
@@ -369,7 +380,17 @@ function SolverCore.solve!(
     verbose > 0 &&
       stats.iter % verbose == 0 &&
       @info log_row(
-        Any[stats.iter, solver.substats.iter, fx, primal_feas, primal_ktol, dual_feas, dual_ktol, τ, norm(x)],
+        Any[
+          stats.iter,
+          solver.substats.iter,
+          fx,
+          primal_feas,
+          primal_ktol,
+          dual_feas,
+          dual_ktol,
+          τ,
+          norm(x),
+        ],
         colsep = 1,
       )
 
@@ -405,12 +426,12 @@ function SolverCore.solve!(
     else
       n_iter_since_decrease = 0
     end
-      
+
     solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol
 
     θ = primal_feasibility_mode == :decrease ? primal_feas^2 : compute_θ!(solver)
     infeasible = sqrt(θ)/hx < infeasible_tol && hx > primal_tol
-    
+
     set_iter!(stats, stats.iter + 1)
     rem_eval = max_eval - neval_obj(nlp)
     set_time!(stats, time() - start_time)
@@ -456,7 +477,7 @@ function get_status(
   max_time = Inf,
   max_iter = Inf,
   max_decreas_iter = Inf,
-) where {M <: AbstractNLPModel}
+) where {M<:AbstractNLPModel}
   if infeasible
     :infeasible
   elseif optimal
@@ -476,7 +497,11 @@ function get_status(
   end
 end
 
-function _qn_lag_update_y!(nlp::AbstractNLPModel{T, V}, solver::R2NSolver{T, G, V}, stats::GenericExecutionStats) where{T, V, G}
+function _qn_lag_update_y!(
+  nlp::AbstractNLPModel{T,V},
+  solver::R2NSolver{T,G,V},
+  stats::GenericExecutionStats,
+) where {T,V,G}
   @. solver.y = solver.∇fk - solver.∇fk⁻
 
   ψ = solver.ψ
@@ -484,7 +509,7 @@ function _qn_lag_update_y!(nlp::AbstractNLPModel{T, V}, solver::R2NSolver{T, G, 
   spmat = shifted_spmat.spmat
   spfct = ψ.spfct
   qrm_update_shift_spmat!(shifted_spmat, zero(T))
-  spmat.val[1:(spmat.mat.nz - spmat.mat.m)] .= ψ.A.vals
+  spmat.val[1:(spmat.mat.nz-spmat.mat.m)] .= ψ.A.vals
   qrm_spfct_init!(spfct, spmat)
   qrm_set(spfct, "qrm_keeph", 0) # Discard de Q matrix in all subsequent QR factorizations
   qrm_set(spfct, "qrm_rd_eps", eps(T)^(0.4)) # If a diagonal element of the R-factor is less than eps(R)^(0.4), we consider that A is rank defficient.
@@ -519,7 +544,11 @@ function _qn_lag_update_y!(nlp::AbstractNLPModel{T, V}, solver::R2NSolver{T, G, 
   mul!(solver.y, solver.ψ.A_prev', ψ.q, one(T), one(T)) # y = y - J(x)_prev^T λ
 end
 
-function _qn_lag_copy!(nlp::AbstractNLPModel{T, V}, solver::R2NSolver{T, G, V}, stats::GenericExecutionStats) where{T, V,  G}
+function _qn_lag_copy!(
+  nlp::AbstractNLPModel{T,V},
+  solver::R2NSolver{T,G,V},
+  stats::GenericExecutionStats,
+) where {T,V,G}
   solver.∇fk⁻ .= solver.∇fk
   solver.ψ.A_prev.vals .= solver.ψ.A.vals
 end

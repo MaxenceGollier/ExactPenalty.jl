@@ -1,26 +1,25 @@
-function compute_θ!(solver::L2PenaltySolver{T}) where{T}
+function compute_θ!(solver::L2PenaltySolver{T}) where {T}
   ## Computes a model decrease for the feasbility problem minₓ ‖c(x)‖₂
   ψ = solver.subsolver.ψ
-  norm_cx = ψ.h(ψ.b)  
+  norm_cx = ψ.h(ψ.b)
   prox!(solver.s, ψ, solver.s0, 1/ψ.h.lambda)
   θ = (norm_cx - ψ(solver.s))/ψ.h.lambda
   return θ
 end
 
-function decr_primal_feas!(solver::L2PenaltySolver{T}) where{T}
+function decr_primal_feas!(solver::L2PenaltySolver{T}) where {T}
   θ = compute_θ!(solver)
-  θ < 0 &&
-    error("L2Penalty: prox-gradient step should produce a decrease but θ = $(θ)")
+  θ < 0 && error("L2Penalty: prox-gradient step should produce a decrease but θ = $(θ)")
 
   sqrt_θ = θ ≥ 0 ? sqrt(θ) : sqrt(-θ)
   return sqrt_θ
 end
 
-function kkt_primal_feas!(solver::L2PenaltySolver{T}) where{T}
-  return norm(solver.subsolver.ψ.b, Inf) 
+function kkt_primal_feas!(solver::L2PenaltySolver{T}) where {T}
+  return norm(solver.subsolver.ψ.b, Inf)
 end
 
-function compute_least_square_multipliers!(solver::L2PenaltySolver{T}) where{T}
+function compute_least_square_multipliers!(solver::L2PenaltySolver{T}) where {T}
   s = isa(solver.subsolver, R2NSolver) ? solver.subsolver.s1 : solver.subsolver.s
   sigma_symbol = isa(solver.subsolver, R2NSolver) ? :sigma_cauchy : :sigma
   ψ = solver.subsolver.ψ
@@ -31,7 +30,7 @@ function compute_least_square_multipliers!(solver::L2PenaltySolver{T}) where{T}
   # y = (AAᵀ)^{-1}(-A∇f) -> corresponds to the least-square multipliers.
   ψ.h = NormL2(Inf)
   solver.temp_b .= ψ.b
-  ψ.b .= 0 
+  ψ.b .= 0
   @. solver.subsolver.mν∇fk = - solver.subsolver.∇fk
   prox!(s, ψ, solver.subsolver.mν∇fk, T(1))
 
@@ -43,13 +42,17 @@ function compute_least_square_multipliers!(solver::L2PenaltySolver{T}) where{T}
   @. solver.y = ψ.q
 end
 
-function update_constraint_multipliers!(solver::L2PenaltySolver{T}) where{T}
-  σ = isa(solver.subsolver, R2NSolver) ? solver.substats.solver_specific[:sigma_cauchy] : solver.substats.solver_specific[:sigma]
+function update_constraint_multipliers!(solver::L2PenaltySolver{T}) where {T}
+  σ =
+    isa(solver.subsolver, R2NSolver) ? solver.substats.solver_specific[:sigma_cauchy] :
+    solver.substats.solver_specific[:sigma]
   @. solver.y = solver.subsolver.ψ.q * σ
 end
 
-function decr_dual_feas!(solver::L2PenaltySolver{T}) where{T}
-  σ = isa(solver.subsolver, R2NSolver) ? solver.substats.solver_specific[:sigma_cauchy] : solver.substats.solver_specific[:sigma]
+function decr_dual_feas!(solver::L2PenaltySolver{T}) where {T}
+  σ =
+    isa(solver.subsolver, R2NSolver) ? solver.substats.solver_specific[:sigma_cauchy] :
+    solver.substats.solver_specific[:sigma]
   s = isa(solver.subsolver, R2NSolver) ? solver.subsolver.s1 : solver.subsolver.s
 
   norm_cx = solver.subsolver.ψ.h(solver.subsolver.ψ.b)
@@ -57,12 +60,15 @@ function decr_dual_feas!(solver::L2PenaltySolver{T}) where{T}
 
   ξ1 = norm_cx - shifted_norm_cx - dot(solver.subsolver.∇fk, s)
   sqrt_ξ1_σ = ξ1 ≥ 0 ? sqrt(ξ1 * σ) : sqrt(-ξ1 * σ)
-  (ξ1 < 0 ) && error("L2Penalty: prox-gradient step should produce a decrease but ξ1 = $(ξ1)")
+  (ξ1 < 0) &&
+    error("L2Penalty: prox-gradient step should produce a decrease but ξ1 = $(ξ1)")
   return sqrt_ξ1_σ
 end
 
-function kkt_dual_feas!(solver::L2PenaltySolver{T}) where{T}
-  σ = isa(solver.subsolver, R2NSolver) ? solver.substats.solver_specific[:sigma_cauchy] : solver.substats.solver_specific[:sigma]
+function kkt_dual_feas!(solver::L2PenaltySolver{T}) where {T}
+  σ =
+    isa(solver.subsolver, R2NSolver) ? solver.substats.solver_specific[:sigma_cauchy] :
+    solver.substats.solver_specific[:sigma]
   s = isa(solver.subsolver, R2NSolver) ? solver.subsolver.s1 : solver.subsolver.s
   return norm(s, Inf)*σ
 end
