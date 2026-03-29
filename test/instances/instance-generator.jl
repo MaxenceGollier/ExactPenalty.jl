@@ -54,7 +54,7 @@ function generate_instance(n::Int, m::Int, alpha::Real;
   end
 
   x0 = zeros(typeof(alpha), n)
-  model = R2NModel(Symmetric(Hessian_modifier(Q), :L), nabla, 0.0, x0)
+  model = QuadraticModel(nabla, Symmetric(Hessian_modifier(Q), :L), regularize = true, x0 = x0)
   c! = let c = b
   (b, x) -> 
     begin
