@@ -27,7 +27,9 @@ function read_instance(file::String; type = Float64, Hessian_modifier = H -> H)
     end
   end
   x0 = zeros(type, length(data["nabla"]))
-  model = QuadraticModel(data["nabla"], Hessian_modifier((data["Q"] + data["Q"]')/2), σ = data["sigma"], x0 = x0)
+  sQ = (data["Q"] + data["Q"]')/2
+  H = Hessian_modifier == LinearOperator ? Hessian_modifier{Float64, Vector{Float64}}(sQ, symmetric = true) : Hessian_modifier(sQ)
+  model = QuadraticModel(data["nabla"], H, σ = data["sigma"], x0 = x0)
 
   c! = let c = data["c"] 
     (b, x) -> 
