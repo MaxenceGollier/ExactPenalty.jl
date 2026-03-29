@@ -111,7 +111,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     α == αmin && break
   end
 
-  (stats.iter >= max_iter && isa(reg_nlp.model.data.H, AbstractQuasiNewtonOperator)) && reset!(reg_nlp.model.data.H)
+  (stats.iter >= max_iter && isa(reg_nlp.model.data.H, AbstractQuasiNewtonOperator)) && LinearOperators.reset!(reg_nlp.model.data.H)
   # FIXME: just throw "max_iter" and let R2N do its thing...
   set_solution!(stats, @view x1[1:n])
   if Δ*norm(reg_nlp.h.b) - obj(reg_nlp, @view x1[1:n]) < 0 || any(isnan, x1) # FIXME: just throw "not_desc" in this case, and let R2N do its thing...

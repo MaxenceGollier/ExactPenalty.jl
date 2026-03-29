@@ -253,6 +253,7 @@ function SolverCore.solve!(
   solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol
 
   infeasible = false
+  not_desc = false
   n_iter_since_decrease = 0
 
   set_status!(
@@ -264,6 +265,7 @@ function SolverCore.solve!(
         iter = stats.iter,
         optimal = solved,
         infeasible = infeasible,
+        not_desc = not_desc,
         max_eval = max_eval,
         max_time = max_time,
         max_iter = max_iter,
@@ -283,7 +285,7 @@ function SolverCore.solve!(
         solver.substats;
         callback = (args...) -> subsolver_callback(args...; feasibility_mode = dual_feasibility_mode),
         x = x,
-        atol = dual_ktol,
+        atol = T(0),
         rtol = T(0),
         neg_tol = T(Inf),
         verbose = sub_verbose,
@@ -304,7 +306,7 @@ function SolverCore.solve!(
         qn_update_y! = _qn_lag_update_y!,
         qn_copy! = _qn_lag_copy!,
         x = x,
-        atol = dual_ktol,
+        atol = T(0),
         rtol = T(0),
         neg_tol = T(Inf),
         verbose = sub_verbose,
@@ -323,7 +325,7 @@ function SolverCore.solve!(
         solver.substats;
         callback = (args...) -> subsolver_callback(args...; feasibility_mode = dual_feasibility_mode),
         x = x,
-        atol = dual_ktol,
+        atol = T(0),
         rtol = T(0),
         neg_tol = T(Inf),
         verbose = sub_verbose,
@@ -345,6 +347,10 @@ function SolverCore.solve!(
       solver.subsolver.∇fk .= solver.∇fk
       set_solver_specific!(solver.substats, :smooth_obj, fx)
       continue
+    end
+
+    if solver.substats.status == :not_desc
+      not_desc = true
     end
 
     x .= solver.substats.solution
@@ -421,6 +427,7 @@ function SolverCore.solve!(
         iter = stats.iter,
         optimal = solved,
         infeasible = infeasible,
+        not_desc = not_desc,
         max_eval = max_eval,
         max_time = max_time,
         max_iter = max_iter,
@@ -443,6 +450,7 @@ function get_status(
   iter = 0,
   optimal = false,
   infeasible = false,
+  not_desc = false,
   n_iter_since_decrease = 0,
   max_eval = Inf,
   max_time = Inf,
@@ -453,6 +461,8 @@ function get_status(
     :infeasible
   elseif optimal
     :first_order
+  elseif not_desc
+    :not_desc
   elseif iter > max_iter
     :max_iter
   elseif elapsed_time > max_time
