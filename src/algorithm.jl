@@ -44,7 +44,8 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T, V}; subsolver = R2Solver) wher
   substats = RegularizedExecutionStats(subnlp)
 
   subpb = L2PenalizedProblem(nlp, sub_h, substats.multipliers)
-  set_solver_specific!(substats, :ktol, T(0))
+  set_solver_specific!(substats, :primal_ktol, T(0))
+  set_solver_specific!(substats, :dual_ktol, T(0))
 
   if subsolver == R2NSolver
     if isa(nlp, QuasiNewtonModel)
@@ -198,15 +199,16 @@ function SolverCore.solve!(
 
   if verbose > 0
     @info log_header(
-      [:iter, :sub_iter, :fx, :pr_feas, :du_feas, :epsk, :tau, :normx],
+      [:iter, :sub_iter, :fx, :pr_feas, :pr_feas_k, :du_feas, :du_feas_k, :tau, :normx],
       [Int, Int, Float64, Float64, Float64, Float64, Float64, Float64, Float64],
       hdr_override = Dict{Symbol, String}(   # TODO: Add this as constant dict elsewhere
         :iter => "outer",
         :sub_iter => "inner",
         :fx => "f(x)",
         :pr_feas => "pr_feas",
+        :pr_feas_k => "pεₖ",
         :du_feas => "du_feas",
-        :epsk => "ϵₖ",
+        :du_feas_k => "dεₖ",
         :tau => "τ",
         :normx => "‖x‖",
       ),
@@ -239,15 +241,19 @@ function SolverCore.solve!(
   dual_feas_computer! = dual_feasibility_mode == :decrease ? decr_dual_feas! : kkt_dual_feas!
   dual_feas = dual_feas_computer!(solver)
 
-  feas = max(primal_feas, dual_feas) 
+  primal_tol = atol + rtol * primal_feas
+  dual_tol = atol + rtol * dual_feas
 
-  atol += rtol * feas # make stopping test absolute and relative
+  primal_ktol = one(primal_tol)
+  dual_ktol = min(one(dual_tol), max(sub_rtol * dual_feas + sub_atol, dual_tol))
 
-  ktol = max(sub_rtol*dual_feas + sub_atol, atol) # Keep ϵ₀ ≥ ϵ
-  set_solver_specific!(solver.substats, :ktol, ktol)
-  
-  solved = feas ≤ atol
+  set_solver_specific!(solver.substats, :primal_ktol, primal_ktol)
+  set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
+
+  solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol
+
   infeasible = false
+  not_desc = false
   n_iter_since_decrease = 0
 
   set_status!(
@@ -259,6 +265,7 @@ function SolverCore.solve!(
         iter = stats.iter,
         optimal = solved,
         infeasible = infeasible,
+        not_desc = not_desc,
         max_eval = max_eval,
         max_time = max_time,
         max_iter = max_iter,
@@ -278,9 +285,9 @@ function SolverCore.solve!(
         solver.substats;
         callback = (args...) -> subsolver_callback(args...; feasibility_mode = dual_feasibility_mode),
         x = x,
-        atol = ktol,
+        atol = T(0),
         rtol = T(0),
-        neg_tol = T(0),
+        neg_tol = T(Inf),
         verbose = sub_verbose,
         max_iter = sub_max_iter,
         max_time = max_time - stats.elapsed_time,
@@ -299,9 +306,9 @@ function SolverCore.solve!(
         qn_update_y! = _qn_lag_update_y!,
         qn_copy! = _qn_lag_copy!,
         x = x,
-        atol = ktol,
+        atol = T(0),
         rtol = T(0),
-        neg_tol = T(0),
+        neg_tol = T(Inf),
         verbose = sub_verbose,
         max_iter = sub_max_iter,
         max_time = max_time - stats.elapsed_time,
@@ -318,9 +325,9 @@ function SolverCore.solve!(
         solver.substats;
         callback = (args...) -> subsolver_callback(args...; feasibility_mode = dual_feasibility_mode),
         x = x,
-        atol = ktol,
+        atol = T(0),
         rtol = T(0),
-        neg_tol = T(0),
+        neg_tol = T(Inf),
         verbose = sub_verbose,
         max_iter = sub_max_iter,
         max_time = max_time - stats.elapsed_time,
@@ -342,6 +349,10 @@ function SolverCore.solve!(
       continue
     end
 
+    if solver.substats.status == :not_desc
+      not_desc = true
+    end
+
     x .= solver.substats.solution
     fx = solver.substats.solver_specific[:smooth_obj]
     hx_prev = copy(hx)
@@ -353,40 +364,52 @@ function SolverCore.solve!(
 
     primal_feas = primal_feas_computer!(solver)
     dual_feas = dual_feas_computer!(solver)
-    feas = max(primal_feas, dual_feas)
 
     ## Log status
     verbose > 0 &&
       stats.iter % verbose == 0 &&
       @info log_row(
-        Any[stats.iter, solver.substats.iter, fx, primal_feas, dual_feas, ktol, τ, norm(x)],
+        Any[stats.iter, solver.substats.iter, fx, primal_feas, primal_ktol, dual_feas, dual_ktol, τ, norm(x)],
         colsep = 1,
       )
 
-
-    if primal_feas > ktol #FIXME
+    if primal_feas > primal_ktol || (dual_ktol ≤ dual_tol && primal_feas > primal_tol)
+      # Update penalty parameter
       compute_least_square_multipliers!(solver)
       τ = max(τ + β1, norm(solver.y, 1))
       sub_h.h = NormL2(τ)
       ψ.h = NormL2(τ)
+
+      # Initialize regularization parameter
       νsub = 1/max(β4, β3*τ)
+
+      # Reset tolerance
+      dual_feas = dual_feas_computer!(solver)
+      dual_ktol = max(sub_rtol*dual_feas + sub_atol, dual_tol)
+      set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
     else
-      n_iter_since_decrease = 0
-      ktol = max(sub_rtol*dual_feas + sub_atol, atol)
-      set_solver_specific!(solver.substats, :ktol, ktol)
+      # Tighten tolerances
+      primal_ktol = max(sub_rtol*primal_feas + sub_atol, primal_tol)
+      dual_ktol = max(sub_rtol*dual_feas + sub_atol, dual_tol)
+      set_solver_specific!(solver.substats, :primal_ktol, primal_ktol)
+      set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
+
+      # Initialize regularization parameter
       νsub = 1/solver.substats.solver_specific[:sigma]
     end
-    if primal_feas > ktol && hx_prev ≥ hx
+
+    # Check whether the primal feasibility has decreased. If not, increase the penalty parameter more aggressively.
+    if primal_feas > primal_ktol && hx_prev ≥ hx
       n_iter_since_decrease += 1
       β1 *= 10
     else
       n_iter_since_decrease = 0
     end
       
-    solved = feas ≤ atol
+    solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol
 
     θ = primal_feasibility_mode == :decrease ? primal_feas^2 : compute_θ!(solver)
-    infeasible = sqrt(θ)/hx < infeasible_tol && hx > atol
+    infeasible = sqrt(θ)/hx < infeasible_tol && hx > primal_tol
     
     set_iter!(stats, stats.iter + 1)
     rem_eval = max_eval - neval_obj(nlp)
@@ -404,6 +427,7 @@ function SolverCore.solve!(
         iter = stats.iter,
         optimal = solved,
         infeasible = infeasible,
+        not_desc = not_desc,
         max_eval = max_eval,
         max_time = max_time,
         max_iter = max_iter,
@@ -426,6 +450,7 @@ function get_status(
   iter = 0,
   optimal = false,
   infeasible = false,
+  not_desc = false,
   n_iter_since_decrease = 0,
   max_eval = Inf,
   max_time = Inf,
@@ -436,6 +461,8 @@ function get_status(
     :infeasible
   elseif optimal
     :first_order
+  elseif not_desc
+    :not_desc
   elseif iter > max_iter
     :max_iter
   elseif elapsed_time > max_time

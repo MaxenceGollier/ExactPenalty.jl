@@ -10,6 +10,10 @@ function kkt_stopping_callback(nlp, solver::S, stats) where{S <: Union{R2NSolver
   σ = isa(solver, R2NSolver) ? stats.solver_specific[:sigma_cauchy] : stats.solver_specific[:sigma]
   s = isa(solver, R2NSolver) ? solver.s1 : solver.s
 
+  # FIXME: since neg_tol = Inf and other tols are 0 in the subsolver call, the only way for the subsolver to return :first_order is to have stopped with neg_tol
+  # This avoids the subsolver to stop on an error.
+  stats.status == :first_order && set_status!(stats, :not_desc)
+
   if norm(s) < eps(eltype(s)) && stats.iter > 1
     stats.status = :small_step
   end
@@ -18,7 +22,7 @@ function kkt_stopping_callback(nlp, solver::S, stats) where{S <: Union{R2NSolver
     stats.status = :unbounded
   end
 
-  ktol = stats.solver_specific[:ktol]
+  ktol = stats.solver_specific[:dual_ktol]
 
   set_dual_residual!(stats, norm(s, Inf)*σ)
   stats.multipliers .= solver.ψ.q .*( -σ )
@@ -29,7 +33,11 @@ function decr_stopping_callback(nlp, solver::S, stats) where{S <: Union{R2NSolve
   σ = isa(solver, R2NSolver) ? stats.solver_specific[:sigma_cauchy] : stats.solver_specific[:sigma]
   s = isa(solver, R2NSolver) ? solver.s1 : solver.s
 
-  ktol = stats.solver_specific[:ktol]
+  # FIXME: since neg_tol = Inf and other tols are 0 in the subsolver call, the only way for the subsolver to return :first_order is to have stopped with neg_tol
+  # This avoids the subsolver to stop on an error.
+  stats.status == :first_order && set_status!(stats, :not_desc)
+
+  ktol = stats.solver_specific[:dual_ktol]
 
   ξ1 = solver.ψ.h.lambda*norm(solver.ψ.b) - solver.ψ(s) - dot(s, solver.∇fk)
 
@@ -37,6 +45,7 @@ function decr_stopping_callback(nlp, solver::S, stats) where{S <: Union{R2NSolve
     stats.status = :not_desc
     return
   end
+
   if norm(s) < eps(eltype(s)) && stats.iter > 1
     stats.status = :small_step
   end
