@@ -29,8 +29,11 @@ end
 
 function pairwise_plot(stats, keys)
   solved(df) = (df.status .== :first_order) # TODO: add infeasible problems
-  costs = [df -> .!solved(df) * Inf + df.elapsed_time, 
-            df -> .!solved(df) * Inf + df.neval_obj, df -> .!solved(df) * Inf + df.neval_grad]
+  costs = [
+    df -> .!solved(df) * Inf + df.elapsed_time,
+    df -> .!solved(df) * Inf + df.neval_obj,
+    df -> .!solved(df) * Inf + df.neval_grad,
+  ]
   costnames = ["CPU Time", "# Objective Evals", "# Gradient Evals"]
 
   stats_subset = filter(kv -> kv[1] in keys, stats)
@@ -43,33 +46,62 @@ function pairwise_plot(stats, keys)
   models = Dict(:exact => "∇²f(x)", :lbfgs => "BFGS", :r2 => "σI")
   precision = Dict(:imprecise => "1e-3", :precise => "1e-9")
 
-  suptitle = "\nHessian model: Bₖ(x) = " * models[parts_1[2]] * "; Tolerance: ϵ = " * precision[parts_1[3]]
-  p = profile_solvers(stats_subset, costs, costnames; suptitle = suptitle, xlabel = "", ylabel = "")
+  suptitle =
+    "\nHessian model: Bₖ(x) = " *
+    models[parts_1[2]] *
+    "; Tolerance: ϵ = " *
+    precision[parts_1[3]]
+  p = profile_solvers(
+    stats_subset,
+    costs,
+    costnames;
+    suptitle = suptitle,
+    xlabel = "",
+    ylabel = "",
+  )
   p.subplots[2][:legend_position] = :bottomright
-  p.subplots[3][:legend_position] = :bottomright  
+  p.subplots[3][:legend_position] = :bottomright
 
   compare_with = (parts_1[end] == :reference || parts_2[end] == :reference) ? :main : :ipopt
-  p.series_list[1][:label] = Symbol.(split(string(p.series_list[1][:label]), "_"))[end] == :current ? :current : compare_with
-  p.series_list[2][:label] = Symbol.(split(string(p.series_list[2][:label]), "_"))[end] == :current ? :current : compare_with
-  p.series_list[3][:label] = Symbol.(split(string(p.series_list[3][:label]), "_"))[end] == :current ? :current : compare_with
-  p.series_list[4][:label] = Symbol.(split(string(p.series_list[4][:label]), "_"))[end] == :current ? :current : compare_with
-  p.series_list[5][:label] = Symbol.(split(string(p.series_list[5][:label]), "_"))[end] == :current ? :current : compare_with
-  p.series_list[6][:label] = Symbol.(split(string(p.series_list[6][:label]), "_"))[end] == :current ? :current : compare_with
+  p.series_list[1][:label] =
+    Symbol.(split(string(p.series_list[1][:label]), "_"))[end] == :current ? :current :
+    compare_with
+  p.series_list[2][:label] =
+    Symbol.(split(string(p.series_list[2][:label]), "_"))[end] == :current ? :current :
+    compare_with
+  p.series_list[3][:label] =
+    Symbol.(split(string(p.series_list[3][:label]), "_"))[end] == :current ? :current :
+    compare_with
+  p.series_list[4][:label] =
+    Symbol.(split(string(p.series_list[4][:label]), "_"))[end] == :current ? :current :
+    compare_with
+  p.series_list[5][:label] =
+    Symbol.(split(string(p.series_list[5][:label]), "_"))[end] == :current ? :current :
+    compare_with
+  p.series_list[6][:label] =
+    Symbol.(split(string(p.series_list[6][:label]), "_"))[end] == :current ? :current :
+    compare_with
 
-  p.series_list[1][:linecolor] = Symbol.(split(string(p.series_list[1][:label]), "_"))[end] == :current ? :blue : :red
-  p.series_list[2][:linecolor] = Symbol.(split(string(p.series_list[2][:label]), "_"))[end] == :current ? :blue : :red
-  p.series_list[3][:linecolor] = Symbol.(split(string(p.series_list[3][:label]), "_"))[end] == :current ? :blue : :red
-  p.series_list[4][:linecolor] = Symbol.(split(string(p.series_list[4][:label]), "_"))[end] == :current ? :blue : :red
-  p.series_list[5][:linecolor] = Symbol.(split(string(p.series_list[5][:label]), "_"))[end] == :current ? :blue : :red
-  p.series_list[6][:linecolor] = Symbol.(split(string(p.series_list[6][:label]), "_"))[end] == :current ? :blue : :red
+  p.series_list[1][:linecolor] =
+    Symbol.(split(string(p.series_list[1][:label]), "_"))[end] == :current ? :blue : :red
+  p.series_list[2][:linecolor] =
+    Symbol.(split(string(p.series_list[2][:label]), "_"))[end] == :current ? :blue : :red
+  p.series_list[3][:linecolor] =
+    Symbol.(split(string(p.series_list[3][:label]), "_"))[end] == :current ? :blue : :red
+  p.series_list[4][:linecolor] =
+    Symbol.(split(string(p.series_list[4][:label]), "_"))[end] == :current ? :blue : :red
+  p.series_list[5][:linecolor] =
+    Symbol.(split(string(p.series_list[5][:label]), "_"))[end] == :current ? :blue : :red
+  p.series_list[6][:linecolor] =
+    Symbol.(split(string(p.series_list[6][:label]), "_"))[end] == :current ? :blue : :red
 
   return p
 end
 
-current_dir   = joinpath("artifacts", "current")
+current_dir = joinpath("artifacts", "current")
 reference_dir = joinpath("artifacts", "reference")
 
-stats = Dict{Symbol, DataFrame}()
+stats = Dict{Symbol,DataFrame}()
 
 @info "Loading current benchmark results"
 load_stats(current_dir, stats, "_current")
@@ -78,13 +110,30 @@ load_stats(current_dir, stats, "_current")
 load_stats(reference_dir, stats, "_reference")
 
 p = plot(
-  pairwise_plot(stats, [:l2penalty_exact_imprecise_reference, :l2penalty_exact_imprecise_current]),
-  pairwise_plot(stats, [:l2penalty_exact_precise_reference, :l2penalty_exact_precise_current]),
-  pairwise_plot(stats, [:l2penalty_lbfgs_imprecise_reference, :l2penalty_lbfgs_imprecise_current]),
-  pairwise_plot(stats, [:l2penalty_lbfgs_precise_reference, :l2penalty_lbfgs_precise_current]),
-  pairwise_plot(stats, [:l2penalty_r2_imprecise_reference, :l2penalty_r2_imprecise_current]),
+  pairwise_plot(
+    stats,
+    [:l2penalty_exact_imprecise_reference, :l2penalty_exact_imprecise_current],
+  ),
+  pairwise_plot(
+    stats,
+    [:l2penalty_exact_precise_reference, :l2penalty_exact_precise_current],
+  ),
+  pairwise_plot(
+    stats,
+    [:l2penalty_lbfgs_imprecise_reference, :l2penalty_lbfgs_imprecise_current],
+  ),
+  pairwise_plot(
+    stats,
+    [:l2penalty_lbfgs_precise_reference, :l2penalty_lbfgs_precise_current],
+  ),
+  pairwise_plot(
+    stats,
+    [:l2penalty_r2_imprecise_reference, :l2penalty_r2_imprecise_current],
+  ),
   pairwise_plot(stats, [:l2penalty_r2_precise_reference, :l2penalty_r2_precise_current]),
-  layout = (3, 2), size = (1920, 1080))
+  layout = (3, 2),
+  size = (1920, 1080),
+)
 
 mkpath("benchmark/result")
 savefig(p, "benchmark/result/benchmark_comparison.svg")
@@ -103,7 +152,9 @@ p = plot(
   pairwise_plot(stats, [:l2penalty_exact_precise_current, :ipopt_exact_precise]),
   pairwise_plot(stats, [:l2penalty_lbfgs_imprecise_current, :ipopt_lbfgs_imprecise]),
   pairwise_plot(stats, [:l2penalty_lbfgs_precise_current, :ipopt_lbfgs_precise]),
-  layout = (2, 2), size = (1920, 1080))
+  layout = (2, 2),
+  size = (1920, 1080),
+)
 
 savefig(p, "benchmark/result/benchmark_comparison_ipopt.svg")
 
@@ -112,7 +163,7 @@ savefig(p, "benchmark/result/benchmark_comparison_ipopt.svg")
 function infeasibility_pair(stats, keys)
   df_1 = stats[keys[1]]
   df_2 = stats[keys[2]]
-  
+
   parts_1 = Symbol.(split(string(keys[1]), "_"))
   parts_2 = Symbol.(split(string(keys[2]), "_"))
 

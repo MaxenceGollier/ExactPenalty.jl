@@ -2,12 +2,18 @@ module ExactPenalty
 
 using LinearAlgebra
 using NLPModels, NLPModelsModifiers, RegularizedProblems, RegularizedOptimization
-using Krylov, LinearOperators, ProximalOperators, QRMumps, ShiftedProximalOperators, SolverCore, SparseMatricesCOO
+using Krylov,
+  LinearOperators,
+  ProximalOperators,
+  QRMumps,
+  ShiftedProximalOperators,
+  SolverCore,
+  SparseMatricesCOO
 
 import SolverCore.reset!
 
 abstract type AbstractPenalizedProblemSolver <: AbstractOptimizationSolver end
-abstract type AbstractPenalizedProblem{T, S} <: AbstractRegularizedNLPModel{T, S} end
+abstract type AbstractPenalizedProblem{T,S} <: AbstractRegularizedNLPModel{T,S} end
 
 include("ExactPenaltyExecutionStats.jl")
 

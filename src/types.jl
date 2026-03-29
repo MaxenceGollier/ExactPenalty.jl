@@ -1,18 +1,29 @@
-mutable struct L2PenalizedProblem{T, S, M <: AbstractNLPModel{T, S}, H <: CompositeNormL2, V <: AbstractVector, I} <: AbstractPenalizedProblem{T, S}
+mutable struct L2PenalizedProblem{
+  T,
+  S,
+  M<:AbstractNLPModel{T,S},
+  H<:CompositeNormL2,
+  V<:AbstractVector,
+  I,
+} <: AbstractPenalizedProblem{T,S}
   model::M
   h::H
   selected::I
   y::V
 end
 
-function L2PenalizedProblem(nlp::AbstractNLPModel{T}, h::CompositeNormL2) where{T}
+function L2PenalizedProblem(nlp::AbstractNLPModel{T}, h::CompositeNormL2) where {T}
   if isa(nlp, QuasiNewtonModel)
     return L2PenalizedProblem(nlp, h, 1:nlp.meta.nvar, zeros(T, 0))
   end
   return L2PenalizedProblem(nlp, h, 1:nlp.meta.nvar, zeros(T, nlp.meta.ncon))
 end
 
-function L2PenalizedProblem(nlp::AbstractNLPModel{T, V}, h::CompositeNormL2, y::V) where{T, V}
+function L2PenalizedProblem(
+  nlp::AbstractNLPModel{T,V},
+  h::CompositeNormL2,
+  y::V,
+) where {T,V}
   return L2PenalizedProblem(nlp, h, 1:nlp.meta.nvar, y)
 end
 
