@@ -1,12 +1,16 @@
 module ExactPenalty
 
-using LinearAlgebra
-using NLPModels, NLPModelsModifiers, RegularizedProblems, RegularizedOptimization
+using LinearAlgebra, ProximalOperators
+
+using QuadraticModels, ShiftedProximalOperators
+using RegularizedProblems
+
 using Krylov,
   LinearOperators,
-  ProximalOperators,
+  NLPModels,
+  NLPModelsModifiers,
   QRMumps,
-  ShiftedProximalOperators,
+  RegularizedOptimization,
   SolverCore,
   SparseMatricesCOO
 
@@ -26,6 +30,7 @@ include("subsolvers/tr_ms_sparse.jl")
 
 include("algorithm.jl")
 
+include("getters.jl")
 include("callbacks.jl")
 include("feas_computer.jl")
 include("types.jl")

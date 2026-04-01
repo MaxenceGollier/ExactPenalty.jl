@@ -32,7 +32,7 @@ function kkt_stopping_callback(nlp, solver::S, stats) where {S<:Union{R2NSolver,
   ktol = stats.solver_specific[:dual_ktol]
 
   set_dual_residual!(stats, norm(s, Inf)*σ)
-  stats.multipliers .= solver.ψ.q .* (-σ)
+  stats.multipliers .= get_ψ(solver).q .* (-σ)
   stats.dual_feas ≤ ktol && (stats.status = :user)
 end
 
@@ -48,7 +48,7 @@ function decr_stopping_callback(nlp, solver::S, stats) where {S<:Union{R2NSolver
 
   ktol = stats.solver_specific[:dual_ktol]
 
-  ξ1 = solver.ψ.h.lambda*norm(solver.ψ.b) - solver.ψ(s) - dot(s, solver.∇fk)
+  ξ1 = get_ψ(solver).h.lambda*norm(get_ψ(solver).b) - get_ψ(solver)(s) - dot(s, solver.∇fk)
 
   if ξ1 < 0
     stats.status = :not_desc
@@ -64,6 +64,6 @@ function decr_stopping_callback(nlp, solver::S, stats) where {S<:Union{R2NSolver
   end
 
   set_dual_residual!(stats, sqrt(σ*ξ1))
-  stats.multipliers .= solver.ψ.q .* (-σ)
+  stats.multipliers .= get_ψ(solver).q .* (-σ)
   stats.dual_feas ≤ ktol && (stats.status = :user)
 end

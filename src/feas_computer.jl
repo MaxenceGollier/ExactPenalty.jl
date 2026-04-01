@@ -1,6 +1,6 @@
 function compute_θ!(solver::L2PenaltySolver{T}) where {T}
   ## Computes a model decrease for the feasbility problem minₓ ‖c(x)‖₂
-  ψ = solver.subsolver.ψ
+  ψ = get_ψ(solver)
   norm_cx = ψ.h(ψ.b)
   prox!(solver.s, ψ, solver.s0, 1/ψ.h.lambda)
   θ = (norm_cx - ψ(solver.s))/ψ.h.lambda
@@ -16,13 +16,13 @@ function decr_primal_feas!(solver::L2PenaltySolver{T}) where {T}
 end
 
 function kkt_primal_feas!(solver::L2PenaltySolver{T}) where {T}
-  return norm(solver.subsolver.ψ.b, Inf)
+  return norm(get_ψ(solver).b, Inf)
 end
 
 function compute_least_square_multipliers!(solver::L2PenaltySolver{T}) where {T}
-  s = isa(solver.subsolver, R2NSolver) ? solver.subsolver.s1 : solver.subsolver.s
+  s = get_cauchy_step(solver)
   sigma_symbol = isa(solver.subsolver, R2NSolver) ? :sigma_cauchy : :sigma
-  ψ = solver.subsolver.ψ
+  ψ = get_ψ(solver)
 
   lambda_temp = ψ.h.lambda
 
@@ -43,20 +43,18 @@ function compute_least_square_multipliers!(solver::L2PenaltySolver{T}) where {T}
 end
 
 function update_constraint_multipliers!(solver::L2PenaltySolver{T}) where {T}
-  σ =
-    isa(solver.subsolver, R2NSolver) ? solver.substats.solver_specific[:sigma_cauchy] :
-    solver.substats.solver_specific[:sigma]
-  @. solver.y = solver.subsolver.ψ.q * σ
+  σ = get_cauchy_sigma(solver)
+  ψ = get_ψ(solver)
+  @. solver.y = ψ.q * σ
 end
 
 function decr_dual_feas!(solver::L2PenaltySolver{T}) where {T}
-  σ =
-    isa(solver.subsolver, R2NSolver) ? solver.substats.solver_specific[:sigma_cauchy] :
-    solver.substats.solver_specific[:sigma]
-  s = isa(solver.subsolver, R2NSolver) ? solver.subsolver.s1 : solver.subsolver.s
+  σ = get_cauchy_sigma(solver)
+  s = get_cauchy_step(solver)
+  ψ = get_ψ(solver)
 
-  norm_cx = solver.subsolver.ψ.h(solver.subsolver.ψ.b)
-  shifted_norm_cx = solver.subsolver.ψ(s)
+  norm_cx = ψ.h(ψ.b)
+  shifted_norm_cx = ψ(s)
 
   ξ1 = norm_cx - shifted_norm_cx - dot(solver.subsolver.∇fk, s)
   sqrt_ξ1_σ = ξ1 ≥ 0 ? sqrt(ξ1 * σ) : sqrt(-ξ1 * σ)
@@ -66,9 +64,7 @@ function decr_dual_feas!(solver::L2PenaltySolver{T}) where {T}
 end
 
 function kkt_dual_feas!(solver::L2PenaltySolver{T}) where {T}
-  σ =
-    isa(solver.subsolver, R2NSolver) ? solver.substats.solver_specific[:sigma_cauchy] :
-    solver.substats.solver_specific[:sigma]
-  s = isa(solver.subsolver, R2NSolver) ? solver.subsolver.s1 : solver.subsolver.s
+  σ = get_cauchy_sigma(solver)
+  s = get_cauchy_step(solver)
   return norm(s, Inf)*σ
 end

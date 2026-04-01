@@ -195,7 +195,7 @@ function SolverCore.solve!(
 
   # Retrieve workspace
   sub_h = solver.subpb.h
-  ψ = solver.subsolver.ψ
+  ψ = get_ψ(solver)
 
 
   x = solver.x .= x
@@ -499,12 +499,12 @@ end
 
 function _qn_lag_update_y!(
   nlp::AbstractNLPModel{T,V},
-  solver::R2NSolver{T,G,V},
+  solver::R2NSolver{T,V},
   stats::GenericExecutionStats,
-) where {T,V,G}
+) where {T,V}
   @. solver.y = solver.∇fk - solver.∇fk⁻
 
-  ψ = solver.ψ
+  ψ = get_ψ(solver)
   shifted_spmat = ψ.shifted_spmat
   spmat = shifted_spmat.spmat
   spfct = ψ.spfct
@@ -540,15 +540,16 @@ function _qn_lag_update_y!(
       tol = eps(T)^(0.75),
     )
   end
-  mul!(solver.y, solver.ψ.A', ψ.q, -one(T), one(T)) # y = y + J(x)^T λ 
-  mul!(solver.y, solver.ψ.A_prev', ψ.q, one(T), one(T)) # y = y - J(x)_prev^T λ
+  mul!(solver.y, ψ.A', ψ.q, -one(T), one(T)) # y = y + J(x)^T λ 
+  mul!(solver.y, ψ.A_prev', ψ.q, one(T), one(T)) # y = y - J(x)_prev^T λ
 end
 
 function _qn_lag_copy!(
   nlp::AbstractNLPModel{T,V},
-  solver::R2NSolver{T,G,V},
+  solver::R2NSolver{T,V},
   stats::GenericExecutionStats,
-) where {T,V,G}
+) where {T,V}
   solver.∇fk⁻ .= solver.∇fk
-  solver.ψ.A_prev.vals .= solver.ψ.A.vals
+  ψ = get_ψ(solver)
+  ψ.A_prev.vals .= ψ.A.vals
 end
