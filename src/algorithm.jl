@@ -54,11 +54,7 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T,V}; subsolver = R2Solver) where
   set_solver_specific!(substats, :dual_ktol, T(0))
 
   if subsolver == R2NSolver
-    if isa(nlp, QuasiNewtonModel)
-      solver = subsolver(subpb, subsolver = TRMoreSorensenLinOpSolver)
-    else
-      solver = subsolver(subpb, subsolver = TRMoreSorensenLinOpSolver)
-    end
+    solver = subsolver(subpb, subsolver = MoreSorensenSolver)
   else
     solver = subsolver(subpb)
   end
