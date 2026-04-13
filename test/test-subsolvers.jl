@@ -3,8 +3,8 @@ instances = "instances/"
 instances =
   filter(f -> isfile(f) && endswith(f, ".txt"), joinpath.(instances, readdir(instances)))
 # Get subsolvers
-solver_names = ["TRMoreSorensenLinOpSolver"]
-solvers = [TRMoreSorensenLinOpSolver]
+solver_names = ["MoreSorensenSolver"]
+solvers = [MoreSorensenSolver]
 
 # Test on real instances
 for (solver_name, solver_constructor) in zip(solver_names, solvers)

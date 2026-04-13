@@ -1,7 +1,7 @@
-export TRMoreSorensenLinOpSolver
+export MoreSorensenSolver
 import Base.show
 
-mutable struct TRMoreSorensenLinOpSolver{
+mutable struct MoreSorensenSolver{
   T<:Real,
   V<:AbstractVector{T},
   L<:Union{AbstractLinearOperator,AbstractMatrix},
@@ -15,7 +15,7 @@ mutable struct TRMoreSorensenLinOpSolver{
   workspace::W
 end
 
-function TRMoreSorensenLinOpSolver(
+function MoreSorensenSolver(
   reg_nlp::AbstractRegularizedNLPModel{T,V};
   solver = :minres_qlp,
 ) where {T,V}
@@ -30,11 +30,11 @@ function TRMoreSorensenLinOpSolver(
   H = K2(n, m, n+m, n+m, zero(T), reg_nlp.model.data.σ, reg_nlp.h.A, reg_nlp.model.data.H)
   workspace = construct_workspace(H, u1, n, m; solver = solver)
 
-  return TRMoreSorensenLinOpSolver(u1, u2, x1, x2, H, workspace)
+  return MoreSorensenSolver(u1, u2, x1, x2, H, workspace)
 end
 
 function SolverCore.solve!( #TODO add verbose and kwargs
-  solver::TRMoreSorensenLinOpSolver{T,V},
+  solver::MoreSorensenSolver{T,V},
   reg_nlp::AbstractRegularizedNLPModel{T,V},
   stats::GenericExecutionStats{T,V,V};
   x = reg_nlp.model.meta.x0,
