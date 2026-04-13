@@ -21,8 +21,7 @@ include("linear_algebra/K2.jl")
 include("linear_algebra/construct_workspace.jl")
 include("linear_algebra/krylov.jl")
 
-include("subsolvers/tr_ms_linearop.jl")
-include("subsolvers/tr_ms_sparse.jl")
+include("subsolvers/more-sorensen.jl")
 
 include("algorithm.jl")
 
