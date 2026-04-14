@@ -171,6 +171,7 @@ function SolverCore.solve!(
     ρk = Δobj / Δmod
 
     # Check stopping criteria
+    σk = solver.subpb.model.data.σ 
     dual_res = solver.subpb.model.data.H * s + σk * s
     set_dual_residual!(stats, norm(dual_res, Inf))
     solved = stats.dual_feas ≤ atol

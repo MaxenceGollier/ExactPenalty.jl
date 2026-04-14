@@ -151,3 +151,11 @@ function set_penalty!(nlp::ShiftedL2PenalizedProblem{T}, τ::T) where{T}
   nlp.h.h = NormL2(τ)
   nlp.parent.h.h = NormL2(τ)
 end
+
+function check_descent(shifted_penalty_nlp::ShiftedL2PenalizedProblem{T}, s::AbstractVector) where{T}
+  φ, ψ = shifted_penalty_nlp.model, shifted_penalty_nlp.h
+
+  cx, τ = ψ.b, ψ.h.lambda
+  ψ0 = τ * norm(cx) # φ0 = 0
+  return ψ0 - obj(φ, s) - ψ(s) >= 0
+end

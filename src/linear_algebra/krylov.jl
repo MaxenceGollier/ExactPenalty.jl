@@ -16,8 +16,12 @@ function update_workspace!(solver_workspace::PenaltyKrylovWorkspace, B, A, σ, �
   solver_workspace.H.σ = σ
 end
 
-function update_workspace!(solver_workspace::PenaltyKrylovWorkspace, α)
+function set_dual_inertia!(solver_workspace::PenaltyKrylovWorkspace, α)
   solver_workspace.H.α = α
+end
+
+function set_primal_inertia!(solver_workspace::PenaltyKrylovWorkspace, σ)
+  solver_workspace.H.σ = σ
 end
 
 function solve_system!(workspace::PenaltyKrylovWorkspace, u::V) where {V<:AbstractVector}
@@ -39,4 +43,10 @@ end
 function get_status(workspace::PenaltyKrylovWorkspace)
   workspace.M.stats.solved && return :success
   return :failed
+end
+
+function get_inertia(
+  workspace::PenaltyKrylovWorkspace{WP, OP}
+) where {WP<:KrylovWorkspace, T, M1, M2 <: LBFGSOperator{T}, OP<:OpK2{T, M1, M2}}
+  return workspace.n, 0, workspace.m
 end

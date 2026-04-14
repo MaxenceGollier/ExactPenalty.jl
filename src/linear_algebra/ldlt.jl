@@ -1,9 +1,10 @@
-mutable struct PenaltyLDLTWorkspace{WP <: LDLFactorization, K2 <: AbstractMatrix, V <: AbstractVector}
+mutable struct PenaltyLDLTWorkspace{WP <: LDLFactorization, K2 <: AbstractMatrix, V <: AbstractVector, T <: Real}
   M::WP
   H::K2
   x::V
   dx::V
   r::V
+  σ::T
   n::Int
   m::Int
   status::Symbol
@@ -11,7 +12,7 @@ end
 
 function construct_ldlt_workspace(H::M, u1::V, n, m) where{T, V <: AbstractVector{T}, M <: Symmetric{T, SparseMatrixCSC{T, Int}}}
   S = ldl_analyze(H)
-  return PenaltyLDLTWorkspace(S, H, similar(u1), similar(u1), similar(u1), n, m, :uninitialized)
+  return PenaltyLDLTWorkspace(S, H, similar(u1), similar(u1), similar(u1), zero(T), n, m, :uninitialized)
 end
 
 function update_workspace!(solver_workspace::PenaltyLDLTWorkspace, B, A, σ, α)
@@ -28,15 +29,27 @@ function update_workspace!(solver_workspace::PenaltyLDLTWorkspace, B, A, σ, α)
   @inbounds for i = 1:m
     H[n+i, n+i] = -α
   end
+  solver_workspace.σ = σ
   solver_workspace.M.__factorized = false
 end
 
-function update_workspace!(solver_workspace::PenaltyLDLTWorkspace, α)
+function set_dual_inertia!(solver_workspace::PenaltyLDLTWorkspace, α)
   n, m = solver_workspace.n, solver_workspace.m
   H = solver_workspace.H.data
   @inbounds for i = 1:m
     H[n+i, n+i] = -α
   end
+  solver_workspace.M.__factorized = false
+end
+
+function set_primal_inertia!(solver_workspace::PenaltyLDLTWorkspace, σ)
+  n, m = solver_workspace.n, solver_workspace.m
+  H = solver_workspace.H.data
+  σ_prev = solver_workspace.σ
+  @inbounds for i in 1:n
+    H[i,i] += σ - σ_prev
+  end
+  solver_workspace.σ = σ
   solver_workspace.M.__factorized = false
 end
 
@@ -80,4 +93,25 @@ end
 
 function get_status(workspace::PenaltyLDLTWorkspace)
   return workspace.status
+end
+
+function get_inertia(workspace::PenaltyLDLTWorkspace)
+  LDL = workspace.M
+
+  n = LDL.n
+  (npos, nzero, nneg) = (0, 0, 0)
+
+  D = LDL.d
+  for i=1:n
+    d = D[i]
+    if real(d) > 0
+      npos += 1
+    elseif real(d) == 0
+      nzero += 1
+    else
+      nneg += 1
+    end
+  end
+
+  return npos, nzero, nneg
 end

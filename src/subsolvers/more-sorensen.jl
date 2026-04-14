@@ -44,6 +44,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   atol = eps(T)^(0.3),
   max_time = T(30),
   max_iter = 10,
+  σmax = 1 / eps(T)
 ) where {T<:Real,V<:AbstractVector{T}}
   start_time = time()
   set_time!(stats, 0.0)
@@ -70,28 +71,44 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   )
 
   αmin = eps(T)^(0.5)
-  θ = 0.8
+  θ = T(0.8)
+  μ = T(10)
 
   # [ H + σI Aᵀ][x] = -[∇f]
   # [   A    0 ][y] = -[c] 
   solve_system!(solver_workspace, u1)
   get_solution!(x1, solver_workspace)
+  npos, nzero, nneg = get_inertia(solver_workspace)
+
+  # Get correct inertia
+  while npos < n && reg_nlp.model.data.σ <= σmax
+
+    reg_nlp.model.data.σ *= μ
+    set_primal_inertia!(solver_workspace, reg_nlp.model.data.σ)
+
+    # [ H + σI Aᵀ][x] = -[∇f]
+    # [   A    0 ][y] = -[c] 
+    solve_system!(solver_workspace, u1)
+    get_solution!(x1, solver_workspace)
+    npos, nzero, nneg = get_inertia(solver_workspace)
+  end
+
+  reg_nlp.model.data.σ >= σmax && set_status!(stats, :failed) && return
+
   status = get_status(solver_workspace)
 
   if norm(@view x1[(n+1):(n+m)]) <= Δ && status == :success
     set_solution!(stats, @view x1[1:n])
-    if reg_nlp.h.h.lambda*norm(reg_nlp.h.b) - obj(reg_nlp, @view x1[1:n]) < 0
-      # FIXME: just throw "not_desc" in this case, and let R2N do its thing...
-      set_solution!(stats, x)
-      isa(reg_nlp.model.data.H, AbstractQuasiNewtonOperator) &&
-        LinearOperators.reset!(reg_nlp.model.data.H)
-    end
+    set_status!(stats, :first_order)
+
+    not_desc = !check_descent(reg_nlp, @view x1[1:n])
+    not_desc && set_status!(stats, :not_desc)
     return
   end
 
   if status == :failed
     α = αmin
-    update_workspace!(solver_workspace, αmin)
+    set_dual_inertia!(solver_workspace, αmin)
     solve_system!(solver_workspace, u1)
     get_solution!(x1, solver_workspace)
   end
@@ -109,7 +126,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     @views α₊ = α + norm_x1^2/dot(x1[(n+1):(n+m)], x2[(n+1):(n+m)])*(norm_x1/Δ - 1)
 
     α = α₊ ≤ 0 ? max(θ*α, αmin) : α₊
-    update_workspace!(solver_workspace, α)
+    set_dual_inertia!(solver_workspace, α)
 
     # [ H + σI  Aᵀ ][x] = -[∇f]
     # [   A    -αI ][y] = -[c] 
@@ -128,16 +145,12 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     α == αmin && break
   end
 
-  any(isnan, x1) && error("done")
-  (stats.iter >= max_iter && isa(reg_nlp.model.data.H, AbstractQuasiNewtonOperator)) &&
-    LinearOperators.reset!(reg_nlp.model.data.H)
-  # FIXME: just throw "max_iter" and let R2N do its thing...
-  set_solution!(stats, @view x1[1:n])
-  if Δ*norm(reg_nlp.h.b) - obj(reg_nlp, @view x1[1:n]) < 0 || any(isnan, x1) # FIXME: just throw "not_desc" in this case, and let R2N do its thing...
-    set_solution!(stats, x)
-    isa(reg_nlp.model.data.H, AbstractQuasiNewtonOperator) &&
-      LinearOperators.reset!(reg_nlp.model.data.H)
-  end
+  set_solution!(stats, x)
+  set_status!(stats, :first_order)
+
+  stats.iter >= max_iter && set_status!(stats, :max_iter)
+  stats.elapsed_time >= max_time && set_status!(stats, :max_time)
+  !check_descent(reg_nlp, @view x1[1:n]) && set_status!(stats, :not_desc)
 end
 
 function get_primal_dual_sol!(s, y, solver::MoreSorensenSolver)
