@@ -12,10 +12,13 @@ function subsolver_callback(
 end
 
 function kkt_stopping_callback(nlp, solver::S, stats) where {S<:Union{R2NSolver,R2Solver}}
+
+  stats.iter == 0 && return
+
   σ =
     isa(solver, R2NSolver) ? stats.solver_specific[:sigma_cauchy] :
     stats.solver_specific[:sigma]
-  s = isa(solver, R2NSolver) ? solver.s1 : solver.s
+  s = solver.s
 
   # FIXME: since neg_tol = Inf and other tols are 0 in the subsolver call, the only way for the subsolver to return :first_order is to have stopped with neg_tol
   # This avoids the subsolver to stop on an error.
@@ -30,8 +33,14 @@ function kkt_stopping_callback(nlp, solver::S, stats) where {S<:Union{R2NSolver,
   end
 
   ktol = stats.solver_specific[:dual_ktol]
+  
+  if isa(solver, R2NSolver)
+    H = solver.subpb.model.data.H
+    set_dual_residual!(stats, norm(H*solver.s + stats.solver_specific[:sigma]*solver.s, Inf))
+  else
+    set_dual_residual!(stats, norm(solver.s, Inf)*σ)
+  end
 
-  set_dual_residual!(stats, norm(s, Inf)*σ)
   stats.multipliers .= solver.ψ.q .* (-σ)
   stats.dual_feas ≤ ktol && (stats.status = :user)
 end
