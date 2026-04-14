@@ -1,6 +1,6 @@
 function compute_θ!(solver::L2PenaltySolver{T}) where {T}
   ## Computes a model decrease for the feasbility problem minₓ ‖c(x)‖₂
-  ψ = solver.subsolver.ψ
+  ψ = solver.subsolver.subpb.h
   norm_cx = ψ.h(ψ.b)
   prox!(solver.s, ψ, solver.s0, 1/ψ.h.lambda)
   θ = (norm_cx - ψ(solver.s))/ψ.h.lambda
@@ -16,13 +16,13 @@ function decr_primal_feas!(solver::L2PenaltySolver{T}) where {T}
 end
 
 function kkt_primal_feas!(solver::L2PenaltySolver{T}) where {T}
-  return norm(solver.subsolver.ψ.b, Inf)
+  return norm(solver.subsolver.subpb.h.b, Inf)
 end
 
 function compute_least_square_multipliers!(solver::L2PenaltySolver{T}) where {T}
-  s = isa(solver.subsolver, R2NSolver) ? solver.subsolver.s1 : solver.subsolver.s
-  sigma_symbol = isa(solver.subsolver, R2NSolver) ? :sigma_cauchy : :sigma
-  ψ = solver.subsolver.ψ
+  s = solver.subsolver.s
+  sigma_symbol = isa(solver.subsolver, PenaltyR2NSolver) ? :sigma_cauchy : :sigma
+  ψ = solver.subsolver.subpb.h
 
   lambda_temp = ψ.h.lambda
 
@@ -31,8 +31,9 @@ function compute_least_square_multipliers!(solver::L2PenaltySolver{T}) where {T}
   ψ.h = NormL2(Inf)
   solver.temp_b .= ψ.b
   ψ.b .= 0
-  @. solver.subsolver.mν∇fk = - solver.subsolver.∇fk
-  prox!(s, ψ, solver.subsolver.mν∇fk, T(1))
+  solver.subsolver.∇fk *= -1
+  prox!(s, ψ, solver.subsolver.∇fk, T(1))
+  solver.subsolver.∇fk *= -1
 
   # Reset old value
   ψ.h = NormL2(lambda_temp)
@@ -44,19 +45,19 @@ end
 
 function update_constraint_multipliers!(solver::L2PenaltySolver{T}) where {T}
   σ =
-    isa(solver.subsolver, R2NSolver) ? solver.substats.solver_specific[:sigma_cauchy] :
+    isa(solver.subsolver, PenaltyR2NSolver) ? solver.substats.solver_specific[:sigma_cauchy] :
     solver.substats.solver_specific[:sigma]
-  @. solver.y = solver.subsolver.ψ.q * σ
+  @. solver.y = solver.subsolver.subpb.h.q * σ
 end
 
 function decr_dual_feas!(solver::L2PenaltySolver{T}) where {T}
   σ =
-    isa(solver.subsolver, R2NSolver) ? solver.substats.solver_specific[:sigma_cauchy] :
+    isa(solver.subsolver, PenaltyR2NSolver) ? solver.substats.solver_specific[:sigma_cauchy] :
     solver.substats.solver_specific[:sigma]
-  s = isa(solver.subsolver, R2NSolver) ? solver.subsolver.s1 : solver.subsolver.s
+  s = isa(solver.subsolver, PenaltyR2NSolver) ? solver.subsolver.s1 : solver.subsolver.s
 
-  norm_cx = solver.subsolver.ψ.h(solver.subsolver.ψ.b)
-  shifted_norm_cx = solver.subsolver.ψ(s)
+  norm_cx = solver.subsolver.subpb.h.h(solver.subsolver.subpb.h.b)
+  shifted_norm_cx = solver.subsolver.subpb.h(s)
 
   ξ1 = norm_cx - shifted_norm_cx - dot(solver.subsolver.∇fk, s)
   sqrt_ξ1_σ = ξ1 ≥ 0 ? sqrt(ξ1 * σ) : sqrt(-ξ1 * σ)
@@ -66,9 +67,11 @@ function decr_dual_feas!(solver::L2PenaltySolver{T}) where {T}
 end
 
 function kkt_dual_feas!(solver::L2PenaltySolver{T}) where {T}
-  σ =
-    isa(solver.subsolver, R2NSolver) ? solver.substats.solver_specific[:sigma_cauchy] :
-    solver.substats.solver_specific[:sigma]
-  s = isa(solver.subsolver, R2NSolver) ? solver.subsolver.s1 : solver.subsolver.s
-  return norm(s, Inf)*σ
+  σ = solver.subsolver.subpb.model.data.σ
+  s = solver.subsolver.s
+
+  solver.dual_res .= s .* σ
+  mul!(solver.dual_res, solver.subsolver.subpb.model.data.H, s, one(T), one(T))
+
+  return norm(solver.dual_res, Inf)
 end

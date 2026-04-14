@@ -28,6 +28,8 @@ function MoreSorensenSolver(
   x2 = zeros(eltype(x0), n+m)
 
   H = K2(n, m, n+m, n+m, zero(T), reg_nlp.model.data.σ, reg_nlp.h.A, reg_nlp.model.data.H)
+
+  solver = isa(H, AbstractLinearOperator) ? :minres_qlp : :ldlt
   workspace = construct_workspace(H, u1, n, m; solver = solver)
 
   return MoreSorensenSolver(u1, u2, x1, x2, H, workspace)
@@ -126,6 +128,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     α == αmin && break
   end
 
+  any(isnan, x1) && error("done")
   (stats.iter >= max_iter && isa(reg_nlp.model.data.H, AbstractQuasiNewtonOperator)) &&
     LinearOperators.reset!(reg_nlp.model.data.H)
   # FIXME: just throw "max_iter" and let R2N do its thing...
@@ -135,4 +138,10 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     isa(reg_nlp.model.data.H, AbstractQuasiNewtonOperator) &&
       LinearOperators.reset!(reg_nlp.model.data.H)
   end
+end
+
+function get_primal_dual_sol!(s, y, solver::MoreSorensenSolver)
+  n = length(s)
+  s .= @view solver.x1[1:n]
+  y .= @view solver.x1[(n+1):end]
 end

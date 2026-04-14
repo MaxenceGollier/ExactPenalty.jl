@@ -3,7 +3,7 @@ function subsolver_callback(
   solver::S,
   stats;
   feasibility_mode = :kkt,
-) where {S<:Union{R2NSolver,R2Solver}}
+) where {S<:Union{PenaltyR2NSolver,PenaltyR2Solver}}
   if feasibility_mode == :kkt
     kkt_stopping_callback(nlp, solver, stats)
   elseif feasibility_mode == :decrease
@@ -11,11 +11,11 @@ function subsolver_callback(
   end
 end
 
-function kkt_stopping_callback(nlp, solver::S, stats) where {S<:Union{R2NSolver,R2Solver}}
+function kkt_stopping_callback(nlp, solver::S, stats) where {S<:Union{PenaltyR2NSolver,PenaltyR2Solver}}
   σ =
-    isa(solver, R2NSolver) ? stats.solver_specific[:sigma_cauchy] :
+    isa(solver, PenaltyR2NSolver) ? stats.solver_specific[:sigma_cauchy] :
     stats.solver_specific[:sigma]
-  s = isa(solver, R2NSolver) ? solver.s1 : solver.s
+  s = isa(solver, PenaltyR2NSolver) ? solver.s1 : solver.s
 
   # FIXME: since neg_tol = Inf and other tols are 0 in the subsolver call, the only way for the subsolver to return :first_order is to have stopped with neg_tol
   # This avoids the subsolver to stop on an error.
@@ -36,11 +36,11 @@ function kkt_stopping_callback(nlp, solver::S, stats) where {S<:Union{R2NSolver,
   stats.dual_feas ≤ ktol && (stats.status = :user)
 end
 
-function decr_stopping_callback(nlp, solver::S, stats) where {S<:Union{R2NSolver,R2Solver}}
+function decr_stopping_callback(nlp, solver::S, stats) where {S<:Union{PenaltyR2NSolver,PenaltyR2Solver}}
   σ =
-    isa(solver, R2NSolver) ? stats.solver_specific[:sigma_cauchy] :
+    isa(solver, PenaltyR2NSolver) ? stats.solver_specific[:sigma_cauchy] :
     stats.solver_specific[:sigma]
-  s = isa(solver, R2NSolver) ? solver.s1 : solver.s
+  s = isa(solver, PenaltyR2NSolver) ? solver.s1 : solver.s
 
   # FIXME: since neg_tol = Inf and other tols are 0 in the subsolver call, the only way for the subsolver to return :first_order is to have stopped with neg_tol
   # This avoids the subsolver to stop on an error.

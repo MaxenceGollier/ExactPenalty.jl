@@ -20,46 +20,22 @@ mutable struct L2PenaltySolver{
   substats::GenericExecutionStats{T,V,V,T}
 end
 
-function L2PenaltySolver(nlp::AbstractNLPModel{T,V}; subsolver = R2Solver) where {T,V}
+function L2PenaltySolver(nlp::AbstractNLPModel{T,V}; subsolver = PenaltyR2NSolver) where {T,V}
   x0 = nlp.meta.x0
-  x = similar(x0)
-  s = similar(x0)
-  y = similar(x0, nlp.meta.ncon)
-  temp_b = similar(y)
+  x, s, s0 = similar(x0), similar(x0), similar(x0)
+  temp_b = similar(x0, nlp.meta.ncon)
   dual_res = similar(x0)
-  s0 = zero(x0)
+  y = similar(x0, nlp.meta.ncon)
   ∇fk = similar(x0)
 
-  # Allocating variables for the ShiftedProximalOperator structure
-  (rows, cols) = jac_structure(nlp)
-  vals = similar(rows, eltype(x0))
-  A = SparseMatrixCOO(nlp.meta.ncon, nlp.meta.nvar, rows, cols, vals)
-  b = similar(x0, eltype(x0), nlp.meta.ncon)
+  penalty_subproblem = L2PenalizedProblem(nlp) # f(x) + τ‖c(x)‖₂
+  substats = GenericExecutionStats(penalty_subproblem, solver_specific = Dict{Symbol, T}())
+  solver = subsolver(penalty_subproblem)
 
-  # Allocate sub_h = ||c(x)|| to solve min f(x) + τ||c(x)||
-  store_previous_jacobian = isa(nlp, QuasiNewtonModel) ? true : false
-  sub_h = CompositeNormL2(
-    one(T),
-    (c, x) -> cons!(nlp, x, c),
-    (j, x) -> jac_coord!(nlp, x, j.vals),
-    A,
-    b,
-    store_previous_jacobian = store_previous_jacobian,
-  )
-  subnlp = RegularizedNLPModel(nlp, sub_h)
-  substats = RegularizedExecutionStats(subnlp)
-
-  subpb = L2PenalizedProblem(nlp, sub_h, substats.multipliers)
   set_solver_specific!(substats, :primal_ktol, T(0))
   set_solver_specific!(substats, :dual_ktol, T(0))
 
-  if subsolver == R2NSolver
-    solver = subsolver(subpb, subsolver = MoreSorensenSolver)
-  else
-    solver = subsolver(subpb)
-  end
-
-  return L2PenaltySolver(x, y, dual_res, s, s0, ∇fk, temp_b, solver, subpb, substats)
+  return L2PenaltySolver(x, y, dual_res, s, s0, ∇fk, temp_b, solver, penalty_subproblem, substats)
 end
 
 function SolverCore.reset!(solver::L2PenaltySolver)
@@ -136,7 +112,7 @@ In particular, setting `stats.status = :user` will stop the algorithm.
 All relevant information should be available in `nlp` and `solver`.
 Notably, you can access, and modify, the following:
 - `solver.x`: current iterate;
-- `solver.subsolver`: a `R2Solver` structure holding relevant information on the subsolver state, see `R2` for more information;
+- `solver.subsolver`: a `PenaltyR2Solver` structure holding relevant information on the subsolver state, see `R2` for more information;
 - `stats`: structure holding the output of the algorithm (`GenericExecutionStats`), which contains, among other things:
   - `stats.iter`: current iteration counter;
   - `stats.objective`: current objective function value;
@@ -146,7 +122,7 @@ You can also use the `sub_callback` keyword argument which has exactly the same 
 """
 function L2Penalty(
   nlp::AbstractNLPModel{T,V};
-  subsolver = R2Solver,
+  subsolver = PenaltyR2Solver,
   kwargs...,
 ) where {T<:Real,V}
   if !equality_constrained(nlp)
@@ -169,8 +145,8 @@ function SolverCore.solve!(
   sub_rtol = 1e-2,
   sub_atol = zero(T),
   infeasible_tol = T(1e-2),
-  max_iter::Int = 10000,
-  sub_max_iter::Int = 10000,
+  max_iter::Int = 100,
+  sub_max_iter::Int = 100,
   max_time::T = T(30.0),
   max_eval::Int = -1,
   sub_max_eval::Int = -1,
@@ -190,12 +166,14 @@ function SolverCore.solve!(
   @assert (dual_feasibility_mode == :decrease || dual_feasibility_mode == :kkt)
 
   # Retrieve workspace
-  sub_h = solver.subpb.h
-  ψ = solver.subsolver.ψ
-
+  penalty_pb = solver.subpb # f(x) + τ‖c(x)‖₂
+  mk = solver.subsolver.subpb
+  φ, ψ = mk.model, mk.h
 
   x = solver.x .= x
-  shift!(ψ, x)
+
+  shift!(mk, x, compute_grad = false)
+  grad!(nlp, x, φ.data.c)
   fx = obj(nlp, x) #TODO: this call is redundant with the first evaluation of the objective function of R2N. We can remove this and rely on the lines in the while loop below.
   hx = norm(ψ.b)
 
@@ -232,13 +210,11 @@ function SolverCore.solve!(
 
   set_solver_specific!(solver.substats, :smooth_obj, obj(nlp, x))
   fx = solver.substats.solver_specific[:smooth_obj]
-  grad!(nlp, x, solver.subsolver.∇fk)
   solver.∇fk .= solver.subsolver.∇fk
   compute_least_square_multipliers!(solver)
 
   τ = max(norm(solver.y, 1), T(1))
-  sub_h.h = NormL2(τ)
-  ψ.h = NormL2(τ)
+  set_penalty!(mk, τ)
   νsub = 1/max(β4, β3*τ)
 
   dual_feas_computer! =
@@ -282,74 +258,27 @@ function SolverCore.solve!(
   done = stats.status != :unknown
 
   while !done
-    if isa(solver.subsolver, R2Solver)
-      solve!(
-        solver.subsolver,
-        solver.subpb,
-        solver.substats;
-        callback = (args...) ->
-          subsolver_callback(args...; feasibility_mode = dual_feasibility_mode),
-        x = x,
-        atol = T(0),
-        rtol = T(0),
-        neg_tol = T(Inf),
-        verbose = sub_verbose,
-        max_iter = sub_max_iter,
-        max_time = max_time - stats.elapsed_time,
-        max_eval = min(rem_eval, sub_max_eval),
-        σmin = β4,
-        ν = νsub,
-        compute_obj = false,
-        compute_grad = false,
-      )
-    elseif isa(nlp, QuasiNewtonModel)
-      solve!(
-        solver.subsolver,
-        solver.subpb,
-        solver.substats;
-        callback = (args...) ->
-          subsolver_callback(args...; feasibility_mode = dual_feasibility_mode),
-        qn_update_y! = _qn_lag_update_y!,
-        qn_copy! = _qn_lag_copy!,
-        x = x,
-        atol = T(0),
-        rtol = T(0),
-        neg_tol = T(Inf),
-        verbose = sub_verbose,
-        max_iter = sub_max_iter,
-        max_time = max_time - stats.elapsed_time,
-        max_eval = min(rem_eval, sub_max_eval),
-        σmin = β4,
-        σk = 1/νsub,
-        compute_obj = false,
-        compute_grad = false,
-      )
-    else
-      solve!(
-        solver.subsolver,
-        solver.subpb,
-        solver.substats;
-        callback = (args...) ->
-          subsolver_callback(args...; feasibility_mode = dual_feasibility_mode),
-        x = x,
-        atol = T(0),
-        rtol = T(0),
-        neg_tol = T(Inf),
-        verbose = sub_verbose,
-        max_iter = sub_max_iter,
-        max_time = max_time - stats.elapsed_time,
-        max_eval = min(rem_eval, sub_max_eval),
-        σmin = β4,
-        σk = 1/νsub,
-        compute_obj = false,
-        compute_grad = false,
-      )
-    end
+
+    solve!(
+      solver.subsolver,
+      solver.subpb,
+      solver.substats;
+      x = x,
+      atol = dual_ktol,
+      rtol = T(0),
+      verbose = sub_verbose,
+      max_iter = sub_max_iter,
+      max_time = max_time - stats.elapsed_time,
+      max_eval = min(rem_eval, sub_max_eval),
+      σmin = β4,
+      σk = 1/νsub,
+      compute_obj = false,
+      compute_grad = false,
+    )
 
     if solver.substats.status == :unbounded
       τ *= 10
-      sub_h.h = NormL2(τ)
-      ψ.h = NormL2(τ)
+      set_penalty!(mk, τ)
       νsub = 1/max(β4, β3*τ)
       solver.subsolver.∇fk .= solver.∇fk
       set_solver_specific!(solver.substats, :smooth_obj, fx)
@@ -394,8 +323,7 @@ function SolverCore.solve!(
       # Update penalty parameter
       compute_least_square_multipliers!(solver)
       τ = max(τ + β1, norm(solver.y, 1))
-      sub_h.h = NormL2(τ)
-      ψ.h = NormL2(τ)
+      set_penalty!(mk, τ)
 
       # Initialize regularization parameter
       νsub = 1/max(β4, β3*τ)
@@ -491,60 +419,4 @@ function get_status(
   else
     :unknown
   end
-end
-
-function _qn_lag_update_y!(
-  nlp::AbstractNLPModel{T,V},
-  solver::R2NSolver{T,G,V},
-  stats::GenericExecutionStats,
-) where {T,V,G}
-  @. solver.y = solver.∇fk - solver.∇fk⁻
-
-  ψ = solver.ψ
-  shifted_spmat = ψ.shifted_spmat
-  spmat = shifted_spmat.spmat
-  spfct = ψ.spfct
-  qrm_update_shift_spmat!(shifted_spmat, zero(T))
-  spmat.val[1:(spmat.mat.nz-spmat.mat.m)] .= ψ.A.vals
-  qrm_spfct_init!(spfct, spmat)
-  qrm_set(spfct, "qrm_keeph", 0) # Discard de Q matrix in all subsequent QR factorizations
-  qrm_set(spfct, "qrm_rd_eps", eps(T)^(0.4)) # If a diagonal element of the R-factor is less than eps(R)^(0.4), we consider that A is rank defficient.
-
-  mul!(ψ.g, ψ.A, solver.∇fk, one(T), zero(T))
-  qrm_analyse!(spmat, spfct; transp = 't')
-  qrm_factorize!(spmat, spfct, transp = 't')
-
-  # Check full-rankness
-  full_row_rank = (qrm_get(spfct, "qrm_rd_num") == 0)
-
-  if full_row_rank
-    qrm_solve!(spfct, ψ.g, ψ.p, transp = 't')
-    qrm_solve!(spfct, ψ.p, ψ.q, transp = 'n')
-    qrm_refine!(spmat, spfct, ψ.q, ψ.g, ψ.dq, ψ.p)
-  else
-    α = eps(T)^(0.9)
-    qrm_golub_riley!(
-      ψ.shifted_spmat,
-      spfct,
-      ψ.p,
-      ψ.g,
-      ψ.dp,
-      ψ.q,
-      ψ.dq,
-      transp = 't',
-      α = α,
-      tol = eps(T)^(0.75),
-    )
-  end
-  mul!(solver.y, solver.ψ.A', ψ.q, -one(T), one(T)) # y = y + J(x)^T λ 
-  mul!(solver.y, solver.ψ.A_prev', ψ.q, one(T), one(T)) # y = y - J(x)_prev^T λ
-end
-
-function _qn_lag_copy!(
-  nlp::AbstractNLPModel{T,V},
-  solver::R2NSolver{T,G,V},
-  stats::GenericExecutionStats,
-) where {T,V,G}
-  solver.∇fk⁻ .= solver.∇fk
-  solver.ψ.A_prev.vals .= solver.ψ.A.vals
 end
