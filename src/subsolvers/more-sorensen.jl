@@ -79,15 +79,17 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   solve_system!(solver_workspace, u1)
   get_solution!(x1, solver_workspace)
   npos, nzero, nneg = get_inertia(solver_workspace)
+  status = get_status(solver_workspace)
   
   # Get correct inertia
-  if nneg < m
+  # If the factorization/solver failed, it in indicates we should add a minimal regularization too.
+  if nneg < m || status == :failed
     α = αmin
     set_dual_inertia!(solver_workspace, αmin)
-    if npos == n
-      solve_system!(solver_workspace, u1)
-      get_solution!(x1, solver_workspace)
-    end
+    solve_system!(solver_workspace, u1)
+    get_solution!(x1, solver_workspace)
+    npos, nzero, nneg = get_inertia(solver_workspace)
+    status = get_status(solver_workspace)
   end
 
   while npos < n && reg_nlp.model.data.σ <= σmax

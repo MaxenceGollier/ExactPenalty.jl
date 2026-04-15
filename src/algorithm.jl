@@ -209,7 +209,7 @@ function SolverCore.solve!(
 
   set_solver_specific!(solver.substats, :smooth_obj, obj(nlp, x))
   fx = solver.substats.solver_specific[:smooth_obj]
-  solver.∇fk .= solver.subsolver.∇fk
+  solver.∇fk .= φ.data.c
   compute_least_square_multipliers!(solver)
 
   τ = max(norm(solver.y, 1), T(1))
@@ -218,7 +218,7 @@ function SolverCore.solve!(
 
   dual_feas_computer! =
     dual_feasibility_mode == :decrease ? decr_dual_feas! : kkt_dual_feas!
-  dual_feas = dual_feas_computer!(solver)
+  dual_feas = least_square_dual_feas!(solver)
 
   primal_tol = atol + rtol * primal_feas
   dual_tol = atol + rtol * dual_feas
@@ -291,7 +291,7 @@ function SolverCore.solve!(
     fx = solver.substats.solver_specific[:smooth_obj]
     hx_prev = copy(hx)
     hx = solver.substats.solver_specific[:nonsmooth_obj]/τ
-    solver.∇fk .= solver.subsolver.∇fk
+    solver.∇fk .= φ.data.c
     update_constraint_multipliers!(solver)
 
     ## Compute feasibility 

@@ -9,7 +9,6 @@ mutable struct PenaltyR2NSolver{
   PB <: AbstractRegularizedNLPModel,
 } <: AbstractOptimizationSolver
   xk::V
-  ∇fk::V
   y::V
   xkn::V
   s::V
@@ -40,7 +39,6 @@ function PenaltyR2NSolver(
 
   return PenaltyR2NSolver{T, V, typeof(subsolver), typeof(subpb)}(
     xk,
-    ∇fk,
     y,
     xkn,
     s,
