@@ -9,9 +9,53 @@ mutable struct OpK2{T<:Real,M1,M2<:AbstractLinearOperator} <: AbstractLinearOper
   B::M2
 end
 
-function CscK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2) where{T, M1, M2}
+function CscK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2) where{T, M1 <:SparseMatrixCOO, M2<:SparseMatrixCSC}
+
+  I, J, V = Vector{Int}(), Vector{Int}(), Vector{T}()
+
+  # Step 1: Add the transpose of B to the K2 matrix.
+  # Produces
+  # [ Bᵀ 0 ]
+  # [ 0  0 ]
+  #
+  # Note: LDLFactorizations requires an upper triangular view;
+  # Meanwhile, NLPModels produces a lower triangular view...
+  for j in 1:n
+    for k in B.colptr[j]:(B.colptr[j+1]-1)
+        i = B.rowval[k]
+        push!(I, j)
+        push!(J, i)
+        push!(V, B.nzval[k])
+    end
+  end
+
+  # Step 2: Add the transpose of A to the K2 matrix.
+  # Produces 
+  # [ Bᵀ Aᵀ ]
+  # [ 0  0  ]
+  #
+  for k in 1:nnz(A)
+    push!(I, A.cols[k])          # transpose: row becomes column
+    push!(J, A.rows[k] + n)
+    push!(V, A.vals[k])
+  end
+
+  # Step 3: Construct the sparse CSC matrix
+  H = sparse(I, J, V, n+m, n+m)
+  
+  # Step 4: Initialize inertia corrections
   α_temp = iszero(α) ? eps(T) : α
-  return Symmetric(copy(transpose([B+σ*sparse(I, n, n) spzeros(n, m); A -α_temp*sparse(I, m, m)])))
+  σ_temp = iszero(σ) ? eps(T) : σ
+
+  @inbounds for i in 1:n
+    H[i,i] += σ_temp
+  end
+
+  @inbounds for i in n+1:n+m
+    H[i,i] -= α_temp
+  end
+  
+  return Symmetric(H)
 end
 
 function LinearAlgebra.mul!(

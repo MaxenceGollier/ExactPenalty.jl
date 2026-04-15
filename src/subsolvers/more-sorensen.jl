@@ -61,16 +61,16 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   @. u1[1:n] = -reg_nlp.model.data.c
   @. u1[(n+1):(n+m)] = -reg_nlp.h.b
 
-  α = zero(T)
+  α, σ = zero(T), reg_nlp.model.data.σ
   update_workspace!(
     solver_workspace,
     reg_nlp.model.data.H,
     reg_nlp.h.A,
-    reg_nlp.model.data.σ,
+    σ,
     α,
   )
 
-  αmin = eps(T)^(0.5)
+  αmin = eps(T)^(0.8)
   θ = T(0.8)
   μ = T(10)
 
@@ -79,12 +79,22 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   solve_system!(solver_workspace, u1)
   get_solution!(x1, solver_workspace)
   npos, nzero, nneg = get_inertia(solver_workspace)
-
+  status = get_status(solver_workspace)
+  
   # Get correct inertia
-  while npos < n && reg_nlp.model.data.σ <= σmax
+  if nneg < m
+    α = αmin
+    set_dual_inertia!(solver_workspace, αmin)
+    if npos == n
+      solve_system!(solver_workspace, u1)
+      get_solution!(x1, solver_workspace)
+    end
+  end
 
-    reg_nlp.model.data.σ *= μ
-    set_primal_inertia!(solver_workspace, reg_nlp.model.data.σ)
+  while npos < n && σ <= σmax
+
+    σ *= μ
+    set_primal_inertia!(solver_workspace, σ)
 
     # [ H + σI Aᵀ][x] = -[∇f]
     # [   A    0 ][y] = -[c] 
@@ -93,24 +103,17 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     npos, nzero, nneg = get_inertia(solver_workspace)
   end
 
-  reg_nlp.model.data.σ >= σmax && set_status!(stats, :failed) && return
-
-  status = get_status(solver_workspace)
-
-  if norm(@view x1[(n+1):(n+m)]) <= Δ && status == :success
-    set_solution!(stats, @view x1[1:n])
-    set_status!(stats, :first_order)
-
-    not_desc = !check_descent(reg_nlp, @view x1[1:n])
-    not_desc && set_status!(stats, :not_desc)
+  if σ >= σmax 
+    set_status!(stats, :exception) 
     return
   end
 
-  if status == :failed
-    α = αmin
-    set_dual_inertia!(solver_workspace, αmin)
-    solve_system!(solver_workspace, u1)
-    get_solution!(x1, solver_workspace)
+  if norm(@view x1[(n+1):(n+m)]) <= Δ && status == :success && npos == n
+    set_solution!(stats, @view x1[1:n])
+    set_status!(stats, :first_order)
+  
+    not_desc = !check_descent(reg_nlp, @view x1[1:n])
+    not_desc && set_status!(stats, :not_desc)
   end
 
   # [ H + σI Aᵀ][x'] = -[0]

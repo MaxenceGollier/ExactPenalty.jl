@@ -172,9 +172,8 @@ function SolverCore.solve!(
 
   x = solver.x .= x
 
-  shift!(mk, x, compute_grad = false)
-  grad!(nlp, x, φ.data.c)
-  fx = obj(nlp, x) #TODO: this call is redundant with the first evaluation of the objective function of R2N. We can remove this and rely on the lines in the while loop below.
+  shift!(mk, x)
+  fx = obj(nlp, x)
   hx = norm(ψ.b)
 
   if verbose > 0
@@ -272,8 +271,7 @@ function SolverCore.solve!(
       max_eval = min(rem_eval, sub_max_eval),
       σmin = β4,
       σk = 1/νsub,
-      compute_obj = false,
-      compute_grad = false,
+      is_shifted = true
     )
 
     if solver.substats.status == :unbounded
@@ -329,9 +327,9 @@ function SolverCore.solve!(
       νsub = 1/max(β4, β3*τ)
 
       # Reset tolerance
-      dual_feas = dual_feas_computer!(solver)
-      dual_ktol = max(sub_rtol*dual_feas + sub_atol, dual_tol)
-      set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
+      #dual_feas = dual_feas_computer!(solver)
+      #dual_ktol = max(sub_rtol*dual_feas + sub_atol, dual_tol)
+      #set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
     else
       # Tighten tolerances
       primal_ktol = max(sub_rtol*primal_feas + sub_atol, primal_tol)

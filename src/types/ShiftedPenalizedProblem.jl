@@ -92,7 +92,6 @@ function ShiftedProximalOperators.shift!(
   shifted_penalty_nlp::ShiftedL2PenalizedProblem{T, V, M},
   x::V;
   y::VN = nothing,
-  compute_grad::Bool = true,
 ) where{T, V, H <: AbstractQuasiNewtonOperator{T}, M <: QuadraticModel{T, V, H}, VN <: Union{Nothing, V}}
   nlp, h = shifted_penalty_nlp.parent.model, shifted_penalty_nlp.parent.h
   φ, ψ = shifted_penalty_nlp.model, shifted_penalty_nlp.h
@@ -101,20 +100,18 @@ function ShiftedProximalOperators.shift!(
   qn_s = qn_x_prev
   g, B = φ.data.c, φ.data.H
 
-  if compute_grad
-    grad!(nlp, x, g)
- 
-    # Update the approximation only when the gradient is computed.
-    @. qn_y = g - qn_g_prev
-    if !isnothing(y)
-      mul!(qn_y, ψ.A', y, -one(T), one(T)) # y = y + J(x)^T λ 
-      mul!(qn_y, ψ.A_prev', y, one(T), one(T)) # y = y - J(x)_prev^T λ
-    end
+  grad!(nlp, x, g)
 
-    qn_s .= x .- qn_x_prev
-
-    push!(B, qn_y, qn_s)
+  # Update the approximation.
+  @. qn_y = g - qn_g_prev
+  if !isnothing(y)
+    mul!(qn_y, ψ.A', y, -one(T), one(T)) # y = y + J(x)^T λ 
+    mul!(qn_y, ψ.A_prev', y, one(T), one(T)) # y = y - J(x)_prev^T λ
   end
+
+  qn_s .= x .- qn_x_prev
+
+  push!(B, qn_y, qn_s)
 
   shift!(ψ, x)
 
@@ -129,13 +126,12 @@ function ShiftedProximalOperators.shift!(
   shifted_penalty_nlp::ShiftedL2PenalizedProblem{T, V, M},
   x::V;
   y::VN = nothing,
-  compute_grad::Bool = true,
 ) where{T, V, M, VN <: Union{Nothing, V}}
   nlp, h = shifted_penalty_nlp.parent.model, shifted_penalty_nlp.parent.h
   φ, ψ = shifted_penalty_nlp.model, shifted_penalty_nlp.h
 
   g = φ.data.c
-  compute_grad && grad!(nlp, x, g)
+  grad!(nlp, x, g)
 
   if isnothing(y)
     hess_coord!(nlp, x, φ.data.H.nzval)

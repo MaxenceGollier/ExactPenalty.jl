@@ -75,8 +75,7 @@ function SolverCore.solve!(
   η1::T = √√eps(T),
   η2::T = T(0.9),
   γ::T = T(3),
-  compute_obj::Bool = true,
-  compute_grad::Bool = true,
+  is_shifted::Bool = false
 ) where {T, V}
   reset!(stats)
 
@@ -88,7 +87,7 @@ function SolverCore.solve!(
   xk = solver.xk .= x
 
   # Make sure ψ has the correct shift 
-  shift!(mk, xk, compute_grad = compute_grad)
+  !is_shifted && shift!(mk, xk, compute_grad = compute_grad)
 
   ∇fk = solver.∇fk
   xkn = solver.xkn
@@ -118,7 +117,7 @@ function SolverCore.solve!(
 
   # initialize parameters
   hk = @views h(xk)
-  fk = compute_obj ? obj(nlp, xk) : stats.solver_specific[:smooth_obj]
+  fk = !is_shifted ? obj(nlp, xk) : stats.solver_specific[:smooth_obj]
 
   set_iter!(stats, 0)
   start_time = time()
