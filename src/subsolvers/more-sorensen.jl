@@ -61,12 +61,12 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   @. u1[1:n] = -reg_nlp.model.data.c
   @. u1[(n+1):(n+m)] = -reg_nlp.h.b
 
-  α, σ = zero(T), reg_nlp.model.data.σ
+  α = zero(T)
   update_workspace!(
     solver_workspace,
     reg_nlp.model.data.H,
     reg_nlp.h.A,
-    σ,
+    reg_nlp.model.data.σ,
     α,
   )
 
@@ -90,10 +90,10 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     end
   end
 
-  while npos < n && σ <= σmax
+  while npos < n && reg_nlp.model.data.σ <= σmax
 
-    σ *= μ
-    set_primal_inertia!(solver_workspace, σ)
+    reg_nlp.model.data.σ *= μ
+    set_primal_inertia!(solver_workspace, reg_nlp.model.data.σ)
 
     # [ H + σI Aᵀ][x] = -[∇f]
     # [   A    0 ][y] = -[c] 
@@ -102,7 +102,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     npos, nzero, nneg = get_inertia(solver_workspace)
   end
 
-  if σ >= σmax 
+  if reg_nlp.model.data.σ >= σmax 
     set_status!(stats, :exception) 
     return
   end
