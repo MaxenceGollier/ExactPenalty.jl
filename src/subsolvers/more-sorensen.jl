@@ -79,7 +79,6 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   solve_system!(solver_workspace, u1)
   get_solution!(x1, solver_workspace)
   npos, nzero, nneg = get_inertia(solver_workspace)
-  status = get_status(solver_workspace)
   
   # Get correct inertia
   if nneg < m
@@ -108,12 +107,14 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     return
   end
 
-  if norm(@view x1[(n+1):(n+m)]) <= Δ && status == :success && npos == n
+  if norm(@view x1[(n+1):(n+m)]) <= Δ
     set_solution!(stats, @view x1[1:n])
     set_status!(stats, :first_order)
   
     not_desc = !check_descent(reg_nlp, @view x1[1:n])
     not_desc && set_status!(stats, :not_desc)
+
+    return
   end
 
   # [ H + σI Aᵀ][x'] = -[0]

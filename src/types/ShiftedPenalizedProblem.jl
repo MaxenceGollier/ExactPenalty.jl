@@ -153,5 +153,5 @@ function check_descent(shifted_penalty_nlp::ShiftedL2PenalizedProblem{T}, s::Abs
 
   cx, τ = ψ.b, ψ.h.lambda
   ψ0 = τ * norm(cx) # φ0 = 0
-  return ψ0 - obj(φ, s) - ψ(s) >= 0
+  return ψ0 - dot(φ.data.c, s) - ψ(s) >= 0
 end

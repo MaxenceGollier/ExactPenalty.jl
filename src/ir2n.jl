@@ -89,7 +89,7 @@ function SolverCore.solve!(
   # Make sure ψ has the correct shift 
   !is_shifted && shift!(mk, xk, compute_grad = compute_grad)
 
-  ∇fk = solver.∇fk
+  ∇fk = solver.subpb.model.data.c
   xkn = solver.xkn
   s, y = solver.s, solver.y
   m_fh_hist = solver.m_fh_hist .= T(-Inf)
