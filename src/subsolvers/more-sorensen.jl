@@ -41,7 +41,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   stats::GenericExecutionStats{T,V,V};
   x = reg_nlp.model.meta.x0,
   σk = T(1),
-  atol = eps(T)^(0.3),
+  atol = eps(T)^(0.6),
   max_time = T(30),
   max_iter = 10,
   σmax = 1 / eps(T)
@@ -139,6 +139,17 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     solve_system!(solver_workspace, u1)
     get_solution!(x1, solver_workspace)
     norm_x1 = norm(@view x1[(n+1):(n+m)])
+
+    # Check whether the matrix still has the correct inertia. (We may have failed to detect earlier)
+    npos, nzero, nneg = get_inertia(solver_workspace)
+    if npos < n
+      reg_nlp.model.data.σ *= μ
+      if reg_nlp.model.data.σ >= σmax 
+        set_status!(stats, :exception) 
+        return
+      end
+      solve!(solver, reg_nlp, stats)
+    end
 
     # [ H + σI  Aᵀ ][x'] = -[0]
     # [   A    -αI ][y'] = -[x]

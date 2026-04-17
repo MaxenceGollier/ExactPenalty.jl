@@ -270,7 +270,7 @@ function SolverCore.solve!(
       max_time = max_time - stats.elapsed_time,
       max_eval = min(rem_eval, sub_max_eval),
       σmin = β4,
-      σk = 1/νsub,
+      σk = max(β4, β3*τ),
       is_shifted = true
     )
 
@@ -352,7 +352,7 @@ function SolverCore.solve!(
     solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol
 
     θ = primal_feasibility_mode == :decrease ? primal_feas^2 : compute_θ!(solver)
-    infeasible = sqrt(θ)/hx < infeasible_tol && hx > primal_tol
+    infeasible = sqrt(max(θ, 0))/hx < infeasible_tol && hx > primal_tol
 
     set_iter!(stats, stats.iter + 1)
     rem_eval = max_eval - neval_obj(nlp)
