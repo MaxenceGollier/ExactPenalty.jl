@@ -65,7 +65,7 @@ function SolverCore.solve!(
   atol::T = √eps(T),
   rtol::T = √eps(T),
   verbose::Int = 0,
-  max_iter::Int = 100,
+  max_iter::Int = 1000,
   max_time::Float64 = 30.0,
   max_eval::Int = -1,
   σk::T = eps(T)^(1 / 5),
@@ -169,7 +169,7 @@ function SolverCore.solve!(
 
     # Check stopping criteria
     σk = solver.subpb.model.data.σ 
-    dual_res = solver.subpb.model.data.H * s + σk * s
+    dual_res = Symmetric(solver.subpb.model.data.H, :L) * s + σk * s
     set_dual_residual!(stats, norm(dual_res, Inf))
     solved = stats.dual_feas ≤ atol
     stats.iter == 0 && (atol += stats.dual_feas * rtol)

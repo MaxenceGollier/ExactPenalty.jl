@@ -58,11 +58,15 @@ function ShiftedL2PenalizedProblem(
 ) where{T, V, M, VN1 <: Union{Nothing, V}, VN2 <: Union{Nothing, V}}
  
   nlp, h = penalty_nlp.model, penalty_nlp.h
+  n = length(x)
 
   ∇f = isnothing(∇f) ? grad(nlp, x) : ∇f
   y = isnothing(y) ? zeros(T, nlp.meta.ncon) : y
 
-  B = hess(nlp, x, y)
+  Bi, Bj = hess_structure(nlp)
+  Bv = hess_coord(nlp, x, y)
+  B = SparseMatrixCOO(n, n, Bi, Bj, Bv)
+
   φ = QuadraticModel(∇f, B, x0 = x, regularize = true)
 
   ψ = shifted(h, x)
@@ -134,9 +138,9 @@ function ShiftedProximalOperators.shift!(
   grad!(nlp, x, g)
 
   if isnothing(y)
-    hess_coord!(nlp, x, φ.data.H.nzval)
+    hess_coord!(nlp, x, φ.data.H.vals)
   else
-    hess_coord!(nlp, x, y, φ.data.H.nzval)
+    hess_coord!(nlp, x, y, φ.data.H.vals)
   end
 
   shift!(ψ, x)

@@ -40,7 +40,7 @@ function compute_least_square_multipliers!(solver::L2PenaltySolver{T}) where {T}
   ψ.b .= solver.temp_b
 
   set_solver_specific!(solver.substats, sigma_symbol, T(1))
-  @. solver.y = ψ.q
+  @. solver.y = - ψ.q
 end
 
 function update_constraint_multipliers!(solver::L2PenaltySolver{T}) where {T}
@@ -71,7 +71,7 @@ function kkt_dual_feas!(solver::L2PenaltySolver{T}) where {T}
   s = solver.subsolver.s
 
   solver.dual_res .= s .* σ
-  mul!(solver.dual_res, solver.subsolver.subpb.model.data.H, s, one(T), one(T))
+  mul!(solver.dual_res, Symmetric(solver.subsolver.subpb.model.data.H, :L), s, one(T), one(T))
 
   return norm(solver.dual_res, Inf)
 end

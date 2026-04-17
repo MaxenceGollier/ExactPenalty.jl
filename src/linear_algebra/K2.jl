@@ -58,6 +58,50 @@ function CscK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2)
   return Symmetric(H)
 end
 
+function CooK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2) where{T, M1 <:SparseMatrixCOO, M2<:SparseMatrixCOO}
+
+  I, J, V = Vector{Int}(), Vector{Int}(), Vector{T}()
+
+  # Step 1: Add the transpose of B to the K2 matrix.
+  # Produces
+  # [ Bᵀ 0 ]
+  # [ 0  0 ]
+  #
+  # Note: LDLFactorizations requires an upper triangular view;
+  # Meanwhile, NLPModels produces a lower triangular view...
+  append!(I, B.cols)
+  append!(J, B.rows)
+  append!(V, B.vals)
+
+  # Step 2: Add the transpose of A to the K2 matrix.
+  # Produces 
+  # [ Bᵀ Aᵀ ]
+  # [ 0  0  ]
+  #
+  for k in 1:nnz(A)
+    push!(I, A.cols[k])          # transpose: row becomes column
+    push!(J, A.rows[k] + n)
+    push!(V, A.vals[k])
+  end
+
+  # Step 3: Construct the sparse CSC matrix
+  H = sparse(I, J, V, n+m, n+m)
+  
+  # Step 4: Initialize inertia corrections
+  α_temp = iszero(α) ? eps(T) : α
+  σ_temp = iszero(σ) ? eps(T) : σ
+
+  @inbounds for i in 1:n
+    H[i,i] += σ_temp
+  end
+
+  @inbounds for i in n+1:n+m
+    H[i,i] -= α_temp
+  end
+  
+  return Symmetric(H)
+end
+
 function LinearAlgebra.mul!(
   y::AbstractVector{T},
   H::OpK2{T},
@@ -84,10 +128,7 @@ function K2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2) wh
   if M2 <: AbstractLinearOperator
     return OpK2(n, m, nrow, ncol, α, σ, A, B)
   elseif M2 <: SparseMatrixCOO
-    # For some reason, doing this in one line results in a SparseMatrixCSC instead of SparseMatrixCOO...
-    H1 = [B+σ*I(n) coo_spzeros(T, n, m);]
-    H2 = [A (-one(T))*I]
-    return [H1; H2]
+    return CooK2(n, m, nrow, ncol, α, σ, A, B)
   else
     return CscK2(n, m, nrow, ncol, α, σ, A, B)
   end

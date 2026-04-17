@@ -168,6 +168,14 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   stats.iter >= max_iter && set_status!(stats, :max_iter)
   stats.elapsed_time >= max_time && set_status!(stats, :max_time)
   !check_descent(reg_nlp, @view x1[1:n]) && set_status!(stats, :not_desc)
+  if !check_descent(reg_nlp, @view x1[1:n])
+    reg_nlp.model.data.σ *= μ
+    if reg_nlp.model.data.σ >= σmax 
+      set_status!(stats, :exception) 
+      return
+    end
+    solve!(solver, reg_nlp, stats)
+  end
 end
 
 function get_primal_dual_sol!(s, y, solver::MoreSorensenSolver)

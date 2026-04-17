@@ -146,7 +146,7 @@ function SolverCore.solve!(
   sub_atol = zero(T),
   infeasible_tol = T(1e-2),
   max_iter::Int = 100,
-  sub_max_iter::Int = 100,
+  sub_max_iter::Int = 1000,
   max_time::T = T(30.0),
   max_eval::Int = -1,
   sub_max_eval::Int = -1,
@@ -171,6 +171,7 @@ function SolverCore.solve!(
   φ, ψ = mk.model, mk.h
 
   x = solver.x .= x
+  y = solver.y
 
   shift!(mk, x)
   fx = obj(nlp, x)
@@ -212,10 +213,6 @@ function SolverCore.solve!(
   solver.∇fk .= φ.data.c
   compute_least_square_multipliers!(solver)
 
-  τ = max(norm(solver.y, 1), T(1))
-  set_penalty!(mk, τ)
-  νsub = 1/max(β4, β3*τ)
-
   dual_feas_computer! =
     dual_feasibility_mode == :decrease ? decr_dual_feas! : kkt_dual_feas!
   dual_feas = least_square_dual_feas!(solver)
@@ -230,6 +227,14 @@ function SolverCore.solve!(
   set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
 
   solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol
+
+  ## Initialize penalty parameter
+  τ = max(norm(solver.y, 1), T(1))
+  set_penalty!(mk, τ)
+  νsub = 1/max(β4, β3*τ)
+
+  ## Initialize Hessian matrix
+  hess_coord!(nlp, x, y, φ.data.H.vals)
 
   infeasible = false
   not_desc = false
@@ -352,7 +357,7 @@ function SolverCore.solve!(
     solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol
 
     θ = primal_feasibility_mode == :decrease ? primal_feas^2 : compute_θ!(solver)
-    infeasible = sqrt(max(θ, 0))/hx < infeasible_tol && hx > primal_tol
+    infeasible = hx > primal_tol && sqrt(max(θ, 0))/hx < infeasible_tol
 
     set_iter!(stats, stats.iter + 1)
     rem_eval = max_eval - neval_obj(nlp)
