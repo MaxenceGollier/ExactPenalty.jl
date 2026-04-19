@@ -71,7 +71,7 @@ function SolverCore.solve!(
   σk::T = eps(T)^(1 / 5),
   σmin::T = eps(T),
   η1::T = √√eps(T),
-  η2::T = T(0.9),
+  η2::T = T(0.1),
   γ::T = T(3),
   is_shifted::Bool = false
 ) where {T, V}
@@ -174,6 +174,9 @@ function SolverCore.solve!(
     solved = stats.dual_feas ≤ atol
     stats.iter == 0 && (atol += stats.dual_feas * rtol)
 
+    # Check boundedness
+    unbounded = fk < - 1 / eps(T) 
+
     verbose > 0 &&
       stats.iter % verbose == 0 &&
       @info log_row(
@@ -200,7 +203,6 @@ function SolverCore.solve!(
 
       shift!(mk, xk, y = y)
 
-      set_step_status!(stats, :accepted)
     end
 
     if η2 ≤ ρk < Inf
@@ -209,7 +211,6 @@ function SolverCore.solve!(
 
     if ρk < η1 || ρk == Inf
       σk = σk * γ
-      set_step_status!(stats, :rejected)
     end
 
     m_monotone > 1 && (m_fh_hist[stats.iter % (m_monotone - 1) + 1] = fk + hk)
@@ -220,6 +221,7 @@ function SolverCore.solve!(
     set_solver_specific!(stats, :sigma, σk)
     set_iter!(stats, stats.iter + 1)
     set_time!(stats, time() - start_time)
+
     set_status!(
       stats,
       get_status(
@@ -227,6 +229,7 @@ function SolverCore.solve!(
         elapsed_time = stats.elapsed_time,
         iter = stats.iter,
         optimal = solved,
+        unbounded = unbounded,
         max_eval = max_eval,
         max_time = max_time,
         max_iter = max_iter,

@@ -22,7 +22,7 @@ end
 
 function L2PenaltySolver(nlp::AbstractNLPModel{T,V}; subsolver = PenaltyR2NSolver) where {T,V}
   x0 = nlp.meta.x0
-  x, s, s0 = similar(x0), similar(x0), similar(x0)
+  x, s, s0 = similar(x0), similar(x0), zero(x0)
   temp_b = similar(x0, nlp.meta.ncon)
   dual_res = similar(x0)
   y = similar(x0, nlp.meta.ncon)
@@ -275,7 +275,7 @@ function SolverCore.solve!(
       max_time = max_time - stats.elapsed_time,
       max_eval = min(rem_eval, sub_max_eval),
       σmin = β4,
-      σk = max(β4, β3*τ),
+      σk = 1 / νsub,
       is_shifted = true
     )
 
@@ -283,7 +283,7 @@ function SolverCore.solve!(
       τ *= 10
       set_penalty!(mk, τ)
       νsub = 1/max(β4, β3*τ)
-      solver.subsolver.∇fk .= solver.∇fk
+      shift!(mk, x)
       set_solver_specific!(solver.substats, :smooth_obj, fx)
       continue
     end
@@ -356,7 +356,8 @@ function SolverCore.solve!(
 
     solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol
 
-    θ = primal_feasibility_mode == :decrease ? primal_feas^2 : compute_θ!(solver)
+    θ = compute_θ!(solver)
+
     infeasible = hx > primal_tol && sqrt(max(θ, 0))/hx < infeasible_tol
 
     set_iter!(stats, stats.iter + 1)
@@ -397,6 +398,7 @@ function get_status(
   elapsed_time = 0.0,
   iter = 0,
   optimal = false,
+  unbounded = false,
   infeasible = false,
   not_desc = false,
   n_iter_since_decrease = 0,
@@ -409,6 +411,8 @@ function get_status(
     :infeasible
   elseif optimal
     :first_order
+  elseif unbounded
+    :unbounded
   elseif not_desc
     :not_desc
   elseif iter > max_iter
