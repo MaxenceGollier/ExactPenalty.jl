@@ -23,16 +23,16 @@ include("linear_algebra/construct_workspace.jl")
 include("linear_algebra/krylov.jl")
 include("linear_algebra/ldlt.jl")
 
-include("subsolvers/more-sorensen.jl")
+include("types/quasi-newton/NullHessian.jl")
 
 include("types/PenalizedProblem.jl")
 include("types/ShiftedPenalizedProblem.jl")
 
+include("subsolvers/more-sorensen.jl")
+
 include("ir2n.jl")
-include("ir2.jl")
 
 include("algorithm.jl")
 
-include("callbacks.jl")
 include("feas_computer.jl")
 end

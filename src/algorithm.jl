@@ -20,7 +20,7 @@ mutable struct L2PenaltySolver{
   substats::GenericExecutionStats{T,V,V,T}
 end
 
-function L2PenaltySolver(nlp::AbstractNLPModel{T,V}; subsolver = PenaltyR2NSolver) where {T,V}
+function L2PenaltySolver(nlp::AbstractNLPModel{T,V}) where {T,V}
   x0 = nlp.meta.x0
   x, s, s0 = similar(x0), similar(x0), zero(x0)
   temp_b = similar(x0, nlp.meta.ncon)
@@ -30,7 +30,7 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T,V}; subsolver = PenaltyR2NSolve
 
   penalty_subproblem = L2PenalizedProblem(nlp) # f(x) + τ‖c(x)‖₂
   substats = GenericExecutionStats(penalty_subproblem, solver_specific = Dict{Symbol, T}())
-  solver = subsolver(penalty_subproblem)
+  solver = PenaltyR2NSolver(penalty_subproblem)
 
   set_solver_specific!(substats, :primal_ktol, T(0))
   set_solver_specific!(substats, :dual_ktol, T(0))
@@ -122,13 +122,12 @@ You can also use the `sub_callback` keyword argument which has exactly the same 
 """
 function L2Penalty(
   nlp::AbstractNLPModel{T,V};
-  subsolver = PenaltyR2Solver,
   kwargs...,
 ) where {T<:Real,V}
   if !equality_constrained(nlp)
     error("L2Penalty: This algorithm only works for equality contrained problems.")
   end
-  solver = L2PenaltySolver(nlp, subsolver = subsolver)
+  solver = L2PenaltySolver(nlp)
   stats = ExactPenaltyExecutionStats(nlp)
   solve!(solver, nlp, stats; kwargs...)
   return stats
@@ -173,7 +172,7 @@ function SolverCore.solve!(
   x = solver.x .= x
   y = solver.y
 
-  shift!(mk, x)
+  shift!(ψ, x)
   fx = obj(nlp, x)
   hx = norm(ψ.b)
 
@@ -208,9 +207,8 @@ function SolverCore.solve!(
     primal_feasibility_mode == :decrease ? decr_primal_feas! : kkt_primal_feas!
   primal_feas = primal_feas_computer!(solver)
 
-  set_solver_specific!(solver.substats, :smooth_obj, obj(nlp, x))
-  fx = solver.substats.solver_specific[:smooth_obj]
-  solver.∇fk .= φ.data.c
+  set_solver_specific!(solver.substats, :smooth_obj, fx)
+  grad!(nlp, x, solver.∇fk)
   compute_least_square_multipliers!(solver)
 
   dual_feas_computer! =
@@ -233,8 +231,8 @@ function SolverCore.solve!(
   set_penalty!(mk, τ)
   νsub = 1/max(β4, β3*τ)
 
-  ## Initialize Hessian matrix
-  hess_coord!(nlp, x, y, φ.data.H.vals)
+  ## Initialize Model
+  shift!(mk, x, ∇f = solver.∇fk, y = y)
 
   infeasible = false
   not_desc = false

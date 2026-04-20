@@ -37,7 +37,7 @@ end
 
 function SolverCore.solve!( #TODO add verbose and kwargs
   solver::MoreSorensenSolver{T,V},
-  reg_nlp::AbstractRegularizedNLPModel{T,V},
+  reg_nlp::ShiftedL2PenalizedProblem{T, V, M, H, P},
   stats::GenericExecutionStats{T,V,V};
   x = reg_nlp.model.meta.x0,
   σk = T(1),
@@ -45,7 +45,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   max_time = T(30),
   max_iter = 10,
   σmax = 1 / eps(T)
-) where {T<:Real,V<:AbstractVector{T}}
+) where {T, V, M, H, P}
   start_time = time()
   set_time!(stats, 0.0)
   set_iter!(stats, 0)
@@ -162,7 +162,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     α == αmin && break
   end
 
-  set_solution!(stats, x)
+  set_solution!(stats, @view x1[1:n])
   set_status!(stats, :first_order)
 
   stats.iter >= max_iter && set_status!(stats, :max_iter)
@@ -176,6 +176,30 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     end
     solve!(solver, reg_nlp, stats)
   end
+end
+
+function SolverCore.solve!(
+  solver::MoreSorensenSolver{T,V},
+  reg_nlp::ShiftedL2PenalizedProblem{T, V, M, H, P},
+  stats::GenericExecutionStats{T,V,V};
+  x = reg_nlp.model.meta.x0,
+  σk = T(1),
+  atol = eps(T)^(0.6),
+  max_time = T(30),
+  max_iter = 10,
+  σmax = 1 / eps(T)
+) where {T, V, M, H, O <: NullHessianModel, P <: L2PenalizedProblem{T, V, O}}
+
+  n = reg_nlp.model.meta.nvar
+  u1, x1 = solver.u1, solver.x1
+
+  ν = 1 / reg_nlp.model.data.σ
+  @. u1[1:n] = - ν * reg_nlp.model.data.c
+
+  @views prox!(x1[1:n], reg_nlp.h, u1[1:n], ν, max_iter = max_iter, max_time = max_time, atol = atol)
+  
+  set_solution!(stats, @view x1[1:n])
+  set_status!(stats, :first_order)
 end
 
 function get_primal_dual_sol!(s, y, solver::MoreSorensenSolver)

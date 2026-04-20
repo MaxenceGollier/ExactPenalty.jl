@@ -93,10 +93,26 @@ function ShiftedProximalOperators.shifted(
 end
 
 function ShiftedProximalOperators.shift!(
-  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T, V, M},
+  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T, V, M, H, P},
   x::V;
-  y::VN = nothing,
-) where{T, V, H <: AbstractQuasiNewtonOperator{T}, M <: QuadraticModel{T, V, H}, VN <: Union{Nothing, V}}
+  ∇f::VN1 = nothing,
+  y::VN2 = nothing,
+) where{T, V, M, H, O <: NullHessianModel, P <: L2PenalizedProblem{T, V, O}, VN1 <: Union{Nothing, V}, VN2 <: Union{Nothing, V}}
+  nlp, h = shifted_penalty_nlp.parent.model, shifted_penalty_nlp.parent.h
+  φ, ψ = shifted_penalty_nlp.model, shifted_penalty_nlp.h
+
+  g = φ.data.c
+  isnothing(∇f) ? grad!(nlp, x, g) : (g .= ∇f)
+
+  shift!(ψ, x)
+end
+
+function ShiftedProximalOperators.shift!(
+  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T, V, M, H, P},
+  x::V;
+  ∇f::VN1 = nothing,
+  y::VN2 = nothing,
+) where{T, V, M, H, O <: QuasiNewtonModel, P <: L2PenalizedProblem{T, V, O}, VN1 <: Union{Nothing, V}, VN2 <: Union{Nothing, V}}
   nlp, h = shifted_penalty_nlp.parent.model, shifted_penalty_nlp.parent.h
   φ, ψ = shifted_penalty_nlp.model, shifted_penalty_nlp.h
   qn_y, qn_g_prev, qn_x_prev = shifted_penalty_nlp._qn_y, shifted_penalty_nlp._qn_∇f_prev, shifted_penalty_nlp._qn_x_prev
@@ -104,7 +120,7 @@ function ShiftedProximalOperators.shift!(
   qn_s = qn_x_prev
   g, B = φ.data.c, φ.data.H
 
-  grad!(nlp, x, g)
+  isnothing(∇f) ? grad!(nlp, x, g) : (g .= ∇f)
 
   # Update the approximation.
   @. qn_y = g - qn_g_prev
@@ -127,15 +143,16 @@ function ShiftedProximalOperators.shift!(
 end
 
 function ShiftedProximalOperators.shift!(
-  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T, V, M},
+  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T, V, M, H, P},
   x::V;
-  y::VN = nothing,
-) where{T, V, M, VN <: Union{Nothing, V}}
+  ∇f::VN1 = nothing,
+  y::VN2 = nothing,
+) where{T, V, M, H, P, VN1 <: Union{Nothing, V}, VN2 <: Union{Nothing, V}}
   nlp, h = shifted_penalty_nlp.parent.model, shifted_penalty_nlp.parent.h
   φ, ψ = shifted_penalty_nlp.model, shifted_penalty_nlp.h
 
   g = φ.data.c
-  grad!(nlp, x, g)
+  isnothing(∇f) ? grad!(nlp, x, g) : (g .= ∇f)
 
   if isnothing(y)
     hess_coord!(nlp, x, φ.data.H.vals)
