@@ -1,6 +1,5 @@
 using ExactPenalty
 using LinearOperators,
-  RegularizedOptimization,
   QuadraticModels,
   RegularizedProblems,
   ShiftedProximalOperators,

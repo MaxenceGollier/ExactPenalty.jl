@@ -99,7 +99,7 @@ function CooK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2)
     H[i,i] -= α_temp
   end
   
-  return Symmetric(H)
+  return H
 end
 
 function LinearAlgebra.mul!(

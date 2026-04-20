@@ -10,6 +10,7 @@ mutable struct PenaltyR2NSolver{
 } <: AbstractOptimizationSolver
   xk::V
   y::V
+  dual_res::V
   xkn::V
   s::V
   m_fh_hist::V
@@ -28,6 +29,7 @@ function PenaltyR2NSolver(
   xk = similar(x0)
   ∇fk = similar(x0)
   y = similar(x0, get_ncon(penalty_nlp))
+  dual_res = similar(x0)
   xkn = similar(x0)
   s = similar(x0)
 
@@ -40,6 +42,7 @@ function PenaltyR2NSolver(
   return PenaltyR2NSolver{T, V, typeof(subsolver), typeof(subpb)}(
     xk,
     y,
+    dual_res,
     xkn,
     s,
     m_fh_hist,
@@ -50,8 +53,7 @@ function PenaltyR2NSolver(
 end
 
 function SolverCore.reset!(solver::PenaltyR2NSolver)
-  B = solver.subpb.model.data.H
-  isa(B, AbstractLinearOperator) && LinearOperators.reset!(B)
+  reset!(solver.subpb)
 end
 
 SolverCore.reset!(solver::PenaltyR2NSolver, model) = SolverCore.reset!(solver)
@@ -89,7 +91,7 @@ function SolverCore.solve!(
 
   ∇fk = solver.subpb.model.data.c
   xkn = solver.xkn
-  s, y = solver.s, solver.y
+  s, y, dual_res = solver.s, solver.y, solver.dual_res
   m_fh_hist = solver.m_fh_hist .= T(-Inf)
 
   m_monotone = length(m_fh_hist) + 1
@@ -155,6 +157,8 @@ function SolverCore.solve!(
       solver.substats;
     )
 
+    σk = solver.subpb.model.data.σ 
+
     get_primal_dual_sol!(s, y, solver.subsolver)
 
     xkn .= xk .+ s
@@ -166,16 +170,6 @@ function SolverCore.solve!(
     Δmod = fhmax - (fk + mks) + max(1, abs(fhmax)) * 10 * eps()
 
     ρk = Δobj / Δmod
-
-    # Check stopping criteria
-    σk = solver.subpb.model.data.σ 
-    dual_res = Symmetric(solver.subpb.model.data.H, :L) * s + σk * s
-    set_dual_residual!(stats, norm(dual_res, Inf))
-    solved = stats.dual_feas ≤ atol
-    stats.iter == 0 && (atol += stats.dual_feas * rtol)
-
-    # Check boundedness
-    unbounded = fk < - 1 / eps(T) 
 
     verbose > 0 &&
       stats.iter % verbose == 0 &&
@@ -215,6 +209,16 @@ function SolverCore.solve!(
 
     m_monotone > 1 && (m_fh_hist[stats.iter % (m_monotone - 1) + 1] = fk + hk)
 
+    # Check stopping criteria
+    dual_res .= φ.data.c
+    mul!(dual_res, ψ.A', y, one(T), one(T))
+    set_dual_residual!(stats, norm(dual_res, Inf))
+    solved = stats.dual_feas ≤ atol
+    stats.iter == 0 && (atol += stats.dual_feas * rtol)
+
+    # Check boundedness
+    unbounded = fk < - 1 / eps(T) 
+
     set_objective!(stats, fk + hk)
     set_solver_specific!(stats, :smooth_obj, fk)
     set_solver_specific!(stats, :nonsmooth_obj, hk)
@@ -250,6 +254,7 @@ function SolverCore.solve!(
   end
 
   set_solution!(stats, xk)
+  set_constraint_multipliers!(stats, y)
   set_residuals!(stats, zero(eltype(xk)), stats.dual_feas)
   return stats
 end

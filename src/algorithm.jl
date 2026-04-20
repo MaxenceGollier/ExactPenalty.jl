@@ -353,7 +353,7 @@ function SolverCore.solve!(
     set_time!(stats, time() - start_time)
     set_objective!(stats, fx)
     set_residuals!(stats, primal_feas, dual_feas)
-    set_constraint_multipliers!(stats, solver.y)
+    set_constraint_multipliers!(stats, solver.substats.multipliers)
 
     set_status!(
       stats,

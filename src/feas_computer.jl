@@ -23,9 +23,9 @@ function compute_least_square_multipliers!(solver::L2PenaltySolver{T}) where {T}
   ψ.h = NormL2(Inf)
   solver.temp_b .= ψ.b
   ψ.b .= 0
-  solver.∇fk *= -1
+  solver.∇fk .*= -1
   prox!(s, ψ, solver.∇fk, T(1))
-  solver.∇fk *= -1
+  solver.∇fk .*= -1
 
   # Reset old value
   ψ.h = NormL2(lambda_temp)
@@ -43,18 +43,12 @@ function update_constraint_multipliers!(solver::L2PenaltySolver{T}) where {T}
 end
 
 function kkt_dual_feas!(solver::L2PenaltySolver{T}) where {T}
-  σ = solver.subsolver.subpb.model.data.σ
-  s = solver.subsolver.s
-
-  solver.dual_res .= s .* σ
-  mul!(solver.dual_res, Symmetric(solver.subsolver.subpb.model.data.H, :L), s, one(T), one(T))
-
-  return norm(solver.dual_res, Inf)
+  return solver.substats.dual_feas
 end
 
 function least_square_dual_feas!(solver::L2PenaltySolver{T}) where {T}
   dual_res, y = solver.dual_res, solver.y
-  g, J = solver.subsolver.subpb.model.data.c, solver.subsolver.subpb.h.A #FIXME
+  g, J = solver.∇fk, solver.subsolver.subpb.h.A #FIXME
   
   dual_res .= g
   mul!(dual_res, J', y, one(T), -one(T))

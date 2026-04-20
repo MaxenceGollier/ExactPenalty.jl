@@ -80,7 +80,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   get_solution!(x1, solver_workspace)
   npos, nzero, nneg = get_inertia(solver_workspace)
   status = get_status(solver_workspace)
-  
+
   # Get correct inertia
   # If the factorization/solver failed, it in indicates we should add a minimal regularization too.
   if nneg < m || status == :failed
@@ -191,13 +191,15 @@ function SolverCore.solve!(
 ) where {T, V, M, H, O <: NullHessianModel, P <: L2PenalizedProblem{T, V, O}}
 
   n = reg_nlp.model.meta.nvar
+  ψ = reg_nlp.h
   u1, x1 = solver.u1, solver.x1
 
   ν = 1 / reg_nlp.model.data.σ
   @. u1[1:n] = - ν * reg_nlp.model.data.c
 
-  @views prox!(x1[1:n], reg_nlp.h, u1[1:n], ν, max_iter = max_iter, max_time = max_time, atol = atol)
+  @views prox!(x1[1:n], ψ, u1[1:n], ν, max_iter = max_iter, max_time = max_time, atol = atol)
   
+  @. x1[(n+1):end] = - ψ.q / ν
   set_solution!(stats, @view x1[1:n])
   set_status!(stats, :first_order)
 end
