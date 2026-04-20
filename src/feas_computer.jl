@@ -7,14 +7,6 @@ function compute_θ!(solver::L2PenaltySolver{T}) where {T}
   return θ
 end
 
-function decr_primal_feas!(solver::L2PenaltySolver{T}) where {T}
-  θ = compute_θ!(solver)
-  θ < 0 && error("L2Penalty: prox-gradient step should produce a decrease but θ = $(θ)")
-
-  sqrt_θ = θ ≥ 0 ? sqrt(θ) : sqrt(-θ)
-  return sqrt_θ
-end
-
 function kkt_primal_feas!(solver::L2PenaltySolver{T}) where {T}
   return norm(solver.subsolver.subpb.h.b, Inf)
 end
@@ -48,22 +40,6 @@ function update_constraint_multipliers!(solver::L2PenaltySolver{T}) where {T}
     isa(solver.subsolver, PenaltyR2NSolver) ? solver.substats.solver_specific[:sigma_cauchy] :
     solver.substats.solver_specific[:sigma]
   @. solver.y = solver.subsolver.subpb.h.q * σ
-end
-
-function decr_dual_feas!(solver::L2PenaltySolver{T}) where {T}
-  σ =
-    isa(solver.subsolver, PenaltyR2NSolver) ? solver.substats.solver_specific[:sigma_cauchy] :
-    solver.substats.solver_specific[:sigma]
-  s = isa(solver.subsolver, PenaltyR2NSolver) ? solver.subsolver.s1 : solver.subsolver.s
-
-  norm_cx = solver.subsolver.subpb.h.h(solver.subsolver.subpb.h.b)
-  shifted_norm_cx = solver.subsolver.subpb.h(s)
-
-  ξ1 = norm_cx - shifted_norm_cx - dot(solver.subsolver.∇fk, s)
-  sqrt_ξ1_σ = ξ1 ≥ 0 ? sqrt(ξ1 * σ) : sqrt(-ξ1 * σ)
-  (ξ1 < 0) &&
-    error("L2Penalty: prox-gradient step should produce a decrease but ξ1 = $(ξ1)")
-  return sqrt_ξ1_σ
 end
 
 function kkt_dual_feas!(solver::L2PenaltySolver{T}) where {T}

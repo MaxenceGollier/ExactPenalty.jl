@@ -156,13 +156,8 @@ function SolverCore.solve!(
   β1::T = T(1),
   β3::T = 1e-4/τ,
   β4::T = eps(T),
-  primal_feasibility_mode::Symbol = :kkt,
-  dual_feasibility_mode::Symbol = :kkt,
 ) where {T,V}
   reset!(stats)
-
-  @assert (primal_feasibility_mode == :decrease || primal_feasibility_mode == :kkt)
-  @assert (dual_feasibility_mode == :decrease || dual_feasibility_mode == :kkt)
 
   # Retrieve workspace
   penalty_pb = solver.subpb # f(x) + τ‖c(x)‖₂
@@ -203,16 +198,11 @@ function SolverCore.solve!(
 
   ## Compute Feasibility
 
-  primal_feas_computer! =
-    primal_feasibility_mode == :decrease ? decr_primal_feas! : kkt_primal_feas!
-  primal_feas = primal_feas_computer!(solver)
+  primal_feas = kkt_primal_feas!(solver)
 
   set_solver_specific!(solver.substats, :smooth_obj, fx)
   grad!(nlp, x, solver.∇fk)
   compute_least_square_multipliers!(solver)
-
-  dual_feas_computer! =
-    dual_feasibility_mode == :decrease ? decr_dual_feas! : kkt_dual_feas!
   dual_feas = least_square_dual_feas!(solver)
 
   primal_tol = atol + rtol * primal_feas
@@ -299,8 +289,8 @@ function SolverCore.solve!(
 
     ## Compute feasibility 
 
-    primal_feas = primal_feas_computer!(solver)
-    dual_feas = dual_feas_computer!(solver)
+    primal_feas = kkt_primal_feas!(solver)
+    dual_feas = kkt_dual_feas!(solver)
 
     ## Log status
     verbose > 0 &&
