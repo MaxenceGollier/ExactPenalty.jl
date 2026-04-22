@@ -50,8 +50,7 @@ function PenaltyR2NSolver(
 end
 
 function SolverCore.reset!(solver::PenaltyR2NSolver)
-  B = solver.subpb.model.data.H
-  isa(B, AbstractLinearOperator) && LinearOperators.reset!(B)
+  reset!(solver.subpb)
 end
 
 SolverCore.reset!(solver::PenaltyR2NSolver, model) = SolverCore.reset!(solver)

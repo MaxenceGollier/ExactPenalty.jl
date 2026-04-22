@@ -47,7 +47,7 @@ function ShiftedL2PenalizedProblem(
 
   ψ = shifted(h, x)
 
-  return ShiftedL2PenalizedProblem(φ, ψ, penalty_nlp, penalty_nlp.meta, copy(∇f), similar(∇f), similar(∇f))
+  return ShiftedL2PenalizedProblem(φ, ψ, penalty_nlp, penalty_nlp.meta, zero(∇f), similar(∇f), zero(∇f))
 end
 
 function ShiftedL2PenalizedProblem(
@@ -121,6 +121,7 @@ function ShiftedProximalOperators.shift!(
   g, B = φ.data.c, φ.data.H
 
   isnothing(∇f) ? grad!(nlp, x, g) : (g .= ∇f)
+  shift!(ψ, x)
 
   # Update the approximation.
   @. qn_y = g - qn_g_prev
@@ -132,8 +133,6 @@ function ShiftedProximalOperators.shift!(
   qn_s .= x .- qn_x_prev
 
   push!(B, qn_y, qn_s)
-
-  shift!(ψ, x)
 
   # Copy the gradient and Jacobian.
   qn_g_prev .= g
@@ -175,4 +174,26 @@ function check_descent(shifted_penalty_nlp::ShiftedL2PenalizedProblem{T}, s::Abs
   cx, τ = ψ.b, ψ.h.lambda
   ψ0 = τ * norm(cx) # φ0 = 0
   return ψ0 - dot(φ.data.c, s) - ψ(s) >= 0
+end
+
+function reset!(
+  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T, V, M, H, P},
+) where{T, V, M, H, P}
+end
+
+function reset!(
+  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T, V, M, H, P},
+) where{T, V, M, H, O <: QuasiNewtonModel, P <: L2PenalizedProblem{T, V, O}}
+  nlp, h = shifted_penalty_nlp.parent.model, shifted_penalty_nlp.parent.h
+  φ, ψ = shifted_penalty_nlp.model, shifted_penalty_nlp.h
+  x_prev = shifted_penalty_nlp._qn_x_prev .= 0
+  g_prev = shifted_penalty_nlp._qn_∇f_prev .= 0
+
+  ψ.A_prev.vals .= ψ.A.vals
+  LinearOperators.reset!(φ.data.H)
+end
+
+function reset!(
+  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T, V, M, H, P},
+) where{T, V, M, H, O <: NullHessianModel, P <: L2PenalizedProblem{T, V, O}}
 end
