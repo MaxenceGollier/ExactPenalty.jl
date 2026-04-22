@@ -31,10 +31,8 @@ include("types/ShiftedPenalizedProblem.jl")
 include("subsolvers/more-sorensen.jl")
 
 include("ir2n.jl")
-include("ir2.jl")
 
 include("algorithm.jl")
 
-include("callbacks.jl")
 include("feas_computer.jl")
 end
