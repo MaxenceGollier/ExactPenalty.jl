@@ -54,25 +54,29 @@ function set_primal_inertia!(solver_workspace::PenaltyLDLTWorkspace, σ)
 end
 
 # Given Ax ≈ b, refine the solution by solving AΔx = b - Ax and updating x += Δx
-function refine!(workspace::PenaltyLDLTWorkspace, u::V; max_iter::Int = 50, tol::T = eps(T)) where{T, V <: AbstractVector{T}}
+function refine!(workspace::PenaltyLDLTWorkspace, u::V; max_iter::Int = 5, tol::T = eps(T)) where{T, V <: AbstractVector{T}}
 
   # Compute the residual r = u - H*x
   r, H, x = workspace.r, workspace.H, workspace.x
+  n, m = workspace.n, workspace.m
   dx = workspace.dx
   solved = false
   k = 0
   while k < max_iter && !solved
     r .= u
-    mul!(r, H, workspace.x, -one(T), one(T)) # r = u - H*x
+
+    # https://github.com/JuliaSparse/SparseArrays.jl/issues/685: mul!(r, H, x, -one(T), one(T)) is somehow extremely slow.
+    mul!(r, H.data, x, -one(T), one(T)) # r = u - H*x
+    mul!(r, H.data', x, -one(T), one(T))
+    @inbounds for i = 1:(n+m)
+      r[i] += H.data[i, i]*x[i]
+    end
+
     ldiv!(dx, workspace.M, r) # H*dx = r
     x .+= dx
     k = k + 1
     solved = norm(dx) < tol*norm(x)
   end
-  # Solve H*Δx = r
-
-  ldiv!(dx, workspace.M, r)
-  x .+= dx
   return workspace.x
 end
 
