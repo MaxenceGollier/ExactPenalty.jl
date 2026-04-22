@@ -172,7 +172,7 @@ function SolverCore.solve!(
   x = solver.x .= x
   y = solver.y
 
-  shift!(mk, x)
+  shift!(ψ, x)
   fx = obj(nlp, x)
   hx = norm(ψ.b)
 
@@ -207,9 +207,8 @@ function SolverCore.solve!(
     primal_feasibility_mode == :decrease ? decr_primal_feas! : kkt_primal_feas!
   primal_feas = primal_feas_computer!(solver)
 
-  set_solver_specific!(solver.substats, :smooth_obj, obj(nlp, x))
-  fx = solver.substats.solver_specific[:smooth_obj]
-  solver.∇fk .= φ.data.c
+  set_solver_specific!(solver.substats, :smooth_obj, fx)
+  grad!(nlp, x, solver.∇fk)
   compute_least_square_multipliers!(solver)
 
   dual_feas_computer! =
@@ -232,8 +231,8 @@ function SolverCore.solve!(
   set_penalty!(mk, τ)
   νsub = 1/max(β4, β3*τ)
 
-  ## Initialize Hessian matrix
-  hess_coord!(nlp, x, y, φ.data.H.vals)
+  ## Initialize Model
+  shift!(mk, x, ∇f = solver.∇fk, y = y)
 
   infeasible = false
   not_desc = false
