@@ -78,7 +78,7 @@ end
 
 function least_square_dual_feas!(solver::L2PenaltySolver{T}) where {T}
   dual_res, y = solver.dual_res, solver.y
-  g, J = solver.subsolver.subpb.model.data.c, solver.subsolver.subpb.h.A #FIXME
+  g, J = solver.∇fk, solver.subsolver.subpb.h.A
   
   dual_res .= g
   mul!(dual_res, J', y, one(T), -one(T))

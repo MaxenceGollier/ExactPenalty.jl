@@ -413,11 +413,11 @@ function get_status(
     :unbounded
   elseif not_desc
     :not_desc
-  elseif iter > max_iter
+  elseif iter >= max_iter
     :max_iter
-  elseif elapsed_time > max_time
+  elseif elapsed_time >= max_time
     :max_time
-  elseif neval_obj(nlp) > max_eval && max_eval > -1
+  elseif neval_obj(nlp) >= max_eval && max_eval > -1
     :max_eval
   elseif n_iter_since_decrease ≥ max_decreas_iter
     :infeasible
