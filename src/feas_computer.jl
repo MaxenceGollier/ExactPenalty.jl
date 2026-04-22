@@ -23,9 +23,9 @@ function compute_least_square_multipliers!(solver::L2PenaltySolver{T}) where {T}
   ψ.h = NormL2(Inf)
   solver.temp_b .= ψ.b
   ψ.b .= 0
-  solver.∇fk *= -1
+  solver.∇fk .*= -1
   prox!(s, ψ, solver.∇fk, T(1))
-  solver.∇fk *= -1
+  solver.∇fk .*= -1
 
   # Reset old value
   ψ.h = NormL2(lambda_temp)
