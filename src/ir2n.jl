@@ -10,6 +10,7 @@ mutable struct PenaltyR2NSolver{
 } <: AbstractOptimizationSolver
   xk::V
   y::V
+  dual_res::V
   xkn::V
   s::V
   m_fh_hist::V
@@ -28,6 +29,7 @@ function PenaltyR2NSolver(
   xk = similar(x0)
   ∇fk = similar(x0)
   y = similar(x0, get_ncon(penalty_nlp))
+  dual_res = similar(x0)
   xkn = similar(x0)
   s = similar(x0)
 
@@ -40,6 +42,7 @@ function PenaltyR2NSolver(
   return PenaltyR2NSolver{T, V, typeof(subsolver), typeof(subpb)}(
     xk,
     y,
+    dual_res,
     xkn,
     s,
     m_fh_hist,
@@ -88,26 +91,10 @@ function SolverCore.solve!(
 
   ∇fk = solver.subpb.model.data.c
   xkn = solver.xkn
-  s, y = solver.s, solver.y
+  s, y, dual_res = solver.s, solver.y, solver.dual_res
   m_fh_hist = solver.m_fh_hist .= T(-Inf)
 
   m_monotone = length(m_fh_hist) + 1
-
-  if verbose > 0
-    @info log_header(
-      [:outer, :inner, :fx, :hx, :xi, :ρ, :σ, :normx, :norms, :arrow],
-      [Int, Int, T, T, T, T, T, T, T, Char],
-      hdr_override = Dict{Symbol, String}(
-        :fx => "f(x)",
-        :hx => "h(x)",
-        :xi => "du_feas",
-        :normx => "‖x‖",
-        :norms => "‖s‖",
-        :arrow => "PenaltyR2N",
-      ),
-      colsep = 1,
-    )
-  end
 
   local ξ1::T
   local ρk::T = zero(T)
@@ -116,6 +103,7 @@ function SolverCore.solve!(
   hk = @views h(xk)
   fk = !is_shifted ? obj(nlp, xk) : stats.solver_specific[:smooth_obj]
 
+  # Initialize stats
   set_iter!(stats, 0)
   start_time = time()
   set_time!(stats, 0.0)
@@ -140,45 +128,22 @@ function SolverCore.solve!(
     ),
   )
 
-  callback(reg_nlp, solver, stats)
-
-  done = stats.status != :unknown
-
-  while !done
-
-    solver.subpb.model.data.σ = σk
-
-    solve!(
-      solver.subsolver,
-      solver.subpb,
-      solver.substats;
+  # Logging
+  if verbose > 0
+    @info log_header(
+      [:outer, :inner, :fx, :hx, :xi, :ρ, :σ, :normx, :norms, :arrow],
+      [Int, Int, T, T, T, T, T, T, T, Char],
+      hdr_override = Dict{Symbol, String}(
+        :fx => "f(x)",
+        :hx => "h(x)",
+        :xi => "du_feas",
+        :normx => "‖x‖",
+        :norms => "‖s‖",
+        :arrow => "PenaltyR2N",
+      ),
+      colsep = 1,
     )
-
-    get_primal_dual_sol!(s, y, solver.subsolver)
-
-    xkn .= xk .+ s
-    fkn, hkn = obj(nlp, xkn), h(xkn)
-    mks = dot(∇fk, s) + ψ(s)
-
-    fhmax = m_monotone > 1 ? maximum(m_fh_hist) : fk + hk
-    Δobj = fhmax - (fkn + hkn) + max(1, abs(fk + hk)) * 10 * eps()
-    Δmod = fhmax - (fk + mks) + max(1, abs(fhmax)) * 10 * eps()
-
-    ρk = Δobj / Δmod
-
-    # Check stopping criteria
-    σk = solver.subpb.model.data.σ 
-    dual_res = Symmetric(solver.subpb.model.data.H, :L) * s + σk * s
-    set_dual_residual!(stats, norm(dual_res, Inf))
-    solved = stats.dual_feas ≤ atol
-    stats.iter == 0 && (atol += stats.dual_feas * rtol)
-
-    # Check boundedness
-    unbounded = fk < - 1 / eps(T) 
-
-    verbose > 0 &&
-      stats.iter % verbose == 0 &&
-      @info log_row(
+    @info log_row(
         Any[
           stats.iter,
           solver.substats.iter,
@@ -193,6 +158,41 @@ function SolverCore.solve!(
         ],
         colsep = 1,
       )
+  end      
+
+  callback(reg_nlp, solver, stats)
+
+  done = stats.status != :unknown
+
+  while !done
+
+    # Compute a step 
+    solver.subpb.model.data.σ = σk
+    solve!(
+      solver.subsolver,
+      solver.subpb,
+      solver.substats;
+    )
+    get_primal_dual_sol!(s, y, solver.subsolver)
+
+    # Check stopping criteria
+    σk = solver.subpb.model.data.σ 
+    dual_res .= s
+    mul!(dual_res, Symmetric(solver.subpb.model.data.H, :L), s, one(T), σk)
+    set_dual_residual!(stats, norm(dual_res, Inf))
+    solved = stats.dual_feas ≤ atol
+    stats.iter == 0 && (atol += stats.dual_feas * rtol)
+
+    # Step acceptance
+    xkn .= xk .+ s
+    fkn, hkn = obj(nlp, xkn), h(xkn)
+    mks = dot(∇fk, s) + ψ(s)
+
+    fhmax = m_monotone > 1 ? maximum(m_fh_hist) : fk + hk
+    Δobj = fhmax - (fkn + hkn) + max(1, abs(fk + hk)) * 10 * eps()
+    Δmod = fhmax - (fk + mks) + max(1, abs(fhmax)) * 10 * eps()
+
+    ρk = Δobj / Δmod
 
     if η1 ≤ ρk < Inf
       xk .= xkn
@@ -214,6 +214,7 @@ function SolverCore.solve!(
 
     m_monotone > 1 && (m_fh_hist[stats.iter % (m_monotone - 1) + 1] = fk + hk)
 
+    # Update stats
     set_objective!(stats, fk + hk)
     set_solver_specific!(stats, :smooth_obj, fk)
     set_solver_specific!(stats, :nonsmooth_obj, hk)
@@ -228,12 +229,31 @@ function SolverCore.solve!(
         elapsed_time = stats.elapsed_time,
         iter = stats.iter,
         optimal = solved,
-        unbounded = unbounded,
+        unbounded = fk < - 1 / eps(T),
         max_eval = max_eval,
         max_time = max_time,
         max_iter = max_iter,
       ),
     )
+
+    # Logging
+    verbose > 0 &&
+      stats.iter % verbose == 0 &&
+      @info log_row(
+        Any[
+          stats.iter,
+          solver.substats.iter,
+          fk,
+          hk,
+          stats.dual_feas,
+          ρk,
+          σk,
+          norm(xk),
+          norm(s),
+          (η2 ≤ ρk < Inf) ? '↘' : (ρk < η1 ? '↗' : '='),
+        ],
+        colsep = 1,
+      )
 
     callback(reg_nlp, solver, stats)
 
