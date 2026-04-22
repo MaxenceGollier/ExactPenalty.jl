@@ -269,6 +269,7 @@ function SolverCore.solve!(
   end
 
   set_solution!(stats, xk)
+  set_constraint_multipliers!(stats, y)
   set_residuals!(stats, zero(eltype(xk)), stats.dual_feas)
   return stats
 end

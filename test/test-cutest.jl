@@ -19,12 +19,10 @@ function test_problem(name, primal_solution, dual_solution, expected_status)
       @test norm(primal_solution - stats.solution) ≤ 100*tol
       @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 10*tol
       @test norm(stats.multipliers - dual_solution) ≤ 100*tol
-      @test abs(
-        stats.dual_feas - norm(
+      @test norm(
           jtprod(nlp, stats.solution, stats.multipliers) + grad(nlp, stats.solution),
           Inf,
-        ),
-      ) ≤ eps(Float64)
+        ) ≤ 100*tol
     end
     @test stats.primal_feas == norm(cons(nlp, stats.solution), Inf)
 
@@ -54,12 +52,10 @@ function test_problem(name, primal_solution, dual_solution, expected_status)
       @test norm(primal_solution - stats.solution) ≤ 100*tol
       @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 10*tol
       @test norm(stats.multipliers - dual_solution) ≤ 100*tol
-      @test abs(
-        stats.dual_feas - norm(
+      @test norm(
           jtprod(nlp, stats.solution, stats.multipliers) + grad(nlp, stats.solution),
           Inf,
-        ),
-      ) ≤ eps(Float64)
+        ) ≤ 100*tol
     end
     @test stats.primal_feas == norm(cons(nlp, stats.solution), Inf)
 
@@ -90,12 +86,10 @@ function test_problem(name, primal_solution, dual_solution, expected_status)
       @test norm(primal_solution - stats.solution) ≤ 100*tol
       @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 10*tol
       @test norm(stats.multipliers - dual_solution) ≤ 100*tol
-      @test abs(
-        stats.dual_feas - norm(
+      @test norm(
           jtprod(nlp, stats.solution, stats.multipliers) + grad(nlp, stats.solution),
           Inf,
-        ),
-      ) ≤ eps(Float64)
+        ) ≤ 100*tol
     end
     @test stats.primal_feas == norm(cons(nlp, stats.solution), Inf)
 

@@ -318,17 +318,14 @@ function SolverCore.solve!(
 
       # Initialize regularization parameter
       νsub = 1/max(β4, β3*τ)
-
-      # Reset tolerance
-      #dual_feas = dual_feas_computer!(solver)
-      #dual_ktol = max(sub_rtol*dual_feas + sub_atol, dual_tol)
-      #set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
     else
       # Tighten tolerances
       primal_ktol = max(sub_rtol*primal_feas + sub_atol, primal_tol)
       dual_ktol = max(sub_rtol*dual_feas + sub_atol, dual_tol)
       set_solver_specific!(solver.substats, :primal_ktol, primal_ktol)
       set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
+
+      y .= solver.substats.multipliers
 
       # Initialize regularization parameter
       νsub = 1/solver.substats.solver_specific[:sigma]
