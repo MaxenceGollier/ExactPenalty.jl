@@ -5,7 +5,7 @@ using LinearOperators,
   ShiftedProximalOperators,
   SolverCore,
   SparseMatricesCOO
-using LinearAlgebra, Random, Test
+using LinearAlgebra, Random, SparseArrays, Test
 
 include("allocations-macro.jl")
 

@@ -1,3 +1,5 @@
+export ShiftedL2PenalizedProblem
+
 abstract type AbstractShiftedPenalizedProblem{T,S} <: AbstractPenalizedProblem{T,S} end
 
 """
@@ -21,7 +23,7 @@ mutable struct ShiftedL2PenalizedProblem{
   S,
   M<:AbstractQuadraticModel{T,S},
   H<:ShiftedCompositeNormL2,
-  P<:L2PenalizedProblem,
+  P<:Union{Nothing, L2PenalizedProblem},
   SN<:Union{Nothing, S},
 } <: AbstractShiftedPenalizedProblem{T,S}
   model::M
