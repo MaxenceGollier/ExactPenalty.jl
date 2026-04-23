@@ -271,7 +271,7 @@ function SolverCore.solve!(
       τ *= 10
       set_penalty!(mk, τ)
       νsub = 1/max(β4, β3*τ)
-      shift!(mk, x)
+      shift!(mk, x, y = y)
       set_solver_specific!(solver.substats, :smooth_obj, fx)
       continue
     end

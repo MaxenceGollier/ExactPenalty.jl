@@ -171,7 +171,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   if !check_descent(reg_nlp, @view x1[1:n])
     reg_nlp.model.data.σ *= μ
     if reg_nlp.model.data.σ >= σmax 
-      set_status!(stats, :exception) 
+      set_status!(stats, :not_desc) 
       return
     end
     solve!(solver, reg_nlp, stats)
@@ -202,6 +202,7 @@ function SolverCore.solve!(
   @. x1[(n+1):end] = - ψ.q / ν
   set_solution!(stats, @view x1[1:n])
   set_status!(stats, :first_order)
+  !check_descent(reg_nlp, @view x1[1:n]) && set_status!(stats, :not_desc)
 end
 
 function get_primal_dual_sol!(s, y, solver::MoreSorensenSolver)
