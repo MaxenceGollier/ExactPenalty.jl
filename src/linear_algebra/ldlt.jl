@@ -81,14 +81,25 @@ function refine!(workspace::PenaltyLDLTWorkspace, u::V; max_iter::Int = 5, tol::
 end
 
 function solve_system!(workspace::PenaltyLDLTWorkspace, u::V) where{V <: AbstractVector}
+  workspace.status = :success
+
   factorized(workspace.M) || ldl_factorize!(workspace.H, workspace.M)
   if !factorized(workspace.M)
     workspace.status = :failed
     return
   end
-  workspace.status = :success
+
   ldiv!(workspace.x, workspace.M, u)
+  if any(isnan, workspace.x)
+    workspace.status = :failed
+    return
+  end
+
   refine!(workspace, u)
+  if any(isnan, workspace.x)
+    workspace.status = :failed
+    return
+  end
 end
 
 function get_solution!(x::V, workspace::PenaltyLDLTWorkspace) where{V <: AbstractVector}

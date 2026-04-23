@@ -70,7 +70,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     α,
   )
 
-  αmin = eps(T)^(0.8)
+  αmin = eps(T)^(0.6)
   θ = T(0.8)
   μ = T(10)
 
