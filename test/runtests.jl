@@ -1,12 +1,13 @@
 using ExactPenalty
 using LinearOperators,
-  RegularizedOptimization,
   QuadraticModels,
   RegularizedProblems,
   ShiftedProximalOperators,
   SolverCore,
   SparseMatricesCOO
-using LinearAlgebra, Random, Test
+using LinearAlgebra, Random, SparseArrays, Test
+
+Random.seed!(0)
 
 include("allocations-macro.jl")
 
