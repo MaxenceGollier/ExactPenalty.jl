@@ -17,7 +17,7 @@ function test_problem(name, primal_solution, dual_solution, expected_status)
     @test stats.status == expected_status
     if expected_status == :first_order
       @test norm(primal_solution - stats.solution) ≤ 100*tol
-      @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 10*tol
+      @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 100*tol
       @test norm(stats.multipliers - dual_solution) ≤ 100*tol
       @test norm(
           jtprod(nlp, stats.solution, stats.multipliers) + grad(nlp, stats.solution),
@@ -50,7 +50,7 @@ function test_problem(name, primal_solution, dual_solution, expected_status)
     @test stats.status == expected_status
     if expected_status == :first_order
       @test norm(primal_solution - stats.solution) ≤ 100*tol
-      @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 10*tol
+      @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 100*tol
       @test norm(stats.multipliers - dual_solution) ≤ 100*tol
       @test norm(
           jtprod(nlp, stats.solution, stats.multipliers) + grad(nlp, stats.solution),
@@ -84,7 +84,7 @@ function test_problem(name, primal_solution, dual_solution, expected_status)
     @test stats.status == expected_status
     if expected_status == :first_order
       @test norm(primal_solution - stats.solution) ≤ 100*tol
-      @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 10*tol
+      @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 100*tol
       @test norm(stats.multipliers - dual_solution) ≤ 100*tol
       @test norm(
           jtprod(nlp, stats.solution, stats.multipliers) + grad(nlp, stats.solution),

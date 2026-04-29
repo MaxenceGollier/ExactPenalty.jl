@@ -7,6 +7,8 @@ using LinearOperators,
   SparseMatricesCOO
 using LinearAlgebra, Random, SparseArrays, Test
 
+Random.seed!(0)
+
 include("allocations-macro.jl")
 
 include("instances/instance-reader.jl")

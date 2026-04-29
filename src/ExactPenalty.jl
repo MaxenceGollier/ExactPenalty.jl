@@ -24,6 +24,7 @@ include("linear_algebra/krylov.jl")
 include("linear_algebra/ldlt.jl")
 
 include("types/quasi-newton/NullHessian.jl")
+include("types/quasi-newton/CompactBFGS.jl")
 
 include("types/PenalizedProblem.jl")
 include("types/ShiftedPenalizedProblem.jl")
