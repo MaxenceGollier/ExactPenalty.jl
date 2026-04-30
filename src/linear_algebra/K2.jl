@@ -9,9 +9,11 @@ mutable struct OpK2{T<:Real,M1,M2<:AbstractLinearOperator} <: AbstractLinearOper
   B::M2
 end
 
-mutable struct CompactBFGSK2{T <: Real, M1 <: CompactBFGS, M2 <: AbstractMatrix{T}} <: AbstractMatrix{T}
+mutable struct CompactBFGSK2{T <: Real, V, M1 <: CompactBFGS, M2 <: AbstractMatrix{T}} <: AbstractMatrix{T}
   B::M1
   H::M2
+  x1::V
+  y1::V
 end
 
 function CscK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2) where{T, M1 <:SparseMatrixCOO, M2<:SparseMatrixCSC}
@@ -99,7 +101,7 @@ function CscK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2)
     H[i,i] -= α_temp
   end
 
-  return CompactBFGSK2(B, H)
+  return CompactBFGSK2(B, Symmetric(H), Vector{T}(undef, n+m), Vector{T}(undef, 2*B._mem))
 end
 
 function CooK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2) where{T, M1 <:SparseMatrixCOO, M2<:SparseMatrixCOO}

@@ -41,6 +41,19 @@ end
 # There is no efficient way to compute the number of nonzeros of this approximation.
 # The meta of the compact BFGSModel will have 0 for the nnzh which is fine.
 SparseArrays.nnz(::CompactBFGS) = 0
+LinearAlgebra.Symmetric(op::CompactBFGS, ::Symbol) = op
+
+# TODO: test this: compare with LinearOperators.jl
+function LinearAlgebra.mul!(
+  x::AbstractVector,
+  op::CompactBFGS,
+  y::AbstractVector,
+  α::Real,
+  β::Real
+)
+  x .*= β
+  x += α*(op.ξ*y - op.Uk*(op.Uk'*y) + op.Vk*(op.Vk'*y)) #FIXME
+end
 
 mutable struct CompactBFGSModel{
   T,
