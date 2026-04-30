@@ -9,6 +9,11 @@ mutable struct OpK2{T<:Real,M1,M2<:AbstractLinearOperator} <: AbstractLinearOper
   B::M2
 end
 
+mutable struct CompactBFGSK2{T <: Real, M1 <: CompactBFGS, M2 <: AbstractMatrix{T}} <: AbstractMatrix{T}
+  B::M1
+  H::M2
+end
+
 function CscK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2) where{T, M1 <:SparseMatrixCOO, M2<:SparseMatrixCSC}
 
   I, J, V = Vector{Int}(), Vector{Int}(), Vector{T}()
@@ -44,6 +49,9 @@ function CscK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2)
   H = sparse(I, J, V, n+m, n+m)
   
   # Step 4: Initialize inertia corrections
+  # Produces 
+  # [ Bᵀ+σI Aᵀ ]
+  # [ 0    -αI ]
   α_temp = iszero(α) ? eps(T) : α
   σ_temp = iszero(σ) ? eps(T) : σ
 
@@ -56,6 +64,42 @@ function CscK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2)
   end
   
   return Symmetric(H)
+end
+
+function CscK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2) where{T, M1 <:SparseMatrixCOO, M2<:CompactBFGS}
+
+  I, J, V = Vector{Int}(), Vector{Int}(), Vector{T}()
+
+  # Step 1: Add the transpose of A to the K2 matrix.
+  # Produces 
+  # [ 0  Aᵀ ]
+  # [ 0  0  ]
+  #
+  for k in 1:nnz(A)
+    push!(I, A.cols[k])          # transpose: row becomes column
+    push!(J, A.rows[k] + n)
+    push!(V, A.vals[k])
+  end
+
+  # Step 3: Construct the sparse CSC matrix
+  H = sparse(I, J, V, n+m, n+m)
+  
+  # Step 4: Initialize inertia corrections
+  # Produces 
+  # [ ξI + σI  Aᵀ ]
+  # [ 0       -αI ]
+  α_temp = iszero(α) ? eps(T) : α
+  σ_temp = iszero(σ) ? eps(T) : σ
+
+  @inbounds for i in 1:n
+    H[i,i] += B.ξ + σ_temp
+  end
+
+  @inbounds for i in n+1:n+m
+    H[i,i] -= α_temp
+  end
+
+  return CompactBFGSK2(B, H)
 end
 
 function CooK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2) where{T, M1 <:SparseMatrixCOO, M2<:SparseMatrixCOO}
@@ -88,6 +132,9 @@ function CooK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2)
   H = sparse(I, J, V, n+m, n+m)
   
   # Step 4: Initialize inertia corrections
+  # Produces 
+  # [ Bᵀ+σI Aᵀ ]
+  # [ 0    -αI ]
   α_temp = iszero(α) ? eps(T) : α
   σ_temp = iszero(σ) ? eps(T) : σ
 

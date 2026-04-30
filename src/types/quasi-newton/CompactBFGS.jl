@@ -38,6 +38,10 @@ function CompactBFGS(
   )
 end
 
+# There is no efficient way to compute the number of nonzeros of this approximation.
+# The meta of the compact BFGSModel will have 0 for the nnzh which is fine.
+SparseArrays.nnz(::CompactBFGS) = 0
+
 mutable struct CompactBFGSModel{
   T,
   S,

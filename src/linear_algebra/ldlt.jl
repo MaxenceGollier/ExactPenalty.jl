@@ -10,14 +10,27 @@ mutable struct PenaltyLDLTWorkspace{WP <: LDLFactorization, K2 <: AbstractMatrix
   status::Symbol
 end
 
+function get_H(solver_workspace::PenaltyLDLTWorkspace{WP, K2}) where{T, WP, K2 <: Symmetric{T, SparseMatrixCSC{T, Int}}}
+  return solver_workspace.H.data
+end
+
+function get_H(solver_workspace::PenaltyLDLTWorkspace{WP, K2}) where{WP, K2 <: CompactBFGSK2}
+  return solver_workspace.H.H
+end
+
 function construct_ldlt_workspace(H::M, u1::V, n, m) where{T, V <: AbstractVector{T}, M <: Symmetric{T, SparseMatrixCSC{T, Int}}}
   S = ldl_analyze(H)
   return PenaltyLDLTWorkspace(S, H, similar(u1), similar(u1), similar(u1), zero(T), n, m, :uninitialized)
 end
 
-function update_workspace!(solver_workspace::PenaltyLDLTWorkspace, B, A, σ, α)
+function construct_ldlt_workspace(H::M, u1::V, n, m) where{T, V <: AbstractVector{T}, M <: CompactBFGSK2}
+  S = ldl_analyze(H.H)
+  return PenaltyLDLTWorkspace(S, H, similar(u1), similar(u1), similar(u1), zero(T), n, m, :uninitialized)
+end
+
+function update_workspace!(solver_workspace::PenaltyLDLTWorkspace, B::M, A, σ, α) where{M}
   n, m = solver_workspace.n, solver_workspace.m
-  H = solver_workspace.H.data
+  H = get_H(solver_workspace)
 
   @views H[1:n, 1:n] .= B'
   @inbounds for i in 1:n
@@ -35,7 +48,7 @@ end
 
 function set_dual_inertia!(solver_workspace::PenaltyLDLTWorkspace, α)
   n, m = solver_workspace.n, solver_workspace.m
-  H = solver_workspace.H.data
+  H = get_H(solver_workspace)
   @inbounds for i = 1:m
     H[n+i, n+i] = -α
   end
@@ -44,7 +57,7 @@ end
 
 function set_primal_inertia!(solver_workspace::PenaltyLDLTWorkspace, σ)
   n, m = solver_workspace.n, solver_workspace.m
-  H = solver_workspace.H.data
+  H = get_H(solver_workspace)
   σ_prev = solver_workspace.σ
   @inbounds for i in 1:n
     H[i,i] += σ - σ_prev
@@ -80,9 +93,31 @@ function refine!(workspace::PenaltyLDLTWorkspace, u::V; max_iter::Int = 5, tol::
   return workspace.x
 end
 
-function solve_system!(workspace::PenaltyLDLTWorkspace, u::V) where{V <: AbstractVector}
+function solve_system!(workspace::PenaltyLDLTWorkspace{WP, K2}, u::V) where{V <: AbstractVector, WP, K2}
   workspace.status = :success
 
+  factorized(workspace.M) || ldl_factorize!(workspace.H, workspace.M)
+  if !factorized(workspace.M)
+    workspace.status = :failed
+    return
+  end
+
+  ldiv!(workspace.x, workspace.M, u)
+  if any(isnan, workspace.x)
+    workspace.status = :failed
+    return
+  end
+
+  refine!(workspace, u)
+  if any(isnan, workspace.x)
+    workspace.status = :failed
+    return
+  end
+end
+
+function solve_system!(workspace::PenaltyLDLTWorkspace{WP, K2}, u::V) where{V <: AbstractVector, WP, K2 <: CompactBFGSK2}
+  workspace.status = :success
+  error("done")
   factorized(workspace.M) || ldl_factorize!(workspace.H, workspace.M)
   if !factorized(workspace.M)
     workspace.status = :failed

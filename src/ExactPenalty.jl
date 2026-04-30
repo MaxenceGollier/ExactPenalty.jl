@@ -18,13 +18,13 @@ abstract type AbstractPenalizedProblemSolver <: AbstractOptimizationSolver end
 
 include("ExactPenaltyExecutionStats.jl")
 
+include("types/quasi-newton/NullHessian.jl")
+include("types/quasi-newton/CompactBFGS.jl")
+
 include("linear_algebra/K2.jl")
 include("linear_algebra/construct_workspace.jl")
 include("linear_algebra/krylov.jl")
 include("linear_algebra/ldlt.jl")
-
-include("types/quasi-newton/NullHessian.jl")
-include("types/quasi-newton/CompactBFGS.jl")
 
 include("types/PenalizedProblem.jl")
 include("types/ShiftedPenalizedProblem.jl")
