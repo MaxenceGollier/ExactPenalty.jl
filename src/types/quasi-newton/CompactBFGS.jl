@@ -10,6 +10,7 @@ mutable struct CompactBFGS{T, V <: AbstractVector{T}, MT <: AbstractMatrix{T}} <
   Mk::MT # p x p
   Uk::MT # n x p
   Vk::MT # n x p
+  _y::V  # p
   _mem::Int
   _insert::Int
 end
@@ -33,6 +34,7 @@ function CompactBFGS(
     zeros(T, mem, mem),
     zeros(T, n, mem),
     zeros(T, n, mem),
+    zeros(T, mem),
     mem,
     1
   )
@@ -51,8 +53,13 @@ function LinearAlgebra.mul!(
   α::Real,
   β::Real
 )
-  x .*= β
-  x += α*(op.ξ*y - op.Uk*(op.Uk'*y) + op.Vk*(op.Vk'*y)) #FIXME
+  x .*= β                           # x = βx
+  x .+= (α*op.ξ).*y                 # x = βx + α * (ξI)y
+
+  mul!(op._y, op.Uk', y)            # _y = Uₖᵀy
+  mul!(x, op.Uk, op._y, -α, one(α)) #  x = βx + α * (ξI - UₖUₖᵀ)y
+  mul!(op._y, op.Vk', y)            # _y = Vₖᵀy
+  mul!(x, op.Vk, op._y, α, one(α))  #  x = βx + α * (ξI - UₖUₖᵀ + VₖVₖᵀ)y
 end
 
 function NLPModels.reset!(
