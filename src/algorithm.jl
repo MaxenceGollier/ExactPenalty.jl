@@ -210,6 +210,7 @@ function SolverCore.solve!(
 
   primal_ktol = one(primal_tol)
   dual_ktol = min(one(dual_tol), max(sub_rtol * dual_feas + sub_atol, dual_tol))
+  dual_krtol = T(0)
 
   set_solver_specific!(solver.substats, :primal_ktol, primal_ktol)
   set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
@@ -257,7 +258,7 @@ function SolverCore.solve!(
       solver.substats;
       x = x,
       atol = dual_ktol,
-      rtol = T(0),
+      rtol = dual_krtol,
       verbose = sub_verbose,
       max_iter = sub_max_iter,
       max_time = max_time - stats.elapsed_time,
@@ -318,10 +319,16 @@ function SolverCore.solve!(
 
       # Initialize regularization parameter
       νsub = 1/max(β4, β3*τ)
+
+      # Add a relative tolerance for the subsolver
+      dual_ktol = dual_tol
+      set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
+      dual_krtol = sub_rtol
     else
       # Tighten tolerances
       primal_ktol = max(sub_rtol*primal_feas + sub_atol, primal_tol)
       dual_ktol = max(sub_rtol*dual_feas + sub_atol, dual_tol)
+      dual_krtol = T(0)
       set_solver_specific!(solver.substats, :primal_ktol, primal_ktol)
       set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
 
@@ -343,7 +350,7 @@ function SolverCore.solve!(
 
     θ = compute_θ!(solver)
 
-    infeasible = hx > primal_tol && sqrt(max(θ, 0))/hx < infeasible_tol
+    infeasible = hx > primal_tol && sqrt(max(θ, 0))/hx < infeasible_tol && sqrt(max(θ, 0)) < primal_ktol
 
     set_iter!(stats, stats.iter + 1)
     rem_eval = max_eval - neval_obj(nlp)
