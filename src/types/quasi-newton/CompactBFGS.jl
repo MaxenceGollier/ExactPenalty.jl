@@ -55,6 +55,22 @@ function LinearAlgebra.mul!(
   x += α*(op.ξ*y - op.Uk*(op.Uk'*y) + op.Vk*(op.Vk'*y)) #FIXME
 end
 
+function NLPModels.reset!(
+  op::CompactBFGS
+)
+  op.ξ = 1
+  op.Sk       .= 0
+  op.Yk       .= 0
+  op.Lk       .= 0
+  op.Mk       .= 0
+  op.Uk       .= 0
+  op.Vk       .= 0
+  op._Dkinvsq .= 0
+  op._DLk     .= 0
+
+  op._insert = 1
+
+end
 mutable struct CompactBFGSModel{
   T,
   S,

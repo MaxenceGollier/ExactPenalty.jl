@@ -1,4 +1,4 @@
-using CUTEst, NLPModels, NLPModelsModifiers
+using CUTEst, NLPModels
 
 problem_names = ["BT1", "MSS1", "SSINE", "VANDANIUMS"]
 expected_status = [:first_order, :first_order, :infeasible, :infeasible]
@@ -44,7 +44,7 @@ function test_problem(name, primal_solution, dual_solution, expected_status)
 
   # Test with BFGS
   @testset "BFGS" begin
-    LBFGS_model = LBFGSModel(nlp)
+    LBFGS_model = CompactBFGSModel(nlp)
     stats = L2Penalty(LBFGS_model, atol = tol, rtol = tol)
 
     @test stats.status == expected_status
