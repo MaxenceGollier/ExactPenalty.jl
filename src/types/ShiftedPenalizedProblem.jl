@@ -23,24 +23,24 @@ mutable struct ShiftedL2PenalizedProblem{
   S,
   M<:AbstractQuadraticModel{T,S},
   H<:ShiftedCompositeNormL2,
-  P<:Union{Nothing, L2PenalizedProblem},
-  SN<:Union{Nothing, S},
+  P<:Union{Nothing,L2PenalizedProblem},
+  SN<:Union{Nothing,S},
 } <: AbstractShiftedPenalizedProblem{T,S}
   model::M
   h::H
   parent::P
-  meta::NLPModelMeta{T, S}
+  meta::NLPModelMeta{T,S}
   _qn_∇f_prev::SN
   _qn_y::SN
   _qn_x_prev::SN
 end
 
 function ShiftedL2PenalizedProblem(
-  penalty_nlp::L2PenalizedProblem{T, V, M}, 
+  penalty_nlp::L2PenalizedProblem{T,V,M},
   x::V;
   ∇f::VN1 = nothing,
-) where{T, V, M <: QuasiNewtonModel{T, V}, VN1 <: Union{Nothing, V}}
- 
+) where {T,V,M<:QuasiNewtonModel{T,V},VN1<:Union{Nothing,V}}
+
   nlp, h = penalty_nlp.model, penalty_nlp.h
 
   ∇f = isnothing(∇f) ? grad(nlp, x) : ∇f
@@ -49,16 +49,24 @@ function ShiftedL2PenalizedProblem(
 
   ψ = shifted(h, x)
 
-  return ShiftedL2PenalizedProblem(φ, ψ, penalty_nlp, penalty_nlp.meta, zero(∇f), similar(∇f), zero(∇f))
+  return ShiftedL2PenalizedProblem(
+    φ,
+    ψ,
+    penalty_nlp,
+    penalty_nlp.meta,
+    zero(∇f),
+    similar(∇f),
+    zero(∇f),
+  )
 end
 
 function ShiftedL2PenalizedProblem(
-  penalty_nlp::L2PenalizedProblem{T, V, M}, 
+  penalty_nlp::L2PenalizedProblem{T,V,M},
   x::V;
   ∇f::VN1 = nothing,
   y::VN2 = nothing,
-) where{T, V, M, VN1 <: Union{Nothing, V}, VN2 <: Union{Nothing, V}}
- 
+) where {T,V,M,VN1<:Union{Nothing,V},VN2<:Union{Nothing,V}}
+
   nlp, h = penalty_nlp.model, penalty_nlp.h
   n = length(x)
 
@@ -73,33 +81,50 @@ function ShiftedL2PenalizedProblem(
 
   ψ = shifted(h, x)
 
-  return ShiftedL2PenalizedProblem(φ, ψ, penalty_nlp, penalty_nlp.meta, nothing, nothing, nothing)
+  return ShiftedL2PenalizedProblem(
+    φ,
+    ψ,
+    penalty_nlp,
+    penalty_nlp.meta,
+    nothing,
+    nothing,
+    nothing,
+  )
 end
 
 # ShiftedProximalOperators API
 function ShiftedProximalOperators.shifted(
-  penalty_nlp::L2PenalizedProblem{T, V, M}, 
+  penalty_nlp::L2PenalizedProblem{T,V,M},
   x::V;
   ∇f::VN1 = nothing,
-) where{T, V, M <: QuasiNewtonModel{T, V}, VN1 <: Union{Nothing, V}}
+) where {T,V,M<:QuasiNewtonModel{T,V},VN1<:Union{Nothing,V}}
   return ShiftedL2PenalizedProblem(penalty_nlp, x; ∇f = ∇f)
 end
 
 function ShiftedProximalOperators.shifted(
-  penalty_nlp::L2PenalizedProblem{T, V, M}, 
+  penalty_nlp::L2PenalizedProblem{T,V,M},
   x::V;
   ∇f::VN1 = nothing,
   y::VN2 = nothing,
-) where{T, V, M, VN1 <: Union{Nothing, V}, VN2 <: Union{Nothing, V}}
+) where {T,V,M,VN1<:Union{Nothing,V},VN2<:Union{Nothing,V}}
   return ShiftedL2PenalizedProblem(penalty_nlp, x; ∇f = ∇f, y = y)
 end
 
 function ShiftedProximalOperators.shift!(
-  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T, V, M, H, P},
+  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
   x::V;
   ∇f::VN1 = nothing,
   y::VN2 = nothing,
-) where{T, V, M, H, O <: NullHessianModel, P <: L2PenalizedProblem{T, V, O}, VN1 <: Union{Nothing, V}, VN2 <: Union{Nothing, V}}
+) where {
+  T,
+  V,
+  M,
+  H,
+  O<:NullHessianModel,
+  P<:L2PenalizedProblem{T,V,O},
+  VN1<:Union{Nothing,V},
+  VN2<:Union{Nothing,V},
+}
   nlp, h = shifted_penalty_nlp.parent.model, shifted_penalty_nlp.parent.h
   φ, ψ = shifted_penalty_nlp.model, shifted_penalty_nlp.h
 
@@ -110,14 +135,25 @@ function ShiftedProximalOperators.shift!(
 end
 
 function ShiftedProximalOperators.shift!(
-  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T, V, M, H, P},
+  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
   x::V;
   ∇f::VN1 = nothing,
   y::VN2 = nothing,
-) where{T, V, M, H, O <: QuasiNewtonModel, P <: L2PenalizedProblem{T, V, O}, VN1 <: Union{Nothing, V}, VN2 <: Union{Nothing, V}}
+) where {
+  T,
+  V,
+  M,
+  H,
+  O<:QuasiNewtonModel,
+  P<:L2PenalizedProblem{T,V,O},
+  VN1<:Union{Nothing,V},
+  VN2<:Union{Nothing,V},
+}
   nlp, h = shifted_penalty_nlp.parent.model, shifted_penalty_nlp.parent.h
   φ, ψ = shifted_penalty_nlp.model, shifted_penalty_nlp.h
-  qn_y, qn_g_prev, qn_x_prev = shifted_penalty_nlp._qn_y, shifted_penalty_nlp._qn_∇f_prev, shifted_penalty_nlp._qn_x_prev
+  qn_y, qn_g_prev, qn_x_prev = shifted_penalty_nlp._qn_y,
+  shifted_penalty_nlp._qn_∇f_prev,
+  shifted_penalty_nlp._qn_x_prev
 
   qn_s = qn_x_prev
   g, B = φ.data.c, φ.data.H
@@ -144,11 +180,11 @@ function ShiftedProximalOperators.shift!(
 end
 
 function ShiftedProximalOperators.shift!(
-  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T, V, M, H, P},
+  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
   x::V;
   ∇f::VN1 = nothing,
   y::VN2 = nothing,
-) where{T, V, M, H, P, VN1 <: Union{Nothing, V}, VN2 <: Union{Nothing, V}}
+) where {T,V,M,H,P,VN1<:Union{Nothing,V},VN2<:Union{Nothing,V}}
   nlp, h = shifted_penalty_nlp.parent.model, shifted_penalty_nlp.parent.h
   φ, ψ = shifted_penalty_nlp.model, shifted_penalty_nlp.h
 
@@ -165,12 +201,15 @@ function ShiftedProximalOperators.shift!(
 end
 
 # Miscellaneous
-function set_penalty!(nlp::ShiftedL2PenalizedProblem{T}, τ::T) where{T} 
+function set_penalty!(nlp::ShiftedL2PenalizedProblem{T}, τ::T) where {T}
   nlp.h.h = NormL2(τ)
   nlp.parent.h.h = NormL2(τ)
 end
 
-function check_descent(shifted_penalty_nlp::ShiftedL2PenalizedProblem{T}, s::AbstractVector) where{T}
+function check_descent(
+  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T},
+  s::AbstractVector,
+) where {T}
   φ, ψ = shifted_penalty_nlp.model, shifted_penalty_nlp.h
 
   cx, τ = ψ.b, ψ.h.lambda
@@ -178,14 +217,11 @@ function check_descent(shifted_penalty_nlp::ShiftedL2PenalizedProblem{T}, s::Abs
   return ψ0 - dot(φ.data.c, s) - ψ(s) >= 0
 end
 
-function reset!(
-  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T, V, M, H, P},
-) where{T, V, M, H, P}
-end
+function reset!(shifted_penalty_nlp::ShiftedL2PenalizedProblem{T,V,M,H,P}) where {T,V,M,H,P} end
 
 function reset!(
-  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T, V, M, H, P},
-) where{T, V, M, H, O <: QuasiNewtonModel, P <: L2PenalizedProblem{T, V, O}}
+  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
+) where {T,V,M,H,O<:QuasiNewtonModel,P<:L2PenalizedProblem{T,V,O}}
   nlp, h = shifted_penalty_nlp.parent.model, shifted_penalty_nlp.parent.h
   φ, ψ = shifted_penalty_nlp.model, shifted_penalty_nlp.h
   x_prev = shifted_penalty_nlp._qn_x_prev .= 0
@@ -196,6 +232,5 @@ function reset!(
 end
 
 function reset!(
-  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T, V, M, H, P},
-) where{T, V, M, H, O <: NullHessianModel, P <: L2PenalizedProblem{T, V, O}}
-end
+  shifted_penalty_nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
+) where {T,V,M,H,O<:NullHessianModel,P<:L2PenalizedProblem{T,V,O}} end

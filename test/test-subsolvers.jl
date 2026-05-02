@@ -53,7 +53,8 @@ for (solver_name, solver_constructor) in zip(solver_names, solvers)
 
     @testset "Ill-conditionned" begin
       for instance in instances
-        reg_nlp = read_instance(instance, type = Float64, Hessian_modifier = x -> sparse(tril(x)))
+        reg_nlp =
+          read_instance(instance, type = Float64, Hessian_modifier = x -> sparse(tril(x)))
         n = reg_nlp.model.meta.nvar
         solver = eval(solver_constructor)(reg_nlp)
         stats = GenericExecutionStats(reg_nlp.model)

@@ -9,7 +9,13 @@ mutable struct OpK2{T<:Real,M1,M2<:AbstractLinearOperator} <: AbstractLinearOper
   B::M2
 end
 
-mutable struct CompactBFGSK2{T <: Real, V, M1 <: CompactBFGS, M2 <: AbstractMatrix{T}, M3 <: AbstractMatrix{T}} <: AbstractMatrix{T}
+mutable struct CompactBFGSK2{
+  T<:Real,
+  V,
+  M1<:CompactBFGS,
+  M2<:AbstractMatrix{T},
+  M3<:AbstractMatrix{T},
+} <: AbstractMatrix{T}
   B::M1
   H::M2
   Z1::M3
@@ -21,7 +27,16 @@ mutable struct CompactBFGSK2{T <: Real, V, M1 <: CompactBFGS, M2 <: AbstractMatr
   y2::V
 end
 
-function CscK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2) where{T, M1 <:SparseMatrixCOO, M2<:SparseMatrixCSC}
+function CscK2(
+  n::Int,
+  m::Int,
+  nrow::Int,
+  ncol::Int,
+  α::T,
+  σ::T,
+  A::M1,
+  B::M2,
+) where {T,M1<:SparseMatrixCOO,M2<:SparseMatrixCSC}
 
   I, J, V = Vector{Int}(), Vector{Int}(), Vector{T}()
 
@@ -32,12 +47,12 @@ function CscK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2)
   #
   # Note: LDLFactorizations requires an upper triangular view;
   # Meanwhile, NLPModels produces a lower triangular view...
-  for j in 1:n
-    for k in B.colptr[j]:(B.colptr[j+1]-1)
-        i = B.rowval[k]
-        push!(I, j)
-        push!(J, i)
-        push!(V, B.nzval[k])
+  for j = 1:n
+    for k = B.colptr[j]:(B.colptr[j+1]-1)
+      i = B.rowval[k]
+      push!(I, j)
+      push!(J, i)
+      push!(V, B.nzval[k])
     end
   end
 
@@ -46,7 +61,7 @@ function CscK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2)
   # [ Bᵀ Aᵀ ]
   # [ 0  0  ]
   #
-  for k in 1:nnz(A)
+  for k = 1:nnz(A)
     push!(I, A.cols[k])          # transpose: row becomes column
     push!(J, A.rows[k] + n)
     push!(V, A.vals[k])
@@ -54,7 +69,7 @@ function CscK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2)
 
   # Step 3: Construct the sparse CSC matrix
   H = sparse(I, J, V, n+m, n+m)
-  
+
   # Step 4: Initialize inertia corrections
   # Produces 
   # [ Bᵀ+σI Aᵀ ]
@@ -62,18 +77,27 @@ function CscK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2)
   α_temp = iszero(α) ? eps(T) : α
   σ_temp = iszero(σ) ? eps(T) : σ
 
-  @inbounds for i in 1:n
-    H[i,i] += σ_temp
+  @inbounds for i = 1:n
+    H[i, i] += σ_temp
   end
 
-  @inbounds for i in n+1:n+m
-    H[i,i] -= α_temp
+  @inbounds for i = (n+1):(n+m)
+    H[i, i] -= α_temp
   end
-  
+
   return Symmetric(H)
 end
 
-function CscK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2) where{T, M1 <:SparseMatrixCOO, M2<:CompactBFGS}
+function CscK2(
+  n::Int,
+  m::Int,
+  nrow::Int,
+  ncol::Int,
+  α::T,
+  σ::T,
+  A::M1,
+  B::M2,
+) where {T,M1<:SparseMatrixCOO,M2<:CompactBFGS}
 
   I, J, V = Vector{Int}(), Vector{Int}(), Vector{T}()
 
@@ -82,7 +106,7 @@ function CscK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2)
   # [ 0  Aᵀ ]
   # [ 0  0  ]
   #
-  for k in 1:nnz(A)
+  for k = 1:nnz(A)
     push!(I, A.cols[k])          # transpose: row becomes column
     push!(J, A.rows[k] + n)
     push!(V, A.vals[k])
@@ -90,7 +114,7 @@ function CscK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2)
 
   # Step 3: Construct the sparse CSC matrix
   H = sparse(I, J, V, n+m, n+m)
-  
+
   # Step 4: Initialize inertia corrections
   # Produces 
   # [ ξI + σI  Aᵀ ]
@@ -98,28 +122,37 @@ function CscK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2)
   α_temp = iszero(α) ? eps(T) : α
   σ_temp = iszero(σ) ? eps(T) : σ
 
-  @inbounds for i in 1:n
-    H[i,i] += B.ξ + σ_temp
+  @inbounds for i = 1:n
+    H[i, i] += B.ξ + σ_temp
   end
 
-  @inbounds for i in n+1:n+m
-    H[i,i] -= α_temp
+  @inbounds for i = (n+1):(n+m)
+    H[i, i] -= α_temp
   end
 
   return CompactBFGSK2(
-    B, 
-    Symmetric(H), 
+    B,
+    Symmetric(H),
     zeros(T, n + m, 2*B._mem),
     zeros(T, 2*B._mem, 2*B._mem),
-    zeros(T, n+m), 
-    zeros(T, n+m), 
-    zeros(T, n+m), 
+    zeros(T, n+m),
+    zeros(T, n+m),
+    zeros(T, n+m),
     zeros(T, 2*B._mem),
-    zeros(T, 2*B._mem)
+    zeros(T, 2*B._mem),
   )
 end
 
-function CooK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2) where{T, M1 <:SparseMatrixCOO, M2<:SparseMatrixCOO}
+function CooK2(
+  n::Int,
+  m::Int,
+  nrow::Int,
+  ncol::Int,
+  α::T,
+  σ::T,
+  A::M1,
+  B::M2,
+) where {T,M1<:SparseMatrixCOO,M2<:SparseMatrixCOO}
 
   I, J, V = Vector{Int}(), Vector{Int}(), Vector{T}()
 
@@ -139,7 +172,7 @@ function CooK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2)
   # [ Bᵀ Aᵀ ]
   # [ 0  0  ]
   #
-  for k in 1:nnz(A)
+  for k = 1:nnz(A)
     push!(I, A.cols[k])          # transpose: row becomes column
     push!(J, A.rows[k] + n)
     push!(V, A.vals[k])
@@ -147,7 +180,7 @@ function CooK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2)
 
   # Step 3: Construct the sparse CSC matrix
   H = sparse(I, J, V, n+m, n+m)
-  
+
   # Step 4: Initialize inertia corrections
   # Produces 
   # [ Bᵀ+σI Aᵀ ]
@@ -155,14 +188,14 @@ function CooK2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2)
   α_temp = iszero(α) ? eps(T) : α
   σ_temp = iszero(σ) ? eps(T) : σ
 
-  @inbounds for i in 1:n
-    H[i,i] += σ_temp
+  @inbounds for i = 1:n
+    H[i, i] += σ_temp
   end
 
-  @inbounds for i in n+1:n+m
-    H[i,i] -= α_temp
+  @inbounds for i = (n+1):(n+m)
+    H[i, i] -= α_temp
   end
-  
+
   return Symmetric(H)
 end
 

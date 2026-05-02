@@ -77,5 +77,14 @@ function generate_instance(
     end
   end
   h = ShiftedCompositeNormL2(tau, c!, J!, SparseMatrixCOO(J), b)
-  return ShiftedL2PenalizedProblem(model, h, nothing, model.meta, nothing, nothing, nothing), Dict(:u => u, :y => y, :tau => tau)
+  return ShiftedL2PenalizedProblem(
+    model,
+    h,
+    nothing,
+    model.meta,
+    nothing,
+    nothing,
+    nothing,
+  ),
+  Dict(:u => u, :y => y, :tau => tau)
 end

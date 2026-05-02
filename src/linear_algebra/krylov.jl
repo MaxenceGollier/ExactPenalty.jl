@@ -46,7 +46,7 @@ function get_status(workspace::PenaltyKrylovWorkspace)
 end
 
 function get_inertia(
-  workspace::PenaltyKrylovWorkspace{WP, OP}
-) where {WP<:KrylovWorkspace, T, M1, M2 <: LBFGSOperator{T}, OP<:OpK2{T, M1, M2}}
+  workspace::PenaltyKrylovWorkspace{WP,OP},
+) where {WP<:KrylovWorkspace,T,M1,M2<:LBFGSOperator{T},OP<:OpK2{T,M1,M2}}
   return workspace.n, 0, workspace.m
 end

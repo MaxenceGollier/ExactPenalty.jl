@@ -3,10 +3,10 @@ export PenaltyR2N, PenaltyR2NSolver, solve!
 import SolverCore.solve!
 
 mutable struct PenaltyR2NSolver{
-  T <: Real,
-  V <: AbstractVector{T},
-  ST <: AbstractOptimizationSolver,
-  PB <: AbstractRegularizedNLPModel,
+  T<:Real,
+  V<:AbstractVector{T},
+  ST<:AbstractOptimizationSolver,
+  PB<:AbstractRegularizedNLPModel,
 } <: AbstractOptimizationSolver
   xk::V
   y::V
@@ -16,14 +16,14 @@ mutable struct PenaltyR2NSolver{
   m_fh_hist::V
   subsolver::ST
   subpb::PB
-  substats::GenericExecutionStats{T, V, V, T}
+  substats::GenericExecutionStats{T,V,V,T}
 end
 
 function PenaltyR2NSolver(
-  penalty_nlp::AbstractPenalizedProblem{T, V};
+  penalty_nlp::AbstractPenalizedProblem{T,V};
   subsolver = MoreSorensenSolver,
   m_monotone::Int = 6,
-) where {T, V}
+) where {T,V}
   x0 = penalty_nlp.model.meta.x0
 
   xk = similar(x0)
@@ -36,10 +36,10 @@ function PenaltyR2NSolver(
   m_fh_hist = fill(T(-Inf), m_monotone - 1)
 
   subpb = shifted(penalty_nlp, xk, ∇f = ∇fk)
-  substats = GenericExecutionStats(subpb, solver_specific = Dict{Symbol, T}())
+  substats = GenericExecutionStats(subpb, solver_specific = Dict{Symbol,T}())
   subsolver = subsolver(subpb)
 
-  return PenaltyR2NSolver{T, V, typeof(subsolver), typeof(subpb)}(
+  return PenaltyR2NSolver{T,V,typeof(subsolver),typeof(subpb)}(
     xk,
     y,
     dual_res,
@@ -59,9 +59,9 @@ end
 SolverCore.reset!(solver::PenaltyR2NSolver, model) = SolverCore.reset!(solver)
 
 function SolverCore.solve!(
-  solver::PenaltyR2NSolver{T, V},
-  reg_nlp::AbstractRegularizedNLPModel{T, V},
-  stats::GenericExecutionStats{T, V};
+  solver::PenaltyR2NSolver{T,V},
+  reg_nlp::AbstractRegularizedNLPModel{T,V},
+  stats::GenericExecutionStats{T,V};
   callback = (args...) -> nothing,
   x::V = reg_nlp.model.meta.x0,
   atol::T = √eps(T),
@@ -75,8 +75,8 @@ function SolverCore.solve!(
   η1::T = √√eps(T),
   η2::T = T(0.1),
   γ::T = T(3),
-  is_shifted::Bool = false
-) where {T, V}
+  is_shifted::Bool = false,
+) where {T,V}
   reset!(stats)
 
   # Retrieve workspace
@@ -111,7 +111,7 @@ function SolverCore.solve!(
   set_solver_specific!(stats, :smooth_obj, fk)
   set_solver_specific!(stats, :nonsmooth_obj, hk)
   set_solver_specific!(stats, :sigma, σk)
-  m_monotone > 1 && (m_fh_hist[stats.iter % (m_monotone - 1) + 1] = fk + hk)
+  m_monotone > 1 && (m_fh_hist[stats.iter%(m_monotone-1)+1] = fk + hk)
 
   solved = false
 
@@ -133,7 +133,7 @@ function SolverCore.solve!(
     @info log_header(
       [:outer, :inner, :fx, :hx, :xi, :ρ, :σ, :normx, :norms, :arrow],
       [Int, Int, T, T, T, T, T, T, T, Char],
-      hdr_override = Dict{Symbol, String}(
+      hdr_override = Dict{Symbol,String}(
         :fx => "f(x)",
         :hx => "h(x)",
         :xi => "du_feas",
@@ -144,21 +144,21 @@ function SolverCore.solve!(
       colsep = 1,
     )
     @info log_row(
-        Any[
-          stats.iter,
-          solver.substats.iter,
-          fk,
-          hk,
-          stats.dual_feas,
-          ρk,
-          σk,
-          norm(xk),
-          norm(s),
-          (η2 ≤ ρk < Inf) ? '↘' : (ρk < η1 ? '↗' : '='),
-        ],
-        colsep = 1,
-      )
-  end      
+      Any[
+        stats.iter,
+        solver.substats.iter,
+        fk,
+        hk,
+        stats.dual_feas,
+        ρk,
+        σk,
+        norm(xk),
+        norm(s),
+        (η2 ≤ ρk < Inf) ? '↘' : (ρk < η1 ? '↗' : '='),
+      ],
+      colsep = 1,
+    )
+  end
 
   callback(reg_nlp, solver, stats)
 
@@ -168,15 +168,11 @@ function SolverCore.solve!(
 
     # Compute a step 
     solver.subpb.model.data.σ = σk
-    solve!(
-      solver.subsolver,
-      solver.subpb,
-      solver.substats;
-    )
+    solve!(solver.subsolver, solver.subpb, solver.substats;)
     get_primal_dual_sol!(s, y, solver.subsolver)
 
     # Check stopping criteria
-    σk = solver.subpb.model.data.σ 
+    σk = solver.subpb.model.data.σ
     dual_res .= s
     mul!(dual_res, Symmetric(solver.subpb.model.data.H, :L), s, one(T), σk)
     set_dual_residual!(stats, norm(dual_res, Inf))
@@ -212,7 +208,7 @@ function SolverCore.solve!(
       σk = σk * γ
     end
 
-    m_monotone > 1 && (m_fh_hist[stats.iter % (m_monotone - 1) + 1] = fk + hk)
+    m_monotone > 1 && (m_fh_hist[stats.iter%(m_monotone-1)+1] = fk + hk)
 
     # Update stats
     set_objective!(stats, fk + hk)

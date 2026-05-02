@@ -37,15 +37,15 @@ end
 
 function SolverCore.solve!( #TODO add verbose and kwargs
   solver::MoreSorensenSolver{T,V},
-  reg_nlp::ShiftedL2PenalizedProblem{T, V, M, H, P},
+  reg_nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
   stats::GenericExecutionStats{T,V,V};
   x = reg_nlp.model.meta.x0,
   σk = T(1),
   atol = eps(T)^(0.6),
   max_time = T(30),
   max_iter = 10,
-  σmax = 1 / eps(T)
-) where {T, V, M, H, P}
+  σmax = 1 / eps(T),
+) where {T,V,M,H,P}
   start_time = time()
   set_time!(stats, 0.0)
   set_iter!(stats, 0)
@@ -80,7 +80,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   get_solution!(x1, solver_workspace)
   npos, nzero, nneg = get_inertia(solver_workspace)
   status = get_status(solver_workspace)
-  
+
   # Get correct inertia
   # If the factorization/solver failed, it in indicates we should add a minimal regularization too.
   if nneg < m || status == :failed
@@ -104,15 +104,15 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     npos, nzero, nneg = get_inertia(solver_workspace)
   end
 
-  if reg_nlp.model.data.σ >= σmax 
-    set_status!(stats, :exception) 
+  if reg_nlp.model.data.σ >= σmax
+    set_status!(stats, :exception)
     return
   end
 
   if norm(@view x1[(n+1):(n+m)]) <= Δ
     set_solution!(stats, @view x1[1:n])
     set_status!(stats, :first_order)
-  
+
     not_desc = !check_descent(reg_nlp, @view x1[1:n])
     not_desc && set_status!(stats, :not_desc)
 
@@ -144,8 +144,8 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     npos, nzero, nneg = get_inertia(solver_workspace)
     if npos < n
       reg_nlp.model.data.σ *= μ
-      if reg_nlp.model.data.σ >= σmax 
-        set_status!(stats, :exception) 
+      if reg_nlp.model.data.σ >= σmax
+        set_status!(stats, :exception)
         return
       end
       solve!(solver, reg_nlp, stats)
@@ -170,8 +170,8 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   !check_descent(reg_nlp, @view x1[1:n]) && set_status!(stats, :not_desc)
   if !check_descent(reg_nlp, @view x1[1:n])
     reg_nlp.model.data.σ *= μ
-    if reg_nlp.model.data.σ >= σmax 
-      set_status!(stats, :not_desc) 
+    if reg_nlp.model.data.σ >= σmax
+      set_status!(stats, :not_desc)
       return
     end
     solve!(solver, reg_nlp, stats)
@@ -180,15 +180,15 @@ end
 
 function SolverCore.solve!(
   solver::MoreSorensenSolver{T,V},
-  reg_nlp::ShiftedL2PenalizedProblem{T, V, M, H, P},
+  reg_nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
   stats::GenericExecutionStats{T,V,V};
   x = reg_nlp.model.meta.x0,
   σk = T(1),
   atol = eps(T)^(0.6),
   max_time = T(30),
   max_iter = 10,
-  σmax = 1 / eps(T)
-) where {T, V, M, H, O <: NullHessianModel, P <: L2PenalizedProblem{T, V, O}}
+  σmax = 1 / eps(T),
+) where {T,V,M,H,O<:NullHessianModel,P<:L2PenalizedProblem{T,V,O}}
 
   n = reg_nlp.model.meta.nvar
   ψ = reg_nlp.h
@@ -197,8 +197,16 @@ function SolverCore.solve!(
   ν = 1 / reg_nlp.model.data.σ
   @. u1[1:n] = - ν * reg_nlp.model.data.c
 
-  @views prox!(x1[1:n], ψ, u1[1:n], ν, max_iter = max_iter, max_time = max_time, atol = atol)
-  
+  @views prox!(
+    x1[1:n],
+    ψ,
+    u1[1:n],
+    ν,
+    max_iter = max_iter,
+    max_time = max_time,
+    atol = atol,
+  )
+
   @. x1[(n+1):end] = - ψ.q / ν
   set_solution!(stats, @view x1[1:n])
   set_status!(stats, :first_order)

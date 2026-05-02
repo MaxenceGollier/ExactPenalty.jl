@@ -37,8 +37,8 @@ end
 
 function update_constraint_multipliers!(solver::L2PenaltySolver{T}) where {T}
   σ =
-    isa(solver.subsolver, PenaltyR2NSolver) ? solver.substats.solver_specific[:sigma_cauchy] :
-    solver.substats.solver_specific[:sigma]
+    isa(solver.subsolver, PenaltyR2NSolver) ?
+    solver.substats.solver_specific[:sigma_cauchy] : solver.substats.solver_specific[:sigma]
   @. solver.y = solver.subsolver.subpb.h.q * σ
 end
 
@@ -47,7 +47,13 @@ function kkt_dual_feas!(solver::L2PenaltySolver{T}) where {T}
   s = solver.subsolver.s
 
   solver.dual_res .= s .* σ
-  mul!(solver.dual_res, Symmetric(solver.subsolver.subpb.model.data.H, :L), s, one(T), one(T))
+  mul!(
+    solver.dual_res,
+    Symmetric(solver.subsolver.subpb.model.data.H, :L),
+    s,
+    one(T),
+    one(T),
+  )
 
   return norm(solver.dual_res, Inf)
 end
@@ -55,7 +61,7 @@ end
 function least_square_dual_feas!(solver::L2PenaltySolver{T}) where {T}
   dual_res, y = solver.dual_res, solver.y
   g, J = solver.∇fk, solver.subsolver.subpb.h.A
-  
+
   dual_res .= g
   mul!(dual_res, J', y, one(T), -one(T))
   return norm(dual_res, Inf)
