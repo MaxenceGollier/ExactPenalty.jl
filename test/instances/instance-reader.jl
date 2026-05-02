@@ -32,7 +32,7 @@ function read_instance(file::String; type = Float64, Hessian_modifier = H -> H)
   H =
     Hessian_modifier == LinearOperator ?
     Hessian_modifier{Float64,Vector{Float64}}(sQ, symmetric = true) : Hessian_modifier(sQ)
-  model = QuadraticModel(data["nabla"], H, σ = data["sigma"], x0 = x0)
+  model = QuadraticModel(data["nabla"], H, regularize = true, σ = data["sigma"], x0 = x0)
 
   c! = let c = data["c"]
     (b, x) -> begin
@@ -45,5 +45,5 @@ function read_instance(file::String; type = Float64, Hessian_modifier = H -> H)
     end
   end
   h = ShiftedCompositeNormL2(data["tau"], c!, J!, SparseMatrixCOO(data["J"]), data["c"])
-  return RegularizedNLPModel(model, h)
+  return ShiftedL2PenalizedProblem(model, h, nothing, model.meta, nothing, nothing, nothing)
 end

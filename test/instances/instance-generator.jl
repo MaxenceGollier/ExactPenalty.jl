@@ -34,6 +34,7 @@ function generate_instance(
   eigsQ = range(λmin, λmax, length = n) |> collect
   UQ = qr(randn(rng, n, n)).Q
   Q = UQ * Diagonal(eigsQ) * UQ'
+  σ = σmin
 
   # --- Generate J ---
   σmax = σmin * κ_J
@@ -49,7 +50,7 @@ function generate_instance(
   b = randn(rng, m)
 
   # --- Solve KKT ---
-  KKT = [Q J'; J -alpha * I(m)]
+  KKT = [Q+σ*I J'; J -alpha * I(m)]
   rhs = vcat(-nabla, -b)
   sol = KKT \ rhs
   u = sol[1:n]
@@ -64,7 +65,7 @@ function generate_instance(
   H =
     Hessian_modifier == LinearOperator ?
     Hessian_modifier{Float64,Vector{Float64}}(Q, symmetric = true) : Hessian_modifier(Q)
-  model = QuadraticModel(nabla, H, regularize = true, x0 = x0)
+  model = QuadraticModel(nabla, H, regularize = true, σ = σ, x0 = x0)
   c! = let c = b
     (b, x) -> begin
       b .= c
@@ -76,5 +77,5 @@ function generate_instance(
     end
   end
   h = ShiftedCompositeNormL2(tau, c!, J!, SparseMatrixCOO(J), b)
-  return RegularizedNLPModel(model, h), Dict(:u => u, :y => y, :tau => tau)
+  return ShiftedL2PenalizedProblem(model, h, nothing, model.meta, nothing, nothing, nothing), Dict(:u => u, :y => y, :tau => tau)
 end

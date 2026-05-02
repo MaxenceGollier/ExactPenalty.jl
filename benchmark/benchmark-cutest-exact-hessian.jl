@@ -1,6 +1,6 @@
 using JLD2
 
-using CUTEst, ExactPenalty, NLPModelsModifiers, RegularizedOptimization, SolverBenchmark
+using CUTEst, ExactPenalty, NLPModelsModifiers, SolverBenchmark
 
 nmax = 300
 problem_names = CUTEst.select_sif_problems(
@@ -21,7 +21,6 @@ solvers = Dict(
       verbose = 0,
       atol = imprecise_tol,
       rtol = imprecise_tol,
-      subsolver = R2NSolver,
     ),
   :l2penalty_exact_precise =>
     nlp -> L2Penalty(
@@ -29,7 +28,6 @@ solvers = Dict(
       verbose = 0,
       atol = precise_tol,
       rtol = precise_tol,
-      subsolver = R2NSolver,
     ),
 )
 

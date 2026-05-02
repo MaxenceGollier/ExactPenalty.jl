@@ -1,11 +1,13 @@
 module ExactPenalty
 
-using LinearAlgebra
-using NLPModels, NLPModelsModifiers, RegularizedProblems, RegularizedOptimization
+using LinearAlgebra, SparseArrays
+using NLPModels, NLPModelsModifiers, RegularizedProblems
 using Krylov,
+  LDLFactorizations,
   LinearOperators,
   ProximalOperators,
   QRMumps,
+  QuadraticModels,
   ShiftedProximalOperators,
   SolverCore,
   SparseMatricesCOO
@@ -13,20 +15,25 @@ using Krylov,
 import SolverCore.reset!
 
 abstract type AbstractPenalizedProblemSolver <: AbstractOptimizationSolver end
-abstract type AbstractPenalizedProblem{T,S} <: AbstractRegularizedNLPModel{T,S} end
 
 include("ExactPenaltyExecutionStats.jl")
+
+include("types/quasi-newton/NullHessian.jl")
+include("types/quasi-newton/CompactBFGS.jl")
 
 include("linear_algebra/K2.jl")
 include("linear_algebra/construct_workspace.jl")
 include("linear_algebra/krylov.jl")
+include("linear_algebra/ldlt.jl")
+
+include("types/PenalizedProblem.jl")
+include("types/ShiftedPenalizedProblem.jl")
 
 include("subsolvers/more-sorensen.jl")
 
+include("ir2n.jl")
+
 include("algorithm.jl")
 
-include("callbacks.jl")
 include("feas_computer.jl")
-include("types.jl")
-
 end
