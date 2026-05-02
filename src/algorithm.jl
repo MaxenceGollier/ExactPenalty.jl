@@ -29,13 +29,24 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T,V}) where {T,V}
   ∇fk = similar(x0)
 
   penalty_subproblem = L2PenalizedProblem(nlp) # f(x) + τ‖c(x)‖₂
-  substats = GenericExecutionStats(penalty_subproblem, solver_specific = Dict{Symbol, T}())
+  substats = GenericExecutionStats(penalty_subproblem, solver_specific = Dict{Symbol,T}())
   solver = PenaltyR2NSolver(penalty_subproblem)
 
   set_solver_specific!(substats, :primal_ktol, T(0))
   set_solver_specific!(substats, :dual_ktol, T(0))
 
-  return L2PenaltySolver(x, y, dual_res, s, s0, ∇fk, temp_b, solver, penalty_subproblem, substats)
+  return L2PenaltySolver(
+    x,
+    y,
+    dual_res,
+    s,
+    s0,
+    ∇fk,
+    temp_b,
+    solver,
+    penalty_subproblem,
+    substats,
+  )
 end
 
 function SolverCore.reset!(solver::L2PenaltySolver)
@@ -120,10 +131,7 @@ Notably, you can access, and modify, the following:
   - `stats.elapsed_time`: elapsed time in seconds.
 You can also use the `sub_callback` keyword argument which has exactly the same structure and in sent to `R2`.
 """
-function L2Penalty(
-  nlp::AbstractNLPModel{T,V};
-  kwargs...,
-) where {T<:Real,V}
+function L2Penalty(nlp::AbstractNLPModel{T,V}; kwargs...) where {T<:Real,V}
   if !equality_constrained(nlp)
     error("L2Penalty: This algorithm only works for equality contrained problems.")
   end
@@ -266,7 +274,7 @@ function SolverCore.solve!(
       σmin = β4,
       σk = 1 / νsub,
       η2 = isa(nlp, QuasiNewtonModel) ? T(0.9) : T(0.1),
-      is_shifted = true
+      is_shifted = true,
     )
 
     if solver.substats.status == :unbounded
@@ -351,7 +359,10 @@ function SolverCore.solve!(
 
     θ = compute_θ!(solver)
 
-    infeasible = hx > primal_tol && sqrt(max(θ, 0))/hx < infeasible_tol && sqrt(max(θ, 0)) < primal_ktol
+    infeasible =
+      hx > primal_tol &&
+      sqrt(max(θ, 0))/hx < infeasible_tol &&
+      sqrt(max(θ, 0)) < primal_ktol
 
     set_iter!(stats, stats.iter + 1)
     rem_eval = max_eval - neval_obj(nlp)

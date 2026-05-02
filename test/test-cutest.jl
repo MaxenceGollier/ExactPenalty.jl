@@ -20,17 +20,18 @@ function test_problem(name, primal_solution, dual_solution, expected_status)
       @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 100*tol
       @test norm(stats.multipliers - dual_solution) ≤ 100*tol
       @test norm(
-          jtprod(nlp, stats.solution, stats.multipliers) + grad(nlp, stats.solution),
-          Inf,
-        ) ≤ 100*tol
+        jtprod(nlp, stats.solution, stats.multipliers) + grad(nlp, stats.solution),
+        Inf,
+      ) ≤ 100*tol
     end
     @test stats.primal_feas == norm(cons(nlp, stats.solution), Inf)
 
     # Test stability and allocations
     solver = L2PenaltySolver(null_model)
     stats_optimized = ExactPenaltyExecutionStats(null_model)
-    @test @wrappedallocs(solve!(solver, null_model, stats_optimized, atol = 1e-3, rtol = 1e-3)) ==
-          0
+    @test @wrappedallocs(
+      solve!(solver, null_model, stats_optimized, atol = 1e-3, rtol = 1e-3)
+    ) == 0
 
     # Test that the second calling form gives the same output
     @test stats_optimized.status == stats.status
@@ -53,18 +54,16 @@ function test_problem(name, primal_solution, dual_solution, expected_status)
       @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 100*tol
       @test norm(stats.multipliers - dual_solution) ≤ 100*tol
       @test norm(
-          jtprod(nlp, stats.solution, stats.multipliers) + grad(nlp, stats.solution),
-          Inf,
-        ) ≤ 100*tol
+        jtprod(nlp, stats.solution, stats.multipliers) + grad(nlp, stats.solution),
+        Inf,
+      ) ≤ 100*tol
     end
     @test stats.primal_feas == norm(cons(nlp, stats.solution), Inf)
 
     # Test stability and allocations
     solver = L2PenaltySolver(LBFGS_model)
     stats_optimized = ExactPenaltyExecutionStats(LBFGS_model)
-    @wrappedallocs(
-      solve!(solver, LBFGS_model, stats_optimized, atol = 1e-3, rtol = 1e-3)
-    )
+    @wrappedallocs(solve!(solver, LBFGS_model, stats_optimized, atol = 1e-3, rtol = 1e-3))
 
     # Test that the second calling form gives the same output
     @test stats_optimized.status == stats.status
@@ -87,9 +86,9 @@ function test_problem(name, primal_solution, dual_solution, expected_status)
       @test abs(stats.objective - obj(nlp, primal_solution)) ≤ 100*tol
       @test norm(stats.multipliers - dual_solution) ≤ 100*tol
       @test norm(
-          jtprod(nlp, stats.solution, stats.multipliers) + grad(nlp, stats.solution),
-          Inf,
-        ) ≤ 100*tol
+        jtprod(nlp, stats.solution, stats.multipliers) + grad(nlp, stats.solution),
+        Inf,
+      ) ≤ 100*tol
     end
     @test stats.primal_feas == norm(cons(nlp, stats.solution), Inf)
 

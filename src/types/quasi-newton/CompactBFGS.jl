@@ -1,6 +1,7 @@
 export CompactBFGSModel
 
-mutable struct CompactBFGS{T, V <: AbstractVector{T}, MT <: AbstractMatrix{T}} <: AbstractMatrix{T}
+mutable struct CompactBFGS{T,V<:AbstractVector{T},MT<:AbstractMatrix{T}} <:
+               AbstractMatrix{T}
   ξ::T
   Sk::MT # n x p
   Yk::MT # n x p
@@ -23,8 +24,8 @@ function CompactBFGS(
   damped::Bool = false,
   σ₂::Float64 = 0.99,
   σ₃::Float64 = 10.0,
-) where {I <: Integer}
-  return CompactBFGS{T, Vector{T}, Matrix{T}}(
+) where {I<:Integer}
+  return CompactBFGS{T,Vector{T},Matrix{T}}(
     one(T),
     zeros(T, n, mem),
     zeros(T, n, mem),
@@ -36,7 +37,7 @@ function CompactBFGS(
     zeros(T, n, mem),
     zeros(T, mem),
     mem,
-    1
+    1,
   )
 end
 
@@ -51,10 +52,10 @@ function LinearAlgebra.mul!(
   op::CompactBFGS,
   y::AbstractVector,
   α::Real,
-  β::Real
+  β::Real,
 )
   x .*= β                           # x = βx
-  x .+= (α*op.ξ).*y                 # x = βx + α * (ξI)y
+  x .+= (α*op.ξ) .* y                 # x = βx + α * (ξI)y
 
   mul!(op._y, op.Uk', y)            # _y = Uₖᵀy
   mul!(x, op.Uk, op._y, -α, one(α)) #  x = βx + α * (ξI - UₖUₖᵀ)y
@@ -62,18 +63,16 @@ function LinearAlgebra.mul!(
   mul!(x, op.Vk, op._y, α, one(α))  #  x = βx + α * (ξI - UₖUₖᵀ + VₖVₖᵀ)y
 end
 
-function NLPModels.reset!(
-  op::CompactBFGS
-)
+function NLPModels.reset!(op::CompactBFGS)
   op.ξ = 1
-  op.Sk       .= 0
-  op.Yk       .= 0
-  op.Lk       .= 0
-  op.Mk       .= 0
-  op.Uk       .= 0
-  op.Vk       .= 0
+  op.Sk .= 0
+  op.Yk .= 0
+  op.Lk .= 0
+  op.Mk .= 0
+  op.Uk .= 0
+  op.Vk .= 0
   op._Dkinvsq .= 0
-  op._DLk     .= 0
+  op._DLk .= 0
 
   op._insert = 1
 
@@ -81,22 +80,19 @@ end
 mutable struct CompactBFGSModel{
   T,
   S,
-  M <: AbstractNLPModel{T, S},
-  Meta <: AbstractNLPModelMeta{T, S},
-  Op <: CompactBFGS{T}
-} <: QuasiNewtonModel{T, S}
+  M<:AbstractNLPModel{T,S},
+  Meta<:AbstractNLPModelMeta{T,S},
+  Op<:CompactBFGS{T},
+} <: QuasiNewtonModel{T,S}
   meta::Meta
   model::M
   op::Op
 end
 
-function Base.push!(
-  op::CompactBFGS{T, V, MT},
-  s::V,
-  y::V,
-) where {T, V, MT}
+function Base.push!(op::CompactBFGS{T,V,MT}, s::V, y::V) where {T,V,MT}
   k, mem = op._insert, op._mem
-  Sk, Yk, Lk, Dkinvsq, _DLk, Mk, Uk, Vk = op.Sk, op.Yk, op.Lk, op._Dkinvsq, op._DLk, op.Mk, op.Uk, op.Vk
+  Sk, Yk, Lk, Dkinvsq, _DLk, Mk, Uk, Vk =
+    op.Sk, op.Yk, op.Lk, op._Dkinvsq, op._DLk, op.Mk, op.Uk, op.Vk
   ξ = op.ξ
 
   sy = dot(s, y)
@@ -105,12 +101,12 @@ function Base.push!(
 
   # Shift
   if k > mem
-    @inbounds for i in 1:mem-1
+    @inbounds for i = 1:(mem-1)
       copyto!(view(Sk, :, i), view(Sk, :, i+1))
       copyto!(view(Yk, :, i), view(Yk, :, i+1))
       Dkinvsq[i] = Dkinvsq[i+1]
 
-      for j in 1:i-1
+      for j = 1:(i-1)
         Lk[i, j] = Lk[i+1, j+1]
       end
     end
@@ -120,7 +116,7 @@ function Base.push!(
   copyto!(view(Sk, :, k), s)
   copyto!(view(Yk, :, k), y)
 
-  @inbounds for j in 1:k-1
+  @inbounds for j = 1:(k-1)
     Lk[k, j] = dot(s, view(Yk, :, j))
   end
   Dkinvsq[k] = 1 / sqrt(sy)
@@ -147,7 +143,7 @@ function Base.push!(
   op._insert = min(k + 1, mem)
 end
 
-function CompactBFGSModel(nlp::AbstractNLPModel{T, S}; kwargs...) where {T, S}
+function CompactBFGSModel(nlp::AbstractNLPModel{T,S}; kwargs...) where {T,S}
   op = CompactBFGS(T, nlp.meta.nvar; kwargs...)
   return CompactBFGSModel(nlp.meta, nlp, op)
 end
@@ -155,4 +151,3 @@ end
 get_model(nlp::CompactBFGSModel) = nlp.model
 get_op(nlp::CompactBFGSModel) = nlp.op
 @default_counters CompactBFGSModel model
-
