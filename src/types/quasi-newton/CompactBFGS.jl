@@ -57,7 +57,7 @@ function LinearAlgebra.mul!(
   x .*= β                                               # x = βx
   x .+= (α*op.ξ) .* y                                   # x = βx + α * (ξI)y
 
-  k = min(op._insert, op._mem)
+  k = min(op._insert - 1, op._mem)
 
   @views mul!(op._y[1:k], op.Uk[:, 1:k]', y)            # _y = Uₖᵀy
   @views mul!(x, op.Uk[:, 1:k], op._y[1:k], -α, one(α)) #  x = βx + α * (ξI - UₖUₖᵀ)y

@@ -191,7 +191,7 @@ function solve_system!(
   H = workspace.H
   B = workspace.H.B
   n, m = workspace.n, workspace.m
-  p = min(B._insert, B._mem)
+  p = min(B._insert - 1, B._mem)
   x1, x2, x3, y1, y2 = H.x1, H.x2, H.x3, H.y1, H.y2
   Z1, Z2 = H.Z1, H.Z2
   Uk = @view B.Uk[:, 1:p]
@@ -243,8 +243,9 @@ function solve_system!(
   # Step 4.2: Compute 
   # Z₂ = FᵀZ₁ = UᵀZ₁[1:n]
   # Z₂ = FᵀZ₁ = VᵀZ₁[1:n]
-  @views mul!(Z2[1:p, :], Uk', Z1[1:n, :])
-  @views mul!(Z2[(p+1):(2*p), :], Vk', Z1[1:n, :])
+  Z2 .= 0
+  @views mul!(Z2[1:p, 1:(2*p)], Uk', Z1[1:n, (1:(2*p))])
+  @views mul!(Z2[(p+1):(2*p), 1:(2*p)], Vk', Z1[1:n, (1:(2*p))])
 
   # Step 4.3: Compute 
   # Z₂ = I + Z₂
@@ -266,8 +267,8 @@ function solve_system!(
   # Step 6: Compute
   # x₂ = E[y₂] = [-U V][y₂] = [-Uy₂ + Vy₂]
   # x₂ = E[y₂] = [ 0 0][y₂] = [0]
-  @views mul!(x2[1:n], Vk, y2[1:p])
-  @views mul!(x2[1:n], Uk, y2[(p+1):(2*p)], -one(eltype(y2)), one(eltype(y2)))
+  @views mul!(x2[1:n], Vk, y2[(p+1):(2*p)])
+  @views mul!(x2[1:n], Uk, y2[1:p], -one(eltype(y2)), one(eltype(y2)))
 
   # Step 7: Solve
   # [x₃] = [σI+ξI  Aᵀ]⁻¹[x₂]
