@@ -191,9 +191,11 @@ function solve_system!(
   H = workspace.H
   B = workspace.H.B
   n, m = workspace.n, workspace.m
-  p = B._mem
+  p = min(B._insert - 1, B._mem)
   x1, x2, x3, y1, y2 = H.x1, H.x2, H.x3, H.y1, H.y2
   Z1, Z2 = H.Z1, H.Z2
+  Uk = @view B.Uk[:, 1:p]
+  Vk = @view B.Vk[:, 1:p]
 
   # Step 0: Write (#TODO: we can use easily use QRMumps instead of LDLFactorization here...)
   # [B  Aᵀ] = [σI+ξI  Aᵀ] + [-U V]([U V])ᵀ
@@ -223,8 +225,8 @@ function solve_system!(
   # Step 3: Compute
   # y₁ = Fᵀx₁ = [Uᵀx₁(1:n)]
   # y₁ = Fᵀx₁ = [Vᵀx₁(1:n)]
-  @views mul!(y1[1:p], B.Uk', x1[1:n])
-  @views mul!(y1[(p+1):end], B.Vk', x1[1:n])
+  @views mul!(y1[1:p], Uk', x1[1:n])
+  @views mul!(y1[(p+1):2*p], Vk', x1[1:n])
 
 
   # Step 4: Assemble Schur complement (I + Fᵀ [σI+ξI  Aᵀ]⁻¹ E )
@@ -234,15 +236,16 @@ function solve_system!(
   # Z₁ = [A     -αI]   E = [A     -αI]  [ 0 0]
   Z1 .= 0
 
-  @views Z1[1:n, 1:p] .= B.Uk .* (-1)
-  @views Z1[1:n, (p+1):end] .= B.Vk
+  @views Z1[1:n, 1:p] .= Uk .* (-1)
+  @views Z1[1:n, (p+1):(2*p)] .= Vk
   ldiv!(workspace.M, Z1)
 
   # Step 4.2: Compute 
   # Z₂ = FᵀZ₁ = UᵀZ₁[1:n]
   # Z₂ = FᵀZ₁ = VᵀZ₁[1:n]
-  @views mul!(Z2[1:p, :], B.Uk', Z1[1:n, :])
-  @views mul!(Z2[(p+1):end, :], B.Vk', Z1[1:n, :])
+  Z2 .= 0
+  @views mul!(Z2[1:p, 1:(2*p)], Uk', Z1[1:n, (1:(2*p))])
+  @views mul!(Z2[(p+1):(2*p), 1:(2*p)], Vk', Z1[1:n, (1:(2*p))])
 
   # Step 4.3: Compute 
   # Z₂ = I + Z₂
@@ -254,8 +257,8 @@ function solve_system!(
   # (I + Fᵀ [σI+ξI  Aᵀ]⁻¹ E )⁻¹[y₁]
   # (       [A     -αI]     )  [y₁]
   # using Julia LinearALgebra's lu!
-  F = lu!(Z2, check = false) # FIXME ?
-  ldiv!(y2, F, y1)
+  F = lu!(Z2[1:2*p, 1:2*p], check = false) # FIXME ?
+  @views ldiv!(y2[1:2*p], F, y1[1:2*p])
   if any(isnan, y2)
     workspace.status = :failed
     return
@@ -264,8 +267,8 @@ function solve_system!(
   # Step 6: Compute
   # x₂ = E[y₂] = [-U V][y₂] = [-Uy₂ + Vy₂]
   # x₂ = E[y₂] = [ 0 0][y₂] = [0]
-  @views mul!(x2[1:n], B.Vk, y2[1:p])
-  @views mul!(x2[1:n], B.Uk, y2[(p+1):end], -one(eltype(y2)), one(eltype(y2)))
+  @views mul!(x2[1:n], Vk, y2[(p+1):(2*p)])
+  @views mul!(x2[1:n], Uk, y2[1:p], -one(eltype(y2)), one(eltype(y2)))
 
   # Step 7: Solve
   # [x₃] = [σI+ξI  Aᵀ]⁻¹[x₂]

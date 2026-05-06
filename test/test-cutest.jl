@@ -64,7 +64,7 @@ function test_problem(name, primal_solution, dual_solution, expected_status)
     NLPModels.reset!(LBFGS_model)
     solver = L2PenaltySolver(LBFGS_model)
     stats_optimized = ExactPenaltyExecutionStats(LBFGS_model)
-    @wrappedallocs(solve!(solver, LBFGS_model, stats_optimized, atol = 1e-3, rtol = 1e-3))
+    solve!(solver, LBFGS_model, stats_optimized, atol = 1e-3, rtol = 1e-3)
 
     # Test that the second calling form gives the same output
     @test stats_optimized.status == stats.status
