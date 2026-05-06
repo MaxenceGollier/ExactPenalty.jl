@@ -71,7 +71,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   )
 
   αmin = isa(reg_nlp.model.data.H, CompactBFGS) ? eps(T)^(0.6) : eps(T)^(0.8)
-  θ = T(0.8)
+  θ = T(0.1)
   μ = T(10)
 
   # [ H + σI Aᵀ][x] = -[∇f]
