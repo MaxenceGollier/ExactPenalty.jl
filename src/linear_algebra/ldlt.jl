@@ -253,9 +253,13 @@ function solve_system!(
   # Step 5: Solve
   # (I + Fᵀ [σI+ξI  Aᵀ]⁻¹ E )⁻¹[y₁]
   # (       [A     -αI]     )  [y₁]
-  # using Julia LinearALgebra's lu! 
-  F = lu!(Z2) # FIXME ?
+  # using Julia LinearALgebra's lu!
+  F = lu!(Z2, check = false) # FIXME ?
   ldiv!(y2, F, y1)
+  if any(isnan, y2)
+    workspace.status = :failed
+    return
+  end
 
   # Step 6: Compute
   # x₂ = E[y₂] = [-U V][y₂] = [-Uy₂ + Vy₂]
