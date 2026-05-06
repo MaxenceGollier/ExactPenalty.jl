@@ -54,13 +54,15 @@ function LinearAlgebra.mul!(
   α::Real,
   β::Real,
 )
-  x .*= β                           # x = βx
-  x .+= (α*op.ξ) .* y                 # x = βx + α * (ξI)y
+  x .*= β                                               # x = βx
+  x .+= (α*op.ξ) .* y                                   # x = βx + α * (ξI)y
 
-  mul!(op._y, op.Uk', y)            # _y = Uₖᵀy
-  mul!(x, op.Uk, op._y, -α, one(α)) #  x = βx + α * (ξI - UₖUₖᵀ)y
-  mul!(op._y, op.Vk', y)            # _y = Vₖᵀy
-  mul!(x, op.Vk, op._y, α, one(α))  #  x = βx + α * (ξI - UₖUₖᵀ + VₖVₖᵀ)y
+  k = min(op._insert, op._mem)
+
+  @views mul!(op._y[1:k], op.Uk[:, 1:k]', y)            # _y = Uₖᵀy
+  @views mul!(x, op.Uk[:, 1:k], op._y[1:k], -α, one(α)) #  x = βx + α * (ξI - UₖUₖᵀ)y
+  @views mul!(op._y[1:k], op.Vk[:, 1:k]', y)            # _y = Vₖᵀy
+  @views mul!(x, op.Vk[:, 1:k], op._y[1:k], α, one(α))  #  x = βx + α * (ξI - UₖUₖᵀ + VₖVₖᵀ)y
 end
 
 function NLPModels.reset!(op::CompactBFGS)
@@ -73,6 +75,7 @@ function NLPModels.reset!(op::CompactBFGS)
   op.Vk .= 0
   op._Dkinvsq .= 0
   op._DLk .= 0
+  op._y .= 0
 
   op._insert = 1
 
