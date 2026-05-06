@@ -45,6 +45,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   max_time = T(30),
   max_iter = 10,
   σmax = 1 / eps(T),
+  accept_descent::Bool = true, # Whether we accept inexact steps that decrease the quadratic model.
 ) where {T,V,M,H,P}
   start_time = time()
   set_time!(stats, 0.0)
@@ -111,7 +112,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
 
   is_descent = check_descent(reg_nlp, @view x1[1:n])
 
-  if norm(@view x1[(n+1):(n+m)]) <= Δ || is_descent
+  if norm(@view x1[(n+1):(n+m)]) <= Δ || (is_descent && accept_descent)
     set_solution!(stats, @view x1[1:n])
     set_status!(stats, :first_order)
 
@@ -141,7 +142,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
 
     # Check whether x1 decreases the model.
     is_descent = check_descent(reg_nlp, @view x1[1:n])
-    if is_descent
+    if is_descent && accept_descent
       set_solution!(stats, @view x1[1:n])
       set_status!(stats, :first_order)
       return
