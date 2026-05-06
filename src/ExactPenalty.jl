@@ -35,5 +35,6 @@ include("ir2n.jl")
 
 include("algorithm.jl")
 
+include("extrapolate.jl")
 include("feas_computer.jl")
 end
