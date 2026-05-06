@@ -19,7 +19,7 @@
   Bk_compact = B0 - Uk*Uk' + Vk*Vk'
   Bk_op = Matrix(bfgs_op_nlp.op)
 
-  @test norm(Bk_compact - Bk_op) / norm(Bk_op) <= 0.1
+  @test norm(Bk_compact - Bk_op) / norm(Bk_op) <= 1e-12
 
   s = randn(n)
   y = randn(n)

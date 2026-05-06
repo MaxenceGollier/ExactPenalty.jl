@@ -61,6 +61,7 @@ function test_problem(name, primal_solution, dual_solution, expected_status)
     @test stats.primal_feas == norm(cons(nlp, stats.solution), Inf)
 
     # Test stability and allocations
+    NLPModels.reset!(LBFGS_model)
     solver = L2PenaltySolver(LBFGS_model)
     stats_optimized = ExactPenaltyExecutionStats(LBFGS_model)
     @wrappedallocs(solve!(solver, LBFGS_model, stats_optimized, atol = 1e-3, rtol = 1e-3))

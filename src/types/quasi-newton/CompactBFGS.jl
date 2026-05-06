@@ -140,7 +140,7 @@ function Base.push!(op::CompactBFGS{T,V,MT}, s::V, y::V) where {T,V,MT}
   axpy!(ξ, Sk, Uk)                                         # Uₖ = ξ Sₖ + Yₖ Dₖ⁻¹ Lₖᵀ
   @views rdiv!(Uk[:, 1:k], UpperTriangular(Mk[1:k, 1:k]))  # Uₖ = (ξ Sₖ + Yₖ Dₖ⁻¹ Lₖᵀ) Jₖ⁻¹
 
-  op._insert = min(k + 1, mem)
+  op._insert = min(k + 1, mem + 1)
 end
 
 function CompactBFGSModel(nlp::AbstractNLPModel{T,S}; kwargs...) where {T,S}
