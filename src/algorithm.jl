@@ -324,6 +324,13 @@ function SolverCore.solve!(
       # Update penalty parameter
       compute_least_square_multipliers!(solver)
       τ = max(τ + β1, norm(solver.y, 1))
+
+      succ = extrapolate!(x, solver, τ₊, τ)
+      if succ
+        shift!(mk, x, y = solver.y)
+        set_solver_specific!(solver.substats, :smooth_obj, obj(nlp, x))
+      end
+      τ = τ₊
       set_penalty!(mk, τ)
 
       # Initialize regularization parameter
