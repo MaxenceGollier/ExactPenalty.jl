@@ -100,7 +100,7 @@ function Base.push!(op::CompactBFGS{T,V,MT}, s::V, y::V) where {T,V,MT}
 
   sy = dot(s, y)
 
-  sy <= 0 && return
+  sy <= eps(T) && return
 
   # Shift
   if k > mem
