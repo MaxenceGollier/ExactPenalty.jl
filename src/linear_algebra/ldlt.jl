@@ -226,7 +226,7 @@ function solve_system!(
   # y₁ = Fᵀx₁ = [Uᵀx₁(1:n)]
   # y₁ = Fᵀx₁ = [Vᵀx₁(1:n)]
   @views mul!(y1[1:p], Uk', x1[1:n])
-  @views mul!(y1[(p+1):2*p], Vk', x1[1:n])
+  @views mul!(y1[(p+1):(2*p)], Vk', x1[1:n])
 
 
   # Step 4: Assemble Schur complement (I + Fᵀ [σI+ξI  Aᵀ]⁻¹ E )
@@ -257,8 +257,8 @@ function solve_system!(
   # (I + Fᵀ [σI+ξI  Aᵀ]⁻¹ E )⁻¹[y₁]
   # (       [A     -αI]     )  [y₁]
   # using Julia LinearALgebra's lu!
-  F = lu!(Z2[1:2*p, 1:2*p], check = false) # FIXME ?
-  @views ldiv!(y2[1:2*p], F, y1[1:2*p])
+  F = lu!(Z2[1:(2*p), 1:(2*p)], check = false) # FIXME ?
+  @views ldiv!(y2[1:(2*p)], F, y1[1:(2*p)])
   if any(isnan, y2)
     workspace.status = :failed
     return
