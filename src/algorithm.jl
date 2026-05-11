@@ -323,11 +323,9 @@ function SolverCore.solve!(
     if primal_feas > primal_ktol || (dual_ktol ≤ dual_tol && primal_feas > primal_tol)
       # Update penalty parameter
       compute_least_square_multipliers!(solver)
-      τ = max(τ + β1, norm(solver.y, 1))
-
-      succ = extrapolate!(x, solver, τ₊, τ)
-      if succ
-        shift!(mk, x, y = solver.y)
+      τ₊ = max(τ + β1, norm(solver.y, 1))
+      if extrapolate!(x, solver, τ₊, τ)
+        shift!(mk, x, y = solver.subsolver.y)
         set_solver_specific!(solver.substats, :smooth_obj, obj(nlp, x))
       end
       τ = τ₊
