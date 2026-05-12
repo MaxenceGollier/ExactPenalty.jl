@@ -177,7 +177,7 @@ function solve_system!(
   end
 
   refine!(workspace, u)
-  if any(isnan, workspace.x)
+  if any(isnan, workspace.x) || norm(workspace.dx)/norm(workspace.x) > eps(eltype(workspace.x))^(0.5)
     workspace.status = :failed
     return
   end
@@ -300,7 +300,7 @@ function get_inertia(workspace::PenaltyLDLTWorkspace)
     d = D[i]
     if real(d) > 0
       npos += 1
-    elseif real(d) == 0
+    elseif abs(real(d)) < eps(eltype(d))
       nzero += 1
     else
       nneg += 1
