@@ -86,11 +86,21 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   # If the factorization/solver failed, it in indicates we should add a minimal regularization too.
   if nneg < m || status == :failed
     α = αmin
-    set_dual_inertia!(solver_workspace, αmin)
+    set_dual_inertia!(solver_workspace, α)
     solve_system!(solver_workspace, u1)
     get_solution!(x1, solver_workspace)
     npos, nzero, nneg = get_inertia(solver_workspace)
     status = get_status(solver_workspace)
+
+    if nneg < m || status == :failed
+      αmin = eps(T)^(0.6)
+      α = αmin
+      set_dual_inertia!(solver_workspace, α)
+      solve_system!(solver_workspace, u1)
+      get_solution!(x1, solver_workspace)
+      npos, nzero, nneg = get_inertia(solver_workspace)
+      status = get_status(solver_workspace)
+    end
   end
 
   while npos < n && reg_nlp.model.data.σ <= σmax
