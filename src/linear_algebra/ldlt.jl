@@ -177,7 +177,8 @@ function solve_system!(
   end
 
   refine!(workspace, u)
-  if any(isnan, workspace.x) || norm(workspace.dx)/norm(workspace.x) > eps(eltype(workspace.x))^(0.5)
+  if any(isnan, workspace.x) ||
+     norm(workspace.dx)/norm(workspace.x) > eps(eltype(workspace.x))^(0.5)
     workspace.status = :failed
     return
   end
