@@ -22,7 +22,7 @@ end
 function PenaltyR2NSolver(
   penalty_nlp::AbstractPenalizedProblem{T,V};
   subsolver = MoreSorensenSolver,
-  m_monotone::Int = 100,
+  m_monotone::Int = 12,
 ) where {T,V}
   x0 = penalty_nlp.model.meta.x0
 
