@@ -320,7 +320,7 @@ function SolverCore.solve!(
         colsep = 1,
       )
 
-    if primal_feas > primal_ktol || (dual_ktol ≤ dual_tol && primal_feas > primal_tol)
+    if primal_feas > primal_ktol || (dual_feas ≤ dual_tol && primal_feas > primal_tol)
       # Update penalty parameter
       compute_least_square_multipliers!(solver)
       τ₊ = max(τ + β1, norm(solver.y, 1))
@@ -355,7 +355,7 @@ function SolverCore.solve!(
     # Check whether the primal feasibility has decreased. If not, increase the penalty parameter more aggressively.
     if primal_feas > primal_ktol && hx_prev ≥ hx
       n_iter_since_decrease += 1
-      β1 *= 10
+      β1 *= 2
     else
       n_iter_since_decrease = 0
     end

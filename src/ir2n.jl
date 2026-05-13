@@ -22,7 +22,7 @@ end
 function PenaltyR2NSolver(
   penalty_nlp::AbstractPenalizedProblem{T,V};
   subsolver = MoreSorensenSolver,
-  m_monotone::Int = 6,
+  m_monotone::Int = 100,
 ) where {T,V}
   x0 = penalty_nlp.model.meta.x0
 
@@ -191,12 +191,15 @@ function SolverCore.solve!(
     ρk = Δobj / Δmod
 
     if η1 ≤ ρk < Inf
+  
       xk .= xkn
 
       #update functions
       fk, hk = fkn, hkn
 
       shift!(mk, xk, y = y)
+
+      m_monotone > 1 && (m_fh_hist[stats.iter%(m_monotone-1)+1] = fk + hk)
 
     end
 
@@ -207,8 +210,6 @@ function SolverCore.solve!(
     if ρk < η1 || ρk == Inf
       σk = σk * γ
     end
-
-    m_monotone > 1 && (m_fh_hist[stats.iter%(m_monotone-1)+1] = fk + hk)
 
     # Update stats
     set_objective!(stats, fk + hk)
