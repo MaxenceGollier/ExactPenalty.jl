@@ -283,6 +283,7 @@ function SolverCore.solve!(
       νsub = 1/max(β4, β3*τ)
       shift!(mk, x, y = y)
       set_solver_specific!(solver.substats, :smooth_obj, fx)
+      set_solver_specific!(solver.substats, :nonsmooth_obj, ψ.h(ψ.b))
       continue
     end
 
@@ -326,7 +327,14 @@ function SolverCore.solve!(
       τ₊ = max(τ + β1, norm(solver.y, 1))
       if extrapolate!(x, solver, τ₊, τ)
         shift!(mk, x, y = solver.subsolver.y)
+
+        # Update status
         set_solver_specific!(solver.substats, :smooth_obj, obj(nlp, x))
+        set_solver_specific!(solver.substats, :nonsmooth_obj, ψ.h(ψ.b))
+
+        fx = solver.substats.solver_specific[:smooth_obj]
+        hx_prev = copy(hx)
+        hx = solver.substats.solver_specific[:nonsmooth_obj]/τ
       end
       τ = τ₊
       set_penalty!(mk, τ)
