@@ -2,7 +2,7 @@ using JLD2
 
 using CUTEst, NLPModelsIpopt, SolverBenchmark
 
-nmax = 300
+nmax = 3000
 problem_names = CUTEst.select_sif_problems(
   min_con = 1,
   max_var = nmax,
