@@ -113,22 +113,13 @@ p = plot(
   ),
   pairwise_plot(
     stats,
-    [:l2penalty_exact_reference, :l2penalty_exact_current],
-  ),
-  pairwise_plot(
-    stats,
-    [:l2penalty_lbfgs_reference, :l2penalty_lbfgs_current],
-  ),
-  pairwise_plot(
-    stats,
     [:l2penalty_lbfgs_reference, :l2penalty_lbfgs_current],
   ),
   pairwise_plot(
     stats,
     [:l2penalty_r2_reference, :l2penalty_r2_current],
   ),
-  pairwise_plot(stats, [:l2penalty_r2_reference, :l2penalty_r2_current]),
-  layout = (3, 2),
+  layout = (3, 1),
   size = (1920, 1080),
 )
 
@@ -145,11 +136,9 @@ for key in keys(ipopt_stats)
 end
 
 p = plot(
-  pairwise_plot(stats, [:l2penalty_exact_current, :ipopt_exact_imprecise]),
-  pairwise_plot(stats, [:l2penalty_exact_current, :ipopt_exact_precise]),
-  pairwise_plot(stats, [:l2penalty_lbfgs_current, :ipopt_lbfgs_imprecise]),
-  pairwise_plot(stats, [:l2penalty_lbfgs_current, :ipopt_lbfgs_precise]),
-  layout = (2, 2),
+  pairwise_plot(stats, [:l2penalty_exact_current, :ipopt_exact]),
+  pairwise_plot(stats, [:l2penalty_lbfgs_current, :ipopt_lbfgs]),
+  layout = (2, 1),
   size = (1920, 1080),
 )
 
@@ -166,7 +155,7 @@ function infeasibility_pair(stats, keys)
 
   @assert parts_2[1] == :ipopt
 
-  @info "Checking infeasibility results for $(parts_1[2]) Hessian approximation with $(parts_1[3]) tolerance."
+  @info "Checking infeasibility results for $(parts_1[2]) Hessian approximation."
   for i = 1:nrow(df_1)
     @assert df_1[i, :name] == df_2[i, :name]
     if df_1[i, :status] == :infeasible && df_2[i, :status] == :infeasible
