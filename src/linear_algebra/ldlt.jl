@@ -107,7 +107,9 @@ function update_workspace!(
     H[i, i] = σ + B.ξ
   end
 
-  @views H[1:n, (n+1):(n+m)] .= A'
+  @inbounds for i = 1:length(A.vals)
+    H[A.cols[i], n + A.rows[i]] = A.vals[i]
+  end
 
   @inbounds for i = 1:m
     H[n+i, n+i] = -α
