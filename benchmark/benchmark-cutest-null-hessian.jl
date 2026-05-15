@@ -2,7 +2,7 @@ using JLD2
 
 using CUTEst, ExactPenalty, NLPModelsModifiers, SolverBenchmark
 
-nmax = 3000
+nmax = 300
 problem_names = CUTEst.select_sif_problems(
   min_con = 1,
   max_var = nmax,
@@ -11,23 +11,15 @@ problem_names = CUTEst.select_sif_problems(
 )
 problem_list = (CUTEstModel(name) for name in problem_names)
 
-imprecise_tol = 1e-3
-precise_tol = 1e-9
+tol = 1e-6
 
 solvers = Dict(
-  :l2penalty_r2_imprecise =>
+  :l2penalty_r2 =>
     nlp -> L2Penalty(
       NullHessianModel(nlp),
       verbose = 0,
-      atol = imprecise_tol,
-      rtol = imprecise_tol,
-    ),
-  :l2penalty_r2_precise =>
-    nlp -> L2Penalty(
-      NullHessianModel(nlp),
-      verbose = 0,
-      atol = precise_tol,
-      rtol = precise_tol,
+      atol = tol,
+      rtol = tol,
     ),
 )
 
