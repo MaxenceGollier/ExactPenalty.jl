@@ -170,6 +170,3 @@ function infeasibility_pair(stats, keys)
 end
 
 infeasibility_pair(stats, [:l2penalty_exact_current, :ipopt_exact])
-infeasibility_pair(stats, [:l2penalty_exact_current, :ipopt_exact])
-infeasibility_pair(stats, [:l2penalty_lbfgs_current, :ipopt_lbfgs])
-infeasibility_pair(stats, [:l2penalty_lbfgs_current, :ipopt_lbfgs])
