@@ -43,14 +43,12 @@ function pairwise_plot(stats, keys)
   parts_2 = Symbol.(split(string(keys[2]), "_"))
   @assert parts_1[3] == parts_2[3]
 
-  models = Dict(:exact => "∇²f(x)", :lbfgs => "BFGS", :r2 => "σI")
+  models = Dict(:exact => "∇²L(x, y)", :lbfgs => "BFGS", :r2 => "σI")
   precision = Dict(:imprecise => "1e-3", :precise => "1e-9")
 
   suptitle =
     "\nHessian model: Bₖ(x) = " *
-    models[parts_1[2]] *
-    "; Tolerance: ϵ = " *
-    precision[parts_1[3]]
+    models[parts_1[2]]
   p = profile_solvers(
     stats_subset,
     costs,
@@ -112,25 +110,25 @@ load_stats(reference_dir, stats, "_reference")
 p = plot(
   pairwise_plot(
     stats,
-    [:l2penalty_exact_imprecise_reference, :l2penalty_exact_imprecise_current],
+    [:l2penalty_exact_reference, :l2penalty_exact_current],
   ),
   pairwise_plot(
     stats,
-    [:l2penalty_exact_precise_reference, :l2penalty_exact_precise_current],
+    [:l2penalty_exact_reference, :l2penalty_exact_current],
   ),
   pairwise_plot(
     stats,
-    [:l2penalty_lbfgs_imprecise_reference, :l2penalty_lbfgs_imprecise_current],
+    [:l2penalty_lbfgs_reference, :l2penalty_lbfgs_current],
   ),
   pairwise_plot(
     stats,
-    [:l2penalty_lbfgs_precise_reference, :l2penalty_lbfgs_precise_current],
+    [:l2penalty_lbfgs_reference, :l2penalty_lbfgs_current],
   ),
   pairwise_plot(
     stats,
-    [:l2penalty_r2_imprecise_reference, :l2penalty_r2_imprecise_current],
+    [:l2penalty_r2_reference, :l2penalty_r2_current],
   ),
-  pairwise_plot(stats, [:l2penalty_r2_precise_reference, :l2penalty_r2_precise_current]),
+  pairwise_plot(stats, [:l2penalty_r2_reference, :l2penalty_r2_current]),
   layout = (3, 2),
   size = (1920, 1080),
 )
@@ -148,10 +146,10 @@ for key in keys(ipopt_stats)
 end
 
 p = plot(
-  pairwise_plot(stats, [:l2penalty_exact_imprecise_current, :ipopt_exact_imprecise]),
-  pairwise_plot(stats, [:l2penalty_exact_precise_current, :ipopt_exact_precise]),
-  pairwise_plot(stats, [:l2penalty_lbfgs_imprecise_current, :ipopt_lbfgs_imprecise]),
-  pairwise_plot(stats, [:l2penalty_lbfgs_precise_current, :ipopt_lbfgs_precise]),
+  pairwise_plot(stats, [:l2penalty_exact_current, :ipopt_exact_imprecise]),
+  pairwise_plot(stats, [:l2penalty_exact_current, :ipopt_exact_precise]),
+  pairwise_plot(stats, [:l2penalty_lbfgs_current, :ipopt_lbfgs_imprecise]),
+  pairwise_plot(stats, [:l2penalty_lbfgs_current, :ipopt_lbfgs_precise]),
   layout = (2, 2),
   size = (1920, 1080),
 )
@@ -183,7 +181,7 @@ function infeasibility_pair(stats, keys)
   @info ""
 end
 
-infeasibility_pair(stats, [:l2penalty_exact_imprecise_current, :ipopt_exact_imprecise])
-infeasibility_pair(stats, [:l2penalty_exact_precise_current, :ipopt_exact_precise])
-infeasibility_pair(stats, [:l2penalty_lbfgs_imprecise_current, :ipopt_lbfgs_imprecise])
-infeasibility_pair(stats, [:l2penalty_lbfgs_precise_current, :ipopt_lbfgs_precise])
+infeasibility_pair(stats, [:l2penalty_exact_current, :ipopt_exact])
+infeasibility_pair(stats, [:l2penalty_exact_current, :ipopt_exact])
+infeasibility_pair(stats, [:l2penalty_lbfgs_current, :ipopt_lbfgs])
+infeasibility_pair(stats, [:l2penalty_lbfgs_current, :ipopt_lbfgs])
