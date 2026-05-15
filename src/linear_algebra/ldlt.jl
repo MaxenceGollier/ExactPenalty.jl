@@ -69,16 +69,26 @@ function update_workspace!(solver_workspace::PenaltyLDLTWorkspace, B::M, A, σ, 
   n, m = solver_workspace.n, solver_workspace.m
   H = get_H(solver_workspace)
 
-  @views H[1:n, 1:n] .= B'
   @inbounds for i = 1:n
-    H[i, i] += σ
+    H[i, i] = σ
   end
 
-  @views H[1:n, (n+1):(n+m)] .= A'
+  @inbounds for i = 1:length(B.vals)
+    if B.cols[i] == B.rows[i]
+      H[B.cols[i], B.rows[i]] += B.vals[i]
+    else
+      H[B.cols[i], B.rows[i]] = B.vals[i]
+    end
+  end
+
+  @inbounds for i = 1:length(A.vals)
+    H[A.cols[i], n + A.rows[i]] = A.vals[i]
+  end
 
   @inbounds for i = 1:m
     H[n+i, n+i] = -α
   end
+  
   solver_workspace.σ = σ
   solver_workspace.M.__factorized = false
 end
