@@ -19,6 +19,9 @@ jobs:
         with:
           version: 'lts'
 
+      - name: Use Julia cache
+        uses: julia-actions/cache@v2
+
       - name: Download latest RunBenchmark artifact on this branch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
