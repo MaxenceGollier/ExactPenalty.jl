@@ -137,8 +137,8 @@ end
 
 p = plot(
   pairwise_plot(stats, [:l2penalty_exact_current, :ipopt_exact]),
-  pairwise_plot(stats, [:l2penalty_lbfgs_current, :ipopt_lbfgs]),
-  layout = (2, 1),
+  # pairwise_plot(stats, [:l2penalty_lbfgs_current, :ipopt_lbfgs]),
+  layout = (1, 1),
   size = (1920, 1080),
 )
 
