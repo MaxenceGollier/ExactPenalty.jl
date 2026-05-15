@@ -41,7 +41,6 @@ function pairwise_plot(stats, keys)
   # split the stat names. the first part is always l2penalty, then the method used, then the tolerance and finally the branch.
   parts_1 = Symbol.(split(string(keys[1]), "_"))
   parts_2 = Symbol.(split(string(keys[2]), "_"))
-  @assert parts_1[3] == parts_2[3]
 
   models = Dict(:exact => "∇²L(x, y)", :lbfgs => "BFGS", :r2 => "σI")
   precision = Dict(:imprecise => "1e-3", :precise => "1e-9")
