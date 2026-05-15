@@ -3,6 +3,10 @@ name: Compare Benchmarks
 on:
   workflow_dispatch:
   workflow_call:
+  workflow_run:
+    workflows: ["RunBenchmark.yml"]
+    types:
+      - completed
 
 jobs:
   Compare:
