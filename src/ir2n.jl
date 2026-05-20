@@ -76,6 +76,7 @@ function SolverCore.solve!(
   η2::T = T(0.1),
   γ::T = T(3),
   is_shifted::Bool = false,
+  primal_decrease::Bool = false,
 ) where {T,V}
   reset!(stats)
 
@@ -101,6 +102,7 @@ function SolverCore.solve!(
 
   # initialize parameters
   hk = @views h(xk)
+  h0 = copy(hk)
   fk = !is_shifted ? obj(nlp, xk) : stats.solver_specific[:smooth_obj]
 
   # Initialize stats
@@ -171,7 +173,13 @@ function SolverCore.solve!(
     mul!(dual_res, ψ.A', y, one(T), one(T))
     set_dual_residual!(stats, norm(dual_res, Inf))
     solved = stats.dual_feas ≤ atol
-    stats.iter == 0 && (atol += stats.dual_feas * rtol)
+
+    if stats.iter == 0 
+      atol += stats.dual_feas * rtol
+      set_solver_specific!(stats, :dual_ktol, atol)
+    end
+
+    solved = primal_decrease ? solved && hk <  h0 : solved
 
     if solved
       set_status!(stats, :first_order)

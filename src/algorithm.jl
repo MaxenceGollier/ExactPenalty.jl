@@ -236,6 +236,7 @@ function SolverCore.solve!(
   infeasible = false
   not_desc = false
   n_iter_since_decrease = 0
+  primal_decrease = false
 
   set_status!(
     stats,
@@ -275,6 +276,7 @@ function SolverCore.solve!(
       σk = 1 / νsub,
       η2 = isa(nlp, QuasiNewtonModel) ? T(0.9) : T(0.1),
       is_shifted = true,
+      primal_decrease = primal_decrease
     )
 
     if solver.substats.status == :unbounded
@@ -328,6 +330,13 @@ function SolverCore.solve!(
       if extrapolate!(x, solver, τ₊, τ)
         shift!(mk, x, y = solver.subsolver.y)
         set_solver_specific!(solver.substats, :smooth_obj, obj(nlp, x))
+
+        # Subsolver: Do not impose primal decrease
+        primal_decrease = false
+      else
+
+        # Subsolver: Impose primal decrease
+        primal_decrease = true
       end
       τ = τ₊
       set_penalty!(mk, τ)
@@ -351,6 +360,9 @@ function SolverCore.solve!(
 
       # Initialize regularization parameter
       νsub = 1/solver.substats.solver_specific[:sigma]
+
+      # Subsolver: Do not impose primal decrease
+      primal_decrease = false
     end
 
     # Check whether the primal feasibility has decreased. If not, increase the penalty parameter more aggressively.
