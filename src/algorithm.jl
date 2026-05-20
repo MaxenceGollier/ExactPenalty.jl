@@ -324,6 +324,7 @@ function SolverCore.solve!(
       # Update penalty parameter
       compute_least_square_multipliers!(solver)
       τ₊ = max(τ + β1, norm(solver.y, 1))
+      solver.subsolver.y .*= τ₊ / τ
       if extrapolate!(x, solver, τ₊, τ)
         shift!(mk, x, y = solver.subsolver.y)
         set_solver_specific!(solver.substats, :smooth_obj, obj(nlp, x))

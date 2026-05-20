@@ -28,7 +28,7 @@ function PenaltyR2NSolver(
 
   xk = similar(x0)
   ∇fk = similar(x0)
-  y = similar(x0, get_ncon(penalty_nlp))
+  y = zeros(T, get_ncon(penalty_nlp))
   dual_res = similar(x0)
   xkn = similar(x0)
   s = similar(x0)
@@ -166,18 +166,24 @@ function SolverCore.solve!(
 
   while !done
 
+    # Check stopping criteria
+    dual_res .= ∇fk
+    mul!(dual_res, ψ.A', y, one(T), one(T))
+    set_dual_residual!(stats, norm(dual_res, Inf))
+    solved = stats.dual_feas ≤ atol
+    stats.iter == 0 && (atol += stats.dual_feas * rtol)
+
+    if solved
+      set_status!(stats, :first_order)
+      done = true
+      continue
+    end
+
     # Compute a step 
     solver.subpb.model.data.σ = σk
     solve!(solver.subsolver, solver.subpb, solver.substats;)
     get_primal_dual_sol!(s, y, solver.subsolver)
-
-    # Check stopping criteria
     σk = solver.subpb.model.data.σ
-    dual_res .= s
-    mul!(dual_res, Symmetric(solver.subpb.model.data.H, :L), s, one(T), σk)
-    set_dual_residual!(stats, norm(dual_res, Inf))
-    solved = stats.dual_feas ≤ atol
-    stats.iter == 0 && (atol += stats.dual_feas * rtol)
 
     # Step acceptance
     xkn .= xk .+ s

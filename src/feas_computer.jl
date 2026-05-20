@@ -43,19 +43,7 @@ function update_constraint_multipliers!(solver::L2PenaltySolver{T}) where {T}
 end
 
 function kkt_dual_feas!(solver::L2PenaltySolver{T}) where {T}
-  σ = solver.subsolver.subpb.model.data.σ
-  s = solver.subsolver.s
-
-  solver.dual_res .= s .* σ
-  mul!(
-    solver.dual_res,
-    Symmetric(solver.subsolver.subpb.model.data.H, :L),
-    s,
-    one(T),
-    one(T),
-  )
-
-  return norm(solver.dual_res, Inf)
+  return solver.substats.dual_feas
 end
 
 function least_square_dual_feas!(solver::L2PenaltySolver{T}) where {T}
