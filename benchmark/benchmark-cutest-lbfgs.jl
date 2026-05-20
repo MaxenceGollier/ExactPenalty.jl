@@ -15,12 +15,7 @@ tol = 1e-6
 
 solvers = Dict(
   :l2penalty_lbfgs =>
-    nlp -> L2Penalty(
-      CompactBFGSModel(nlp),
-      verbose = 0,
-      atol = tol,
-      rtol = tol,
-    ),
+    nlp -> L2Penalty(CompactBFGSModel(nlp), verbose = 0, atol = tol, rtol = tol),
 )
 
 stats = bmark_solvers(solvers, problem_list, skipif = nlp -> nlp.meta.ncon ≥ nlp.meta.nvar)

@@ -76,24 +76,30 @@ function update_workspace!(
   H = get_H(solver_workspace)
 
   @views H[1:n, 1:n] .= B'
-  
+
   @inbounds for i = 1:n
     H[i, i] += σ
   end
 
   @inbounds for i = 1:length(A.vals)
-    H[A.cols[i], n + A.rows[i]] = A.vals[i]
+    H[A.cols[i], n+A.rows[i]] = A.vals[i]
   end
 
   @inbounds for i = 1:m
     H[n+i, n+i] -= α
   end
-  
+
   solver_workspace.σ = σ
   solver_workspace.M.__factorized = false
 end
 
-function update_workspace!(solver_workspace::PenaltyLDLTWorkspace, B::M, A, σ, α) where {M <: SparseMatrixCOO}
+function update_workspace!(
+  solver_workspace::PenaltyLDLTWorkspace,
+  B::M,
+  A,
+  σ,
+  α,
+) where {M<:SparseMatrixCOO}
   n, m = solver_workspace.n, solver_workspace.m
   H = get_H(solver_workspace)
 
@@ -110,13 +116,13 @@ function update_workspace!(solver_workspace::PenaltyLDLTWorkspace, B::M, A, σ, 
   end
 
   @inbounds for i = 1:length(A.vals)
-    H[A.cols[i], n + A.rows[i]] = A.vals[i]
+    H[A.cols[i], n+A.rows[i]] = A.vals[i]
   end
 
   @inbounds for i = 1:m
     H[n+i, n+i] = -α
   end
-  
+
   solver_workspace.σ = σ
   solver_workspace.M.__factorized = false
 end
@@ -136,7 +142,7 @@ function update_workspace!(
   end
 
   @inbounds for i = 1:length(A.vals)
-    H[A.cols[i], n + A.rows[i]] = A.vals[i]
+    H[A.cols[i], n+A.rows[i]] = A.vals[i]
   end
 
   @inbounds for i = 1:m
