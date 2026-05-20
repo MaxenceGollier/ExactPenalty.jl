@@ -152,7 +152,7 @@ function SolverCore.solve!(
   sub_rtol = 1e-2,
   sub_atol = zero(T),
   infeasible_tol = T(1e-2),
-  max_iter::Int = 100,
+  max_iter::Int = 1000,
   sub_max_iter::Int = 1000,
   max_time::T = T(30.0),
   max_eval::Int = -1,
