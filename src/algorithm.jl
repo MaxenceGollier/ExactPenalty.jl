@@ -212,6 +212,7 @@ function SolverCore.solve!(
   grad!(nlp, x, solver.∇fk)
   compute_least_square_multipliers!(solver)
   dual_feas = least_square_dual_feas!(solver)
+  solver.subsolver.y .= solver.y
 
   primal_tol = atol + rtol * primal_feas
   dual_tol = atol + rtol * dual_feas
