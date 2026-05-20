@@ -15,12 +15,7 @@ tol = 1e-6
 
 solvers = Dict(
   :l2penalty_r2 =>
-    nlp -> L2Penalty(
-      NullHessianModel(nlp),
-      verbose = 0,
-      atol = tol,
-      rtol = tol,
-    ),
+    nlp -> L2Penalty(NullHessianModel(nlp), verbose = 0, atol = tol, rtol = tol),
 )
 
 stats = bmark_solvers(solvers, problem_list, skipif = nlp -> nlp.meta.ncon ≥ nlp.meta.nvar)

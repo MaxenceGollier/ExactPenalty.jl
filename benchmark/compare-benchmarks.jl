@@ -45,9 +45,7 @@ function pairwise_plot(stats, keys)
   models = Dict(:exact => "∇²L(x, y)", :lbfgs => "BFGS", :r2 => "σI")
   precision = Dict(:imprecise => "1e-3", :precise => "1e-9")
 
-  suptitle =
-    "\nHessian model: Bₖ(x) = " *
-    models[parts_1[2]]
+  suptitle = "\nHessian model: Bₖ(x) = " * models[parts_1[2]]
   p = profile_solvers(
     stats_subset,
     costs,
@@ -107,18 +105,9 @@ load_stats(current_dir, stats, "_current")
 load_stats(reference_dir, stats, "_reference")
 
 p = plot(
-  pairwise_plot(
-    stats,
-    [:l2penalty_exact_reference, :l2penalty_exact_current],
-  ),
-  pairwise_plot(
-    stats,
-    [:l2penalty_lbfgs_reference, :l2penalty_lbfgs_current],
-  ),
-  pairwise_plot(
-    stats,
-    [:l2penalty_r2_reference, :l2penalty_r2_current],
-  ),
+  pairwise_plot(stats, [:l2penalty_exact_reference, :l2penalty_exact_current]),
+  pairwise_plot(stats, [:l2penalty_lbfgs_reference, :l2penalty_lbfgs_current]),
+  pairwise_plot(stats, [:l2penalty_r2_reference, :l2penalty_r2_current]),
   layout = (3, 1),
   size = (1920, 1080),
 )
