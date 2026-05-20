@@ -1,10 +1,14 @@
 using ExactPenalty
-using LinearOperators,
+using CUTEst,
+  LinearOperators,
+  NLPModels,
+  NLPModelsModifiers,
   QuadraticModels,
   RegularizedProblems,
   ShiftedProximalOperators,
   SolverCore,
   SparseMatricesCOO
+
 using LinearAlgebra, Random, SparseArrays, Test
 
 Random.seed!(0)

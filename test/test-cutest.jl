@@ -1,5 +1,3 @@
-using CUTEst, NLPModels, NLPModelsModifiers
-
 problem_names = ["BT1", "MSS1", "SSINE", "VANDANIUMS"]
 expected_status = [:first_order, :first_order, :infeasible, :infeasible]
 

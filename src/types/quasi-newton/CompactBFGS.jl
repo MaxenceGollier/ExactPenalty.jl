@@ -2,6 +2,7 @@ export CompactBFGSModel
 
 mutable struct CompactBFGS{T,V<:AbstractVector{T},MT<:AbstractMatrix{T}} <:
                AbstractMatrix{T}
+  const scaling::Bool
   ξ::T
   Sk::MT # n x p
   Yk::MT # n x p
@@ -26,6 +27,7 @@ function CompactBFGS(
   σ₃::Float64 = 10.0,
 ) where {I<:Integer}
   return CompactBFGS{T,Vector{T},Matrix{T}}(
+    scaling,
     one(T),
     zeros(T, n, mem),
     zeros(T, n, mem),
@@ -102,6 +104,10 @@ function Base.push!(op::CompactBFGS{T,V,MT}, s::V, y::V) where {T,V,MT}
 
   sy <= eps(T) && return
 
+  if op.scaling
+    ξ = op.ξ = dot(y, y) / sy
+  end
+
   # Shift
   if k > mem
     @inbounds for i = 1:(mem-1)
@@ -130,7 +136,7 @@ function Base.push!(op::CompactBFGS{T,V,MT}, s::V, y::V) where {T,V,MT}
   # Step 1: compute Mₖ
   mul!(_DLk, Diagonal(Dkinvsq), Lk')
   mul!(Mk, _DLk', _DLk)                                    # Mₖ = Lₖ Dₖ⁻¹ Lₖᵀ
-  mul!(Mk, Sk', Sk, one(T), ξ)                             # Mₖ = ξ Sₖᵀ Sₖ + Lₖ Dₖ⁻¹ Lₖᵀ
+  mul!(Mk, Sk', Sk, ξ, one(T))                             # Mₖ = ξ Sₖᵀ Sₖ + Lₖ Dₖ⁻¹ Lₖᵀ
 
   # Step 2: factorize Mₖ
   cholesky!(Symmetric(@view Mk[1:k, 1:k]))                 # Mₖ = Jₖᵀ Jₖ (factorization)
