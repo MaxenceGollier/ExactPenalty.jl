@@ -9,6 +9,7 @@ mutable struct L2PenaltySolver{
   PB<:AbstractRegularizedNLPModel,
 } <: AbstractOptimizationSolver
   x::V
+  xn::V
   y::V
   dual_res::V
   s::V
@@ -22,7 +23,7 @@ end
 
 function L2PenaltySolver(nlp::AbstractNLPModel{T,V}) where {T,V}
   x0 = nlp.meta.x0
-  x, s, s0 = similar(x0), similar(x0), zero(x0)
+  x, xn, s, s0 = similar(x0), similar(x0), similar(x0), zero(x0)
   temp_b = similar(x0, nlp.meta.ncon)
   dual_res = similar(x0)
   y = similar(x0, nlp.meta.ncon)
@@ -37,6 +38,7 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T,V}) where {T,V}
 
   return L2PenaltySolver(
     x,
+    xn,
     y,
     dual_res,
     s,

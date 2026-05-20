@@ -19,8 +19,10 @@ function extrapolate!(
 
   c, norm_c = ψ.b, norm(ψ.b)
 
-  # Implicitely update the Hessian of the subproblem
+  # println(Matrix(φ.data.H))
   y = solver.y .= (τ₁/norm_c) .* c
+  hess_coord!(nlp, solver.x, y, φ.data.H.vals)
+  #println(Matrix(φ.data.H))
 
   # Prepare the linear solver
   linear_solver = solver.subsolver.subsolver.workspace
@@ -61,8 +63,23 @@ function extrapolate!(
   dx_dτ = @view x1[1:n]
 
   @views dx_dτ .-= x2[1:n] .* (dot(x1[1:n], u1[1:n])/(1 + dot(x2[1:n], u1[1:n])))
+  xn = solver.xn .= solver.x .+ dx_dτ .* (τ₂ - τ₁)
+  # Step acceptance
+
+  ## Check constraints
+  #cn = cons(nlp, xn)
+  #norm_cn = norm(cn)
+  #if norm_cn < norm_c
+  #  gn = grad(nlp, xn)
+  #  yn = τ₂ * cn / norm_cn
+  #  Jn = jac(nlp, xn)
+#
+  #  println(φ.data.c + (τ₂/τ₁) * ψ.A' * y)
+  #  println(gn + Jn' * yn)
+  #end
+#
   if (τ₂ - τ₁) * norm(dx_dτ)/norm(x) < 1
-    x .= solver.x .+ dx_dτ .* (τ₂ - τ₁)
+    x .= xn
     return true
   else
     return false
