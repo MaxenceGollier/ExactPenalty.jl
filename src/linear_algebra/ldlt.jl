@@ -258,7 +258,7 @@ function solve_system!(
   # [x₁] = [σI+ξI  Aᵀ]⁻¹[u]
   # [x₁] = [A     -αI]  [u]
   ldiv!(x1, workspace.M, u)
-  if any(isnan, workspace.x)
+  if any(isnan, x1)
     workspace.status = :failed
     return
   end
@@ -280,6 +280,10 @@ function solve_system!(
   @views Z1[1:n, 1:p] .= Uk .* (-1)
   @views Z1[1:n, (p+1):(2*p)] .= Vk
   ldiv!(workspace.M, Z1)
+  if any(isnan, Z1)
+    workspace.status = :failed
+    return
+  end
 
   # Step 4.2: Compute 
   # Z₂ = FᵀZ₁ = UᵀZ₁[1:n]
@@ -315,6 +319,10 @@ function solve_system!(
   # [x₃] = [σI+ξI  Aᵀ]⁻¹[x₂]
   # [x₃] = [A     -αI]  [x₂]
   ldiv!(x3, workspace.M, x2)
+  if any(isnan, x3)
+    workspace.status = :failed
+    return
+  end
 
   # Step 8:
   # [B  Aᵀ]⁻¹[u] = x₁ - x₃ 

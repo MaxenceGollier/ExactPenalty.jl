@@ -164,8 +164,8 @@ function ShiftedProximalOperators.shift!(
   # Update the approximation.
   @. qn_y = g - qn_g_prev
   if !isnothing(y)
-    mul!(qn_y, ψ.A', y, -one(T), one(T)) # y = y + J(x)^T λ 
-    mul!(qn_y, ψ.A_prev', y, one(T), one(T)) # y = y - J(x)_prev^T λ
+    mul!(qn_y, ψ.A', y, -one(T), one(T)) # y = y - J(x)^T λ 
+    mul!(qn_y, ψ.A_prev', y, one(T), one(T)) # y = y + J(x)_prev^T λ
   end
 
   qn_s .= x .- qn_x_prev
