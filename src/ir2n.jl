@@ -174,12 +174,12 @@ function SolverCore.solve!(
     set_dual_residual!(stats, norm(dual_res, Inf))
     solved = stats.dual_feas ≤ atol
 
-    if stats.iter == 0 
+    if stats.iter == 0
       atol += stats.dual_feas * rtol
       set_solver_specific!(stats, :dual_ktol, atol)
     end
 
-    solved = primal_decrease ? solved && hk <  h0 : solved
+    solved = primal_decrease ? solved && hk < h0 : solved
 
     if solved
       set_status!(stats, :first_order)
