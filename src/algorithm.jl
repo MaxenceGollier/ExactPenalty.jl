@@ -277,7 +277,7 @@ function SolverCore.solve!(
       σk = 1 / νsub,
       η2 = isa(nlp, QuasiNewtonModel) ? T(0.9) : T(0.1),
       is_shifted = true,
-      primal_decrease = primal_decrease
+      primal_decrease = primal_decrease,
     )
 
     if solver.substats.status == :unbounded
