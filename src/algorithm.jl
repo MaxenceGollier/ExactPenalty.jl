@@ -152,7 +152,7 @@ function SolverCore.solve!(
   sub_rtol = 1e-2,
   sub_atol = zero(T),
   infeasible_tol = T(1e-2),
-  max_iter::Int = 100,
+  max_iter::Int = 1000,
   sub_max_iter::Int = 1000,
   max_time::T = T(30.0),
   max_eval::Int = -1,
@@ -212,6 +212,7 @@ function SolverCore.solve!(
   grad!(nlp, x, solver.∇fk)
   compute_least_square_multipliers!(solver)
   dual_feas = least_square_dual_feas!(solver)
+  solver.subsolver.y .= solver.y
 
   primal_tol = atol + rtol * primal_feas
   dual_tol = atol + rtol * dual_feas
@@ -236,6 +237,7 @@ function SolverCore.solve!(
   infeasible = false
   not_desc = false
   n_iter_since_decrease = 0
+  primal_decrease = false
 
   set_status!(
     stats,
@@ -275,6 +277,7 @@ function SolverCore.solve!(
       σk = 1 / νsub,
       η2 = isa(nlp, QuasiNewtonModel) ? T(0.9) : T(0.1),
       is_shifted = true,
+      primal_decrease = primal_decrease
     )
 
     if solver.substats.status == :unbounded
@@ -324,9 +327,17 @@ function SolverCore.solve!(
       # Update penalty parameter
       compute_least_square_multipliers!(solver)
       τ₊ = max(τ + β1, norm(solver.y, 1))
+      solver.subsolver.y .*= τ₊ / τ
       if extrapolate!(x, solver, τ₊, τ)
         shift!(mk, x, y = solver.subsolver.y)
         set_solver_specific!(solver.substats, :smooth_obj, obj(nlp, x))
+
+        # Subsolver: Do not impose primal decrease
+        primal_decrease = false
+      else
+
+        # Subsolver: Impose primal decrease
+        primal_decrease = true
       end
       τ = τ₊
       set_penalty!(mk, τ)
@@ -350,6 +361,9 @@ function SolverCore.solve!(
 
       # Initialize regularization parameter
       νsub = 1/solver.substats.solver_specific[:sigma]
+
+      # Subsolver: Do not impose primal decrease
+      primal_decrease = false
     end
 
     # Check whether the primal feasibility has decreased. If not, increase the penalty parameter more aggressively.
