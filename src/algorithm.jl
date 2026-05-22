@@ -367,7 +367,7 @@ function SolverCore.solve!(
     end
 
     # Check whether the primal feasibility has decreased. If not, increase the penalty parameter more aggressively.
-    if primal_feas > primal_ktol && hx_prev ≥ hx
+    if primal_feas > primal_ktol && hx_prev < hx
       n_iter_since_decrease += 1
       β1 *= 10
     else
