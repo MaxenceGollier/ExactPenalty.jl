@@ -151,7 +151,8 @@ function SolverCore.solve!(
   rtol::T = √eps(T),
   sub_rtol = 1e-2,
   sub_atol = zero(T),
-  infeasible_tol = T(1e-3),
+  infeasible_tol = T(1e-2),
+  infeasible_iter = 10,
   max_iter::Int = 1000,
   sub_max_iter::Int = 1000,
   max_time::T = T(30.0),
@@ -376,12 +377,15 @@ function SolverCore.solve!(
 
     solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol
 
-    θ = compute_θ!(solver)
+    # Infeasiblity detection
+    if stats.iter % infeasible_iter == 0
+      θ = compute_θ!(solver)
 
-    infeasible =
-      hx > primal_tol &&
-      sqrt(max(θ, 0))/hx < infeasible_tol &&
-      sqrt(max(θ, 0)) < primal_ktol
+      infeasible =
+        hx > primal_tol &&
+        sqrt(max(θ, 0))/hx < infeasible_tol &&
+        sqrt(max(θ, 0)) < primal_ktol
+    end
 
     set_iter!(stats, stats.iter + 1)
     rem_eval = max_eval - neval_obj(nlp)
