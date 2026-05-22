@@ -103,7 +103,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     end
   end
 
-  while npos < n && reg_nlp.model.data.σ <= σmax
+  while (npos < n || status == :failed) && reg_nlp.model.data.σ <= σmax
 
     reg_nlp.model.data.σ *= μ
     set_primal_inertia!(solver_workspace, reg_nlp.model.data.σ)
@@ -113,6 +113,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     solve_system!(solver_workspace, u1)
     get_solution!(x1, solver_workspace)
     npos, nzero, nneg = get_inertia(solver_workspace)
+    status = get_status(solver_workspace)
   end
 
   if reg_nlp.model.data.σ >= σmax
