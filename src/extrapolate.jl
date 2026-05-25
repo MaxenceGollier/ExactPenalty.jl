@@ -19,7 +19,7 @@ function extrapolate!(
 
   c, norm_c = ψ.b, norm(ψ.b)
 
-  # Implicitely update the Hessian of the subproblem
+  # Update multipliers
   y = solver.y .= (τ₁/norm_c) .* c
 
   # Prepare the linear solver
@@ -61,8 +61,15 @@ function extrapolate!(
   dx_dτ = @view x1[1:n]
 
   @views dx_dτ .-= x2[1:n] .* (dot(x1[1:n], u1[1:n])/(1 + dot(x2[1:n], u1[1:n])))
-  if (τ₂ - τ₁) * norm(dx_dτ)/norm(x) < 1
-    x .= solver.x .+ dx_dτ .* (τ₂ - τ₁)
+  xn = solver.xn .= solver.x .+ dx_dτ .* (τ₂ - τ₁)
+
+  # Step acceptance
+
+  ## Check constraints
+  cons!(nlp, xn, solver.cn) # TODO: remove rundancy when we call shift afterwards
+  norm_cn = norm(solver.cn)
+  if norm_cn < norm_c
+    x .= xn
     return true
   else
     return false
