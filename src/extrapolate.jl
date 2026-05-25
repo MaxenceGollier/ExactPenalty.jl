@@ -66,8 +66,8 @@ function extrapolate!(
   # Step acceptance
 
   ## Check constraints
-  cn = cons(nlp, xn) # TODO: remove rundancy when we call shift afterwards
-  norm_cn = norm(cn)
+  cons!(nlp, xn, solver.cn) # TODO: remove rundancy when we call shift afterwards
+  norm_cn = norm(solver.cn)
   if norm_cn < norm_c
     x .= xn
     return true

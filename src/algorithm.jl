@@ -11,6 +11,7 @@ mutable struct L2PenaltySolver{
   x::V
   xn::V
   y::V
+  cn::V
   dual_res::V
   s::V
   s0::V
@@ -26,6 +27,7 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T,V}) where {T,V}
   x, xn, s, s0 = similar(x0), similar(x0), similar(x0), zero(x0)
   temp_b = similar(x0, nlp.meta.ncon)
   dual_res = similar(x0)
+  cn = similar(x0, nlp.meta.ncon)
   y = similar(x0, nlp.meta.ncon)
   ∇fk = similar(x0)
 
@@ -40,6 +42,7 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T,V}) where {T,V}
     x,
     xn,
     y,
+    cn,
     dual_res,
     s,
     s0,
