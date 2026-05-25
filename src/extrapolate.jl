@@ -19,10 +19,8 @@ function extrapolate!(
 
   c, norm_c = ψ.b, norm(ψ.b)
 
-  # println(Matrix(φ.data.H))
+  # Update multipliers
   y = solver.y .= (τ₁/norm_c) .* c
-  #hess_coord!(nlp, solver.x, y, φ.data.H.vals)
-  #println(Matrix(φ.data.H))
 
   # Prepare the linear solver
   linear_solver = solver.subsolver.subsolver.workspace
