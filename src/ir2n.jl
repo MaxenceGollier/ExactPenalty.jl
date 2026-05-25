@@ -204,6 +204,16 @@ function SolverCore.solve!(
 
     ρk = Δobj / Δmod
 
+    n = nlp.meta.nvar
+    m = nlp.meta.ncon
+    @. solver.subsolver.u1[1:n] =  - s
+    @. solver.subsolver.u1[(n+1):(n+m)] = 0
+    solve_system!(solver.subsolver.workspace, solver.subsolver.u1)
+    get_solution!(solver.subsolver.x1, solver.subsolver.workspace)
+    s_dot = solver.subsolver.x1[1:n]
+
+    s_prime = dot(Symmetric(φ.data.H, :L)*s + σk*s, s + Symmetric(φ.data.H, :L)*s_dot + σk*s_dot)
+
     if η1 ≤ ρk < Inf
       xk .= xkn
 
@@ -215,11 +225,11 @@ function SolverCore.solve!(
     end
 
     if η2 ≤ ρk < Inf
-      σk = max(σk / γ, σmin)
+      σk = clamp(σk*exp(-0.4*s_prime), σk / γ, max(σmin, σk / γ^3))
     end
 
     if ρk < η1 || ρk == Inf
-      σk = σk * γ
+      σk = clamp(σk*exp(-0.4*s_prime), σk* γ, σk* γ^3) 
     end
 
     m_monotone > 1 && (m_fh_hist[stats.iter%(m_monotone-1)+1] = fk + hk)
