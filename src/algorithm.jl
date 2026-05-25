@@ -235,7 +235,7 @@ function SolverCore.solve!(
   ## Initialize penalty parameter
   τ = max(norm(solver.y, 1), T(1))
   set_penalty!(mk, τ)
-  νsub = 1/max(β4, β3*τ)
+  νsub = 1 / β4
 
   ## Initialize Model
   shift!(mk, x, ∇f = solver.∇fk, y = y)
@@ -289,7 +289,7 @@ function SolverCore.solve!(
     if solver.substats.status == :unbounded
       τ *= 10
       set_penalty!(mk, τ)
-      νsub = 1/max(β4, β3*τ)
+      νsub = 1 / β4
       shift!(mk, x, y = y)
       set_solver_specific!(solver.substats, :smooth_obj, fx)
       continue
@@ -349,7 +349,7 @@ function SolverCore.solve!(
       set_penalty!(mk, τ)
 
       # Initialize regularization parameter
-      νsub = 1/max(β4, β3*τ)
+      νsub = 1 / β4
 
       # Add a relative tolerance for the subsolver
       dual_ktol = dual_tol
