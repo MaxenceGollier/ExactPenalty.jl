@@ -205,15 +205,20 @@ function SolverCore.solve!(
 
     ρk = Δobj / Δmod
 
-    n = nlp.meta.nvar
-    m = nlp.meta.ncon
+    # Compute the predicted reduction in the dual residual for the current σk to update it
+    n, m = nlp.meta.nvar, nlp.meta.ncon
     @. solver.subsolver.u1[1:n] =  - s
     @. solver.subsolver.u1[(n+1):(n+m)] = 0
     solve_system!(solver.subsolver.workspace, solver.subsolver.u1)
     get_solution!(solver.subsolver.x1, solver.subsolver.workspace)
-    s_dot = solver.subsolver.x1[1:n]
+    s_dot = @view solver.subsolver.x1[1:n]
+    s_dot_temp = @view solver.subsolver.x2[1:n]
 
-    s_prime = dot(Symmetric(φ.data.H, :L)*s + σk*s, s + Symmetric(φ.data.H, :L)*s_dot + σk*s_dot)
+    dual_res .= s
+    mul!(dual_res, Symmetric(φ.data.H, :L), s, one(T), σk)
+    s_dot_temp .= s .+ σk .* s_dot
+    mul!(s_dot_temp, Symmetric(φ.data.H, :L), s_dot, one(T), one(T))
+    s_prime = dot(dual_res, s_dot_temp)
 
     if η1 ≤ ρk < Inf
       xk .= xkn
