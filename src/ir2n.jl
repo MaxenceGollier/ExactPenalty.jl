@@ -115,6 +115,7 @@ function SolverCore.solve!(
   set_solver_specific!(stats, :sigma, σk)
   m_monotone > 1 && (m_fh_hist[stats.iter%(m_monotone-1)+1] = fk + hk)
 
+  first_increase = true
   solved = false
 
   set_status!(
@@ -225,11 +226,15 @@ function SolverCore.solve!(
     end
 
     if η2 ≤ ρk < Inf
-      σk = clamp(σk*exp(-0.4*s_prime), σk / γ, max(σmin, σk / γ^3))
+      σk = clamp(σk*exp(-0.4*s_prime), σk / sqrt(γ), max(σmin, σk / γ))
     end
 
     if ρk < η1 || ρk == Inf
-      σk = clamp(σk*exp(-0.4*s_prime), σk* γ, σk* γ^3) 
+      σk = clamp(σk*exp(-0.4*s_prime), σk * γ, σk * γ^6) 
+      if first_increase && ρk < 0
+        σk = max(sqrt(stats.dual_feas), σk * γ)
+        first_increase = false
+      end
     end
 
     m_monotone > 1 && (m_fh_hist[stats.iter%(m_monotone-1)+1] = fk + hk)
