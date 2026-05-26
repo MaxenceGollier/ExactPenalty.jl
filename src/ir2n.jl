@@ -226,11 +226,11 @@ function SolverCore.solve!(
     end
 
     if η2 ≤ ρk < Inf
-      σk = clamp(σk*exp(-0.4*s_prime), σk / sqrt(γ), max(σmin, σk / γ))
+      σk = clamp(σk*exp(-0.4*s_prime), σk / γ, max(σmin, σk / γ^3))
     end
 
     if ρk < η1 || ρk == Inf
-      σk = clamp(σk*exp(-0.4*s_prime), σk * γ, σk * γ^6) 
+      σk = clamp(σk*exp(-0.4*s_prime), σk * γ, σk * γ^3) 
       if first_increase && ρk < 0
         σk = max(sqrt(stats.dual_feas), σk * γ)
         first_increase = false
