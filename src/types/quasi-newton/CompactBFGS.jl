@@ -15,6 +15,8 @@ mutable struct CompactBFGS{T,V<:AbstractVector{T},MT<:AbstractMatrix{T}} <:
   _y::V  # p
   _mem::Int
   _insert::Int
+  _nskip::Int
+  _max_skip::Int
 end
 
 function CompactBFGS(
@@ -25,6 +27,7 @@ function CompactBFGS(
   damped::Bool = false,
   σ₂::Float64 = 0.99,
   σ₃::Float64 = 10.0,
+  max_skip = 2,
 ) where {I<:Integer}
   return CompactBFGS{T,Vector{T},Matrix{T}}(
     scaling,
@@ -40,6 +43,8 @@ function CompactBFGS(
     zeros(T, mem),
     mem,
     1,
+    0,
+    max_skip
   )
 end
 
@@ -80,6 +85,7 @@ function NLPModels.reset!(op::CompactBFGS)
   op._y .= 0
 
   op._insert = 1
+  op._nskip = 0
 
 end
 mutable struct CompactBFGSModel{
@@ -102,7 +108,15 @@ function Base.push!(op::CompactBFGS{T,V,MT}, s::V, y::V) where {T,V,MT}
 
   sy = dot(s, y)
 
-  sy <= eps(T) && return
+  if sy <= eps(T) 
+    op._nskip = op._nskip + 1
+    if op._nskip > op._max_skip
+      NLPModels.reset!(op)
+    end
+    return
+  else
+    op._nskip = 0
+  end
 
   if op.scaling
     ξ = op.ξ = dot(y, y) / sy
