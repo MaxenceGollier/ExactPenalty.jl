@@ -349,7 +349,7 @@ function SolverCore.solve!(
       set_penalty!(mk, τ)
 
       # Initialize regularization parameter
-      νsub = 1 / β4
+      νsub = 1 / solver.substats.solver_specific[:sigma]
 
       # Add a relative tolerance for the subsolver
       dual_ktol = dual_tol
