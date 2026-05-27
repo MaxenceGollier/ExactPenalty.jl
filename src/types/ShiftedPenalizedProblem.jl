@@ -33,6 +33,7 @@ mutable struct ShiftedL2PenalizedProblem{
   _qn_∇f_prev::SN
   _qn_y::SN
   _qn_x_prev::SN
+  _is_first_shift::Bool
 end
 
 function ShiftedL2PenalizedProblem(
@@ -57,6 +58,7 @@ function ShiftedL2PenalizedProblem(
     zero(∇f),
     similar(∇f),
     zero(∇f),
+    true
   )
 end
 
@@ -89,6 +91,7 @@ function ShiftedL2PenalizedProblem(
     nothing,
     nothing,
     nothing,
+    true
   )
 end
 
@@ -154,6 +157,7 @@ function ShiftedProximalOperators.shift!(
   qn_y, qn_g_prev, qn_x_prev = shifted_penalty_nlp._qn_y,
   shifted_penalty_nlp._qn_∇f_prev,
   shifted_penalty_nlp._qn_x_prev
+  is_first_shift = shifted_penalty_nlp._is_first_shift
 
   qn_s = qn_x_prev
   g, B = φ.data.c, φ.data.H
@@ -162,15 +166,19 @@ function ShiftedProximalOperators.shift!(
   shift!(ψ, x)
 
   # Update the approximation.
-  @. qn_y = g - qn_g_prev
-  if !isnothing(y)
-    mul!(qn_y, ψ.A', y, -one(T), one(T)) # y = y - J(x)^T λ 
-    mul!(qn_y, ψ.A_prev', y, one(T), one(T)) # y = y + J(x)_prev^T λ
+  if !is_first_shift
+    @. qn_y = g - qn_g_prev
+    if !isnothing(y)
+      mul!(qn_y, ψ.A', y, one(T), one(T)) # y = y + J(x)^T λ 
+      mul!(qn_y, ψ.A_prev', y, -one(T), one(T)) # y = y - J(x)_prev^T λ
+    end
+
+    qn_s .= x .- qn_x_prev
+
+    push!(B, qn_s, qn_y)
+  else
+    shifted_penalty_nlp._is_first_shift = false
   end
-
-  qn_s .= x .- qn_x_prev
-
-  push!(B, qn_y, qn_s)
 
   # Copy the gradient and Jacobian.
   qn_g_prev .= g
@@ -229,6 +237,7 @@ function reset!(
 
   ψ.A_prev.vals .= ψ.A.vals
   LinearOperators.reset!(φ.data.H)
+  shifted_penalty_nlp._is_first_shift = true
 end
 
 function reset!(
