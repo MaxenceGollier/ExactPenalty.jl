@@ -85,6 +85,7 @@ function generate_instance(
     nothing,
     nothing,
     nothing,
+    true
   ),
   Dict(:u => u, :y => y, :tau => tau)
 end
