@@ -244,6 +244,7 @@ function SolverCore.solve!(
   not_desc = false
   n_iter_since_decrease = 0
   primal_decrease = false
+  first_increase = true
 
   set_status!(
     stats,
@@ -284,6 +285,7 @@ function SolverCore.solve!(
       η2 = isa(nlp, QuasiNewtonModel) ? T(0.9) : T(0.1),
       is_shifted = true,
       primal_decrease = primal_decrease,
+      first_increase = first_increase,
     )
 
     if solver.substats.status == :unbounded
@@ -351,6 +353,9 @@ function SolverCore.solve!(
       # Initialize regularization parameter
       νsub = 1 / solver.substats.solver_specific[:sigma]
 
+      # Subsolver: Activate the aggressive regularization parameter update if sigma is too small
+      first_increase = true
+
       # Add a relative tolerance for the subsolver
       dual_ktol = dual_tol
       set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
@@ -370,6 +375,9 @@ function SolverCore.solve!(
 
       # Subsolver: Do not impose primal decrease
       primal_decrease = false
+
+      # Subsolver: Desactivate the aggressive regularization parameter update if sigma is too small
+      first_increase = false
     end
 
     # Check whether the primal feasibility has decreased. If not, increase the penalty parameter more aggressively.

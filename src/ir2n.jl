@@ -77,6 +77,7 @@ function SolverCore.solve!(
   γ::T = T(3),
   is_shifted::Bool = false,
   primal_decrease::Bool = false,
+  first_increase::Bool = true
 ) where {T,V}
   reset!(stats)
 
@@ -115,7 +116,6 @@ function SolverCore.solve!(
   set_solver_specific!(stats, :sigma, σk)
   m_monotone > 1 && (m_fh_hist[stats.iter%(m_monotone-1)+1] = fk + hk)
 
-  first_increase = true
   solved = false
 
   set_status!(
