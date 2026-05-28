@@ -235,7 +235,7 @@ function SolverCore.solve!(
   ## Initialize penalty parameter
   τ = max(norm(solver.y, 1), T(1))
   set_penalty!(mk, τ)
-  νsub = 1/max(β4, β3*τ)
+  νsub = 1 / β4
 
   ## Initialize Model
   shift!(mk, x, ∇f = solver.∇fk, y = y)
@@ -244,6 +244,7 @@ function SolverCore.solve!(
   not_desc = false
   n_iter_since_decrease = 0
   primal_decrease = false
+  first_increase = true
 
   set_status!(
     stats,
@@ -284,12 +285,13 @@ function SolverCore.solve!(
       η2 = isa(nlp, QuasiNewtonModel) ? T(0.9) : T(0.1),
       is_shifted = true,
       primal_decrease = primal_decrease,
+      first_increase = first_increase,
     )
 
     if solver.substats.status == :unbounded
       τ *= 10
       set_penalty!(mk, τ)
-      νsub = 1/max(β4, β3*τ)
+      νsub = 1 / β4
       shift!(mk, x, y = y)
       set_solver_specific!(solver.substats, :smooth_obj, fx)
       continue
@@ -349,7 +351,10 @@ function SolverCore.solve!(
       set_penalty!(mk, τ)
 
       # Initialize regularization parameter
-      νsub = 1/max(β4, β3*τ)
+      νsub = 1 / solver.substats.solver_specific[:sigma]
+
+      # Subsolver: Activate the aggressive regularization parameter update if sigma is too small
+      first_increase = true
 
       # Add a relative tolerance for the subsolver
       dual_ktol = dual_tol
@@ -370,6 +375,9 @@ function SolverCore.solve!(
 
       # Subsolver: Do not impose primal decrease
       primal_decrease = false
+
+      # Subsolver: Desactivate the aggressive regularization parameter update if sigma is too small
+      first_increase = false
     end
 
     # Check whether the primal feasibility has decreased. If not, increase the penalty parameter more aggressively.
