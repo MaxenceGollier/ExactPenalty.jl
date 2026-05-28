@@ -44,7 +44,7 @@ function CompactBFGS(
     mem,
     1,
     0,
-    max_skip
+    max_skip,
   )
 end
 
@@ -108,7 +108,7 @@ function Base.push!(op::CompactBFGS{T,V,MT}, s::V, y::V) where {T,V,MT}
 
   sy = dot(s, y)
 
-  if sy <= eps(T) 
+  if sy <= eps(T)
     op._nskip = op._nskip + 1
     if op._nskip > op._max_skip
       NLPModels.reset!(op)
