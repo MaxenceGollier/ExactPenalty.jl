@@ -58,7 +58,7 @@ function ShiftedL2PenalizedProblem(
     zero(∇f),
     similar(∇f),
     zero(∇f),
-    true
+    true,
   )
 end
 
@@ -91,7 +91,7 @@ function ShiftedL2PenalizedProblem(
     nothing,
     nothing,
     nothing,
-    true
+    true,
   )
 end
 

@@ -77,7 +77,7 @@ function SolverCore.solve!(
   γ::T = T(3),
   is_shifted::Bool = false,
   primal_decrease::Bool = false,
-  first_increase::Bool = true
+  first_increase::Bool = true,
 ) where {T,V}
   reset!(stats)
 
