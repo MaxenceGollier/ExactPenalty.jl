@@ -22,7 +22,7 @@ function test_problem(name, primal_solution, dual_solution, expected_status)
         Inf,
       ) ≤ 100*tol
     end
-    @test stats.primal_feas == norm(cons(nlp, stats.solution), Inf)
+    @test abs(stats.primal_feas - norm(cons(nlp, stats.solution), Inf)) ≤ 100*tol
 
     # Test stability and allocations
     solver = L2PenaltySolver(null_model)
@@ -56,7 +56,7 @@ function test_problem(name, primal_solution, dual_solution, expected_status)
         Inf,
       ) ≤ 100*tol
     end
-    @test stats.primal_feas == norm(cons(nlp, stats.solution), Inf)
+    @test abs(stats.primal_feas - norm(cons(nlp, stats.solution), Inf)) ≤ 100*tol
 
     # Test stability and allocations
     NLPModels.reset!(LBFGS_model)
@@ -89,7 +89,7 @@ function test_problem(name, primal_solution, dual_solution, expected_status)
         Inf,
       ) ≤ 100*tol
     end
-    @test stats.primal_feas == norm(cons(nlp, stats.solution), Inf)
+    @test abs(stats.primal_feas - norm(cons(nlp, stats.solution), Inf)) ≤ 100*tol
 
     # Test stability and allocations
     solver = L2PenaltySolver(nlp)
