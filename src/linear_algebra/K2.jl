@@ -27,7 +27,7 @@ mutable struct CompactBFGSK2{
   y2::V
 end
 
-function CscK2(
+function K2(
   n::Int,
   m::Int,
   nrow::Int,
@@ -88,7 +88,7 @@ function CscK2(
   return Symmetric(H)
 end
 
-function CscK2(
+function K2(
   n::Int,
   m::Int,
   nrow::Int,
@@ -96,7 +96,8 @@ function CscK2(
   α::T,
   σ::T,
   A::M1,
-  B::M2,
+  B::M2;
+  format = :coo,
 ) where {T,M1<:SparseMatrixCOO,M2<:CompactBFGS}
 
   I, J, V = Vector{Int}(), Vector{Int}(), Vector{T}()
@@ -112,23 +113,20 @@ function CscK2(
     push!(V, A.vals[k])
   end
 
-  # Step 3: Construct the sparse CSC matrix
-  H = sparse(I, J, V, n+m, n+m)
-
-  # Step 4: Initialize inertia corrections
+  # Step 3: Initialize inertia corrections
   # Produces 
-  # [ ξI + σI  Aᵀ ]
-  # [ 0       -αI ]
+  # [ Bᵀ+σI Aᵀ ]
+  # [ 0    -αI ]
   α_temp = iszero(α) ? eps(T) : α
   σ_temp = iszero(σ) ? eps(T) : σ
 
-  @inbounds for i = 1:n
-    H[i, i] += B.ξ + σ_temp
-  end
+  append!(I, 1:(n+m))
+  append!(J, 1:(n+m))
+  append!(V, fill(σ_temp, n))
+  append!(V, fill(-α_temp, m))
 
-  @inbounds for i = (n+1):(n+m)
-    H[i, i] -= α_temp
-  end
+  # Step 4: Construct the sparse matrix
+  H = format == :coo ? SparseMatrixCOO(n+m, n+m, I, J, V) : sparse(I, J, V, n+m, n+m)
 
   return CompactBFGSK2(
     B,
@@ -143,7 +141,7 @@ function CscK2(
   )
 end
 
-function CooK2(
+function K2(
   n::Int,
   m::Int,
   nrow::Int,
@@ -151,7 +149,8 @@ function CooK2(
   α::T,
   σ::T,
   A::M1,
-  B::M2,
+  B::M2;
+  format::Symbol = :coo,
 ) where {T,M1<:SparseMatrixCOO,M2<:SparseMatrixCOO}
 
   I, J, V = Vector{Int}(), Vector{Int}(), Vector{T}()
@@ -178,25 +177,26 @@ function CooK2(
     push!(V, A.vals[k])
   end
 
-  # Step 3: Construct the sparse CSC matrix
-  H = sparse(I, J, V, n+m, n+m)
-
-  # Step 4: Initialize inertia corrections
+  # Step 3: Initialize inertia corrections
   # Produces 
   # [ Bᵀ+σI Aᵀ ]
   # [ 0    -αI ]
   α_temp = iszero(α) ? eps(T) : α
   σ_temp = iszero(σ) ? eps(T) : σ
 
-  @inbounds for i = 1:n
-    H[i, i] += σ_temp
-  end
+  append!(I, 1:(n+m))
+  append!(J, 1:(n+m))
+  append!(V, fill(σ_temp, n))
+  append!(V, fill(-α_temp, m))
 
-  @inbounds for i = (n+1):(n+m)
-    H[i, i] -= α_temp
-  end
+  # Step 4: Construct the sparse matrix
+  H = format == :coo ? SparseMatrixCOO(n+m, n+m, I, J, V) : sparse(I, J, V, n+m, n+m)
 
   return Symmetric(H)
+end
+
+function K2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2; format::Symbol = :coo) where {T,M1,M2 <: AbstractLinearOperator}
+  return OpK2(n, m, nrow, ncol, α, σ, A, B)
 end
 
 function LinearAlgebra.mul!(
@@ -219,14 +219,4 @@ end
 function Base.show(io::IO, op::OpK2)
   s = "K2 Linear operator\n"
   print(io, s)
-end
-
-function K2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2) where {T,M1,M2}
-  if M2 <: AbstractLinearOperator
-    return OpK2(n, m, nrow, ncol, α, σ, A, B)
-  elseif M2 <: SparseMatrixCOO
-    return CooK2(n, m, nrow, ncol, α, σ, A, B)
-  else
-    return CscK2(n, m, nrow, ncol, α, σ, A, B)
-  end
 end

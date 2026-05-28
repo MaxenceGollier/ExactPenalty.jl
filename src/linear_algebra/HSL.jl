@@ -1,0 +1,311 @@
+mutable struct PenaltyMA57Workspace{
+  WP<:Ma57,
+  K2<:AbstractMatrix,
+  V<:AbstractVector,
+  T<:Real,
+}
+  M::WP
+  H::K2
+  x::V
+  dx::V
+  r::V
+  σ::T
+  n::Int
+  m::Int
+  status::Symbol
+  factorized::Bool
+end
+
+function get_H(
+  solver_workspace::PenaltyMA57Workspace{WP,K2},
+) where {T,WP,K2<:Symmetric{T,SparseMatrixCOO{T,Int}}}
+  return solver_workspace.H.data
+end
+
+function get_H(solver_workspace::PenaltyMA57Workspace{WP,K2}) where {WP,K2<:CompactBFGSK2}
+  return solver_workspace.H.H.data
+end
+
+function construct_ma57_workspace(
+  H::M,
+  u1::V,
+  n,
+  m,
+) where {T,V<:AbstractVector{T},M<:Symmetric{T,SparseMatrixCOO{T,Int}}}
+  S = Ma57(H.data, sqd = true)
+  return PenaltyMA57Workspace(
+    S,
+    H,
+    similar(u1),
+    similar(u1),
+    similar(u1),
+    zero(T),
+    n,
+    m,
+    :uninitialized,
+    false,
+  )
+end
+
+function construct_ma57_workspace(
+  H::M,
+  u1::V,
+  n,
+  m,
+) where {T,V<:AbstractVector{T},M<:CompactBFGSK2}
+  S = Ma57(H.H.data, sqd = true)
+  return PenaltyMA57Workspace(
+    S,
+    H,
+    similar(u1),
+    similar(u1),
+    similar(u1),
+    zero(T),
+    n,
+    m,
+    :uninitialized,
+    false,
+  )
+end
+
+function update_workspace!(
+  solver_workspace::PenaltyMA57Workspace,
+  B::M,
+  A,
+  σ,
+  α,
+) where {M<:SparseMatrixCOO}
+  n, m = solver_workspace.n, solver_workspace.m
+  H = get_H(solver_workspace)
+
+  @inbounds for i = 1:n
+    H[i, i] = σ
+  end
+
+  @inbounds for i = 1:length(B.vals)
+    if B.cols[i] == B.rows[i]
+      H[B.cols[i], B.rows[i]] += B.vals[i]
+    else
+      H[B.cols[i], B.rows[i]] = B.vals[i]
+    end
+  end
+
+  @inbounds for i = 1:length(A.vals)
+    H[A.cols[i], n+A.rows[i]] = A.vals[i]
+  end
+
+  @inbounds for i = 1:m
+    H[n+i, n+i] = -α
+  end
+
+  solver_workspace.σ = σ
+  solver_workspace.factorized = false
+end
+
+function update_workspace!(
+  solver_workspace::PenaltyMA57Workspace,
+  B::M,
+  A,
+  σ,
+  α,
+) where {M<:CompactBFGS}
+  n, m = solver_workspace.n, solver_workspace.m
+  H = get_H(solver_workspace)
+
+  @inbounds for i = 1:n
+    H[i, i] = σ + B.ξ
+  end
+
+  @inbounds for i = 1:length(A.vals)
+    H[A.cols[i], n+A.rows[i]] = A.vals[i]
+  end
+
+  @inbounds for i = 1:m
+    H[n+i, n+i] = -α
+  end
+  solver_workspace.σ = σ
+  solver_workspace.factorized = false
+end
+
+function set_dual_inertia!(solver_workspace::PenaltyMA57Workspace, α)
+  n, m = solver_workspace.n, solver_workspace.m
+  H = get_H(solver_workspace)
+  @inbounds for i = 1:m
+    H[n+i, n+i] = -α
+  end
+  solver_workspace.factorized = false
+end
+
+function set_primal_inertia!(solver_workspace::PenaltyMA57Workspace, σ)
+  n, m = solver_workspace.n, solver_workspace.m
+  H = get_H(solver_workspace)
+  σ_prev = solver_workspace.σ
+  @inbounds for i = 1:n
+    H[i, i] += σ - σ_prev
+  end
+  solver_workspace.σ = σ
+  solver_workspace.factorized = false
+end
+
+function solve_system!(
+  workspace::PenaltyMA57Workspace{WP,K2},
+  u::V,
+) where {V<:AbstractVector,WP,K2}
+  workspace.status = :success
+
+  workspace.factorized || ma57_factorize!(workspace.M)
+  if workspace.M.info.info[1] < 0
+    workspace.status = :failed
+    return
+  else
+    workspace.factorized = true
+  end
+
+  ldiv!(workspace.x, workspace.M, u)
+  if any(isnan, workspace.x)
+    workspace.status = :failed
+    return
+  end
+
+  refine!(workspace, u)
+  if any(isnan, workspace.x) ||
+     norm(workspace.dx)/norm(workspace.x) > eps(eltype(workspace.x))^(0.5)
+    workspace.status = :failed
+    return
+  end
+end
+
+function solve_system!(
+  workspace::PenaltyLDLTWorkspace{WP,K2},
+  u::V,
+) where {V<:AbstractVector,WP,K2<:CompactBFGSK2}
+  workspace.status = :success
+  H = workspace.H
+  B = workspace.H.B
+  n, m = workspace.n, workspace.m
+  p = min(B._insert - 1, B._mem)
+  x1, x2, x3, y1, y2 = H.x1, H.x2, H.x3, H.y1, H.y2
+  Z1, Z2 = H.Z1, H.Z2
+  Uk = @view B.Uk[:, 1:p]
+  Vk = @view B.Vk[:, 1:p]
+
+  # Step 0: Write (#TODO: we can use easily use QRMumps instead of LDLFactorization here...)
+  # [B  Aᵀ] = [σI+ξI  Aᵀ] + [-U V]([U V])ᵀ
+  # [A -αI] = [A     -αI] + [ 0 0]([0 0])
+  # Hence,
+  # [B  Aᵀ] = [σI+ξI  Aᵀ] + EFᵀ
+  # [A -αI] = [A     -αI] + EFᵀ
+
+  # Step 1: Factorize
+  # [σI+ξI  Aᵀ]
+  # [A     -αI]
+  factorized(workspace.M) || ldl_factorize!(workspace.H.H, workspace.M)
+  if !factorized(workspace.M)
+    workspace.status = :failed
+    return
+  end
+
+  # Step 2: Compute # TODO: allow for iterative refinement
+  # [x₁] = [σI+ξI  Aᵀ]⁻¹[u]
+  # [x₁] = [A     -αI]  [u]
+  ldiv!(x1, workspace.M, u)
+  if any(isnan, x1)
+    workspace.status = :failed
+    return
+  end
+
+  # Step 3: Compute
+  # y₁ = Fᵀx₁ = [Uᵀx₁(1:n)]
+  # y₁ = Fᵀx₁ = [Vᵀx₁(1:n)]
+  @views mul!(y1[1:p], Uk', x1[1:n])
+  @views mul!(y1[(p+1):(2*p)], Vk', x1[1:n])
+
+
+  # Step 4: Assemble Schur complement (I + Fᵀ [σI+ξI  Aᵀ]⁻¹ E )
+  #                                   (       [A     -αI]     )
+  # Step 4.1: Compute 
+  # Z₁ = [σI+ξI  Aᵀ]⁻¹ E = [σI+ξI  Aᵀ]⁻¹[-U V]
+  # Z₁ = [A     -αI]   E = [A     -αI]  [ 0 0]
+  Z1 .= 0
+
+  @views Z1[1:n, 1:p] .= Uk .* (-1)
+  @views Z1[1:n, (p+1):(2*p)] .= Vk
+  ldiv!(workspace.M, Z1)
+  if any(isnan, Z1)
+    workspace.status = :failed
+    return
+  end
+
+  # Step 4.2: Compute 
+  # Z₂ = FᵀZ₁ = UᵀZ₁[1:n]
+  # Z₂ = FᵀZ₁ = VᵀZ₁[1:n]
+  Z2 .= 0
+  @views mul!(Z2[1:p, 1:(2*p)], Uk', Z1[1:n, (1:(2*p))])
+  @views mul!(Z2[(p+1):(2*p), 1:(2*p)], Vk', Z1[1:n, (1:(2*p))])
+
+  # Step 4.3: Compute 
+  # Z₂ = I + Z₂
+  for i = 1:(2*p)
+    Z2[i, i] += 1
+  end
+
+  # Step 5: Solve
+  # (I + Fᵀ [σI+ξI  Aᵀ]⁻¹ E )⁻¹[y₁]
+  # (       [A     -αI]     )  [y₁]
+  # using Julia LinearALgebra's lu!
+  F = lu!(Z2[1:(2*p), 1:(2*p)], check = false) # FIXME ?
+  @views ldiv!(y2[1:(2*p)], F, y1[1:(2*p)])
+  if any(isnan, y2)
+    workspace.status = :failed
+    return
+  end
+
+  # Step 6: Compute
+  # x₂ = E[y₂] = [-U V][y₂] = [-Uy₂ + Vy₂]
+  # x₂ = E[y₂] = [ 0 0][y₂] = [0]
+  @views mul!(x2[1:n], Vk, y2[(p+1):(2*p)])
+  @views mul!(x2[1:n], Uk, y2[1:p], -one(eltype(y2)), one(eltype(y2)))
+
+  # Step 7: Solve
+  # [x₃] = [σI+ξI  Aᵀ]⁻¹[x₂]
+  # [x₃] = [A     -αI]  [x₂]
+  ldiv!(x3, workspace.M, x2)
+  if any(isnan, x3)
+    workspace.status = :failed
+    return
+  end
+
+  # Step 8:
+  # [B  Aᵀ]⁻¹[u] = x₁ - x₃ 
+  # [A -αI]  [u] = x₁ - x₃
+  workspace.x .= x1 .- x3
+end
+
+function get_solution!(x::V, workspace::PenaltyLDLTWorkspace) where {V<:AbstractVector}
+  x .= workspace.x
+end
+
+function get_status(workspace::PenaltyLDLTWorkspace)
+  return workspace.status
+end
+
+function get_inertia(workspace::PenaltyLDLTWorkspace)
+  LDL = workspace.M
+
+  n = LDL.n
+  (npos, nzero, nneg) = (0, 0, 0)
+
+  D = LDL.d
+  for i = 1:n
+    d = D[i]
+    if real(d) > 0
+      npos += 1
+    elseif abs(real(d)) < eps(eltype(d))
+      nzero += 1
+    else
+      nneg += 1
+    end
+  end
+
+  return npos, nzero, nneg
+end

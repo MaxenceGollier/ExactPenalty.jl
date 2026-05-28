@@ -2,7 +2,7 @@ module ExactPenalty
 
 using LinearAlgebra, SparseArrays
 using NLPModels, NLPModelsModifiers, RegularizedProblems
-using Krylov,
+using HSL, Krylov,
   LDLFactorizations,
   LinearOperators,
   ProximalOperators,
@@ -25,6 +25,7 @@ include("linear_algebra/K2.jl")
 include("linear_algebra/construct_workspace.jl")
 include("linear_algebra/krylov.jl")
 include("linear_algebra/ldlt.jl")
+include("linear_algebra/HSL.jl")
 
 include("types/PenalizedProblem.jl")
 include("types/ShiftedPenalizedProblem.jl")

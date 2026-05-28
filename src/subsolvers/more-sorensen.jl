@@ -27,9 +27,9 @@ function MoreSorensenSolver(
   x1 = zeros(eltype(x0), n+m)
   x2 = zeros(eltype(x0), n+m)
 
-  H = K2(n, m, n+m, n+m, zero(T), reg_nlp.model.data.σ, reg_nlp.h.A, reg_nlp.model.data.H)
+  solver = isa(reg_nlp.model.data.H, AbstractLinearOperator) ? :minres_qlp : LIBHSL_isfunctional() ? :ma57 : :ldlt
 
-  solver = isa(H, AbstractLinearOperator) ? :minres_qlp : :ldlt
+  H = K2(n, m, n+m, n+m, zero(T), reg_nlp.model.data.σ, reg_nlp.h.A, reg_nlp.model.data.H; format = solver == :ma57 ? :coo : :csc)
   workspace = construct_workspace(H, u1, n, m; solver = solver)
 
   return MoreSorensenSolver(u1, u2, x1, x2, H, workspace)
