@@ -45,15 +45,15 @@ function second_order_correction!(
 
   m_monotone = length(m_fh_hist) + 1
 
-  # Logging
-  if verbose > 0 && verbose % stats.iter == 0
+   # Logging
+  if verbose > 0 && stats.iter % verbose == 0
     @info log_row(
       Any[
         stats.iter,
         solver.substats.iter,
-        T(0),
-        T(0),
-        T(0),
+        fk,
+        hk,
+        stats.dual_feas,
         ρk,
         T(0),
         norm(xk),
@@ -66,9 +66,10 @@ function second_order_correction!(
   end
 
   k = 0
+  done = false
   fkn, hkn = zero(T), zero(T)
 
-  while ρk < η1 && k < max_iter
+  while ρk < η1 && k < max_iter && !done
 
     second_order_correction!(
       solver.subsolver,
@@ -90,11 +91,32 @@ function second_order_correction!(
 
     ρkn = Δobj / Δmod
     if ρk / ρkn > min_ratio && ρkn < η1
-      break
+      done = true
     else
       ρk = ρkn
     end
     k = k + 1
+
+    set_iter!(stats, stats.iter + 1)
+    if verbose > 0 && stats.iter % verbose == 0
+    @info log_row(
+      Any[
+        stats.iter,
+        solver.substats.iter,
+        fk,
+        hk,
+        stats.dual_feas,
+        ρk,
+        T(0),
+        norm(xk),
+        norm(s),
+        '=',
+        "soc"
+      ],
+      colsep = 1,
+    )
+  end
+  
   end
 
   # Step acceptance

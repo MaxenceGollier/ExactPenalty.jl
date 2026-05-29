@@ -3,6 +3,8 @@ function second_order_correction!(
   reg_nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
   stats::GenericExecutionStats{T,V,V},
 ) where {T,V,M,H,P}
+  reset!(stats)
+  
   n = reg_nlp.model.meta.nvar
   m = length(reg_nlp.h.b)
 
