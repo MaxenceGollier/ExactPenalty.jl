@@ -226,7 +226,7 @@ function SolverCore.solve!(
         σk = max(sqrt(stats.dual_feas), σk * γ)
         first_increase = false
 
-      elseif ρk < 0 && hk - hkn < 0
+      elseif ρk < 0 && hk - hkn < 0 && fk - fkn > 0
 
         second_order_correction!(
           solver,
