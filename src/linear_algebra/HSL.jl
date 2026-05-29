@@ -7,7 +7,7 @@ mutable struct PenaltyMA57Workspace{
   M::WP
   H::K2
   x::V
-  dx::V
+  work::V
   r::V
   σ::T
   n::Int
@@ -32,12 +32,12 @@ function construct_ma57_workspace(
   n,
   m,
 ) where {T,V<:AbstractVector{T},M<:Symmetric{T,SparseMatrixCOO{T,Int}}}
-  S = Ma57(H.data, sqd = true)
+  S = ma57_coord(n + m, H.data.rows, H.data.cols, H.data.vals, sqd = true, print_level = -1)
   return PenaltyMA57Workspace(
     S,
     H,
     similar(u1),
-    similar(u1),
+    similar(u1, 4*length(u1)),
     similar(u1),
     zero(T),
     n,
@@ -76,27 +76,16 @@ function update_workspace!(
   α,
 ) where {M<:SparseMatrixCOO}
   n, m = solver_workspace.n, solver_workspace.m
+  nnz_B, nnz_A = length(B.vals), length(A.vals)
+
   H = get_H(solver_workspace)
 
-  @inbounds for i = 1:n
-    H[i, i] = σ
-  end
+  H.vals[1:nnz_B] .= B.vals
+  H.vals[(nnz_B + 1):(nnz_B + nnz_A)] .= A.vals
+  H.vals[(nnz_B + nnz_A + 1):(nnz_B + nnz_A + n)] .= σ
+  H.vals[(nnz_B + nnz_A + n + 1):(nnz_B + nnz_A + n + m)] .= -α
 
-  @inbounds for i = 1:length(B.vals)
-    if B.cols[i] == B.rows[i]
-      H[B.cols[i], B.rows[i]] += B.vals[i]
-    else
-      H[B.cols[i], B.rows[i]] = B.vals[i]
-    end
-  end
-
-  @inbounds for i = 1:length(A.vals)
-    H[A.cols[i], n+A.rows[i]] = A.vals[i]
-  end
-
-  @inbounds for i = 1:m
-    H[n+i, n+i] = -α
-  end
+  solver_workspace.M.vals .= H.vals
 
   solver_workspace.σ = σ
   solver_workspace.factorized = false
@@ -130,19 +119,16 @@ end
 function set_dual_inertia!(solver_workspace::PenaltyMA57Workspace, α)
   n, m = solver_workspace.n, solver_workspace.m
   H = get_H(solver_workspace)
-  @inbounds for i = 1:m
-    H[n+i, n+i] = -α
-  end
+  H.vals[end-m+1:end] .= -α
+  solver_workspace.M.vals[end-m+1:end] .= -α
   solver_workspace.factorized = false
 end
 
 function set_primal_inertia!(solver_workspace::PenaltyMA57Workspace, σ)
   n, m = solver_workspace.n, solver_workspace.m
   H = get_H(solver_workspace)
-  σ_prev = solver_workspace.σ
-  @inbounds for i = 1:n
-    H[i, i] += σ - σ_prev
-  end
+  H.vals[end-m-n+1:end-m] .= σ
+  solver_workspace.M.vals[end-m-n+1:end-m] .= σ
   solver_workspace.σ = σ
   solver_workspace.factorized = false
 end
@@ -153,30 +139,43 @@ function solve_system!(
 ) where {V<:AbstractVector,WP,K2}
   workspace.status = :success
 
-  workspace.factorized || ma57_factorize!(workspace.M)
-  if workspace.M.info.info[1] < 0
+  # Ma57 icntl(7): Controls the pivotting strategy.
+  # Ma57 icntl(7): A value of 3 performs no pivoting: for a sufficiently large value of σ and a positive value of α,
+  # The matrix is strongly factorizable, so we don't need pivoting.
+  workspace.M.control.icntl[7] = 3
+
+  if !workspace.factorized 
+    try 
+      ma57_factorize!(workspace.M)
+    catch e
+      !(e isa HSL.Ma57Exception) && rethrow(e)
+    end
+  end
+  
+  # Ma57 info(1): a negative value is an error in the factorization.
+  # Ma57 info(1): a value of 4 indicates that the matrix is singular.
+  if workspace.M.info.info[1] < 0 || workspace.M.info.info[1] == 4
     workspace.status = :failed
     return
   else
     workspace.factorized = true
   end
 
-  ldiv!(workspace.x, workspace.M, u)
-  if any(isnan, workspace.x)
-    workspace.status = :failed
-    return
+  # Ma57 icntl(9): Controls the max number of iterative refinement steps.
+  workspace.M.control.icntl[9] = 10
+  try 
+    ma57_solve!(workspace.M, u, workspace.x, workspace.r, workspace.work, 10)
+  catch e
+    !(e isa HSL.Ma57Exception) && rethrow(e)
   end
-
-  refine!(workspace, u)
-  if any(isnan, workspace.x) ||
-     norm(workspace.dx)/norm(workspace.x) > eps(eltype(workspace.x))^(0.5)
+  if any(isnan, workspace.x) || workspace.M.info.info[1] < 0
     workspace.status = :failed
     return
   end
 end
 
 function solve_system!(
-  workspace::PenaltyLDLTWorkspace{WP,K2},
+  workspace::PenaltyMA57Workspace{WP,K2},
   u::V,
 ) where {V<:AbstractVector,WP,K2<:CompactBFGSK2}
   workspace.status = :success
@@ -281,31 +280,23 @@ function solve_system!(
   workspace.x .= x1 .- x3
 end
 
-function get_solution!(x::V, workspace::PenaltyLDLTWorkspace) where {V<:AbstractVector}
+function get_solution!(x::V, workspace::PenaltyMA57Workspace{WP,K2}) where {V<:AbstractVector,WP,K2}
   x .= workspace.x
 end
 
-function get_status(workspace::PenaltyLDLTWorkspace)
+function get_status(workspace::PenaltyMA57Workspace{WP,K2}) where{WP,K2}
   return workspace.status
 end
 
-function get_inertia(workspace::PenaltyLDLTWorkspace)
-  LDL = workspace.M
+function get_inertia(workspace::PenaltyMA57Workspace{WP,K2}) where{WP,K2}
 
-  n = LDL.n
+  n, m = workspace.n, workspace.m
   (npos, nzero, nneg) = (0, 0, 0)
 
-  D = LDL.d
-  for i = 1:n
-    d = D[i]
-    if real(d) > 0
-      npos += 1
-    elseif abs(real(d)) < eps(eltype(d))
-      nzero += 1
-    else
-      nneg += 1
-    end
-  end
-
+  nneg = workspace.M.info.info[24]
+  rank = workspace.M.info.info[25]
+  nzero = n + m - rank
+  npos = n + m - nzero - nneg
+  
   return npos, nzero, nneg
 end
