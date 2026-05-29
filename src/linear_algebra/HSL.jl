@@ -8,6 +8,7 @@ mutable struct PenaltyMA57Workspace{
   H::K2
   x::V
   work::V
+  _qn_work::V
   dx::V
   σ::T
   n::Int
@@ -38,6 +39,7 @@ function construct_ma57_workspace(
     H,
     similar(u1),
     similar(u1, 4*length(u1)),
+    similar(u1, 0),
     similar(u1),
     zero(T),
     n,
@@ -53,12 +55,13 @@ function construct_ma57_workspace(
   n,
   m,
 ) where {T,V<:AbstractVector{T},M<:CompactBFGSK2}
-  S = Ma57(H.H.data, sqd = true)
+  S = ma57_coord(n + m, H.H.data.rows, H.H.data.cols, H.H.data.vals, sqd = true, print_level = -1)
   return PenaltyMA57Workspace(
     S,
     H,
     similar(u1),
-    similar(u1),
+    similar(u1, 4*length(u1)),
+    similar(u1, 2*length(u1)*H.B._mem),
     similar(u1),
     zero(T),
     n,
@@ -99,19 +102,16 @@ function update_workspace!(
   α,
 ) where {M<:CompactBFGS}
   n, m = solver_workspace.n, solver_workspace.m
+  nnz_A = length(A.vals)
+
   H = get_H(solver_workspace)
 
-  @inbounds for i = 1:n
-    H[i, i] = σ + B.ξ
-  end
+  H.vals[1:nnz_A] .= A.vals
+  H.vals[(nnz_A + 1):(nnz_A + n)] .= σ + B.ξ
+  H.vals[(nnz_A + n + 1):(nnz_A + n + m)] .= -α
 
-  @inbounds for i = 1:length(A.vals)
-    H[A.cols[i], n+A.rows[i]] = A.vals[i]
-  end
+  solver_workspace.M.vals .= H.vals
 
-  @inbounds for i = 1:m
-    H[n+i, n+i] = -α
-  end
   solver_workspace.σ = σ
   solver_workspace.factorized = false
 end
@@ -202,17 +202,45 @@ function solve_system!(
   # Step 1: Factorize
   # [σI+ξI  Aᵀ]
   # [A     -αI]
-  factorized(workspace.M) || ldl_factorize!(workspace.H.H, workspace.M)
-  if !factorized(workspace.M)
-    workspace.status = :failed
-    return
+  
+  # Ma57 icntl(7): Controls the pivotting strategy.
+  # Ma57 icntl(7): A value of 3 performs no pivoting: for a sufficiently large value of σ and a positive value of α,
+  # The matrix is strongly factorizable, so we don't need pivoting.
+  workspace.M.control.icntl[7] = 3
+
+  if !workspace.factorized 
+    try 
+      ma57_factorize!(workspace.M)
+    catch e
+      !(e isa HSL.Ma57Exception) && rethrow(e)
+    end
   end
 
-  # Step 2: Compute # TODO: allow for iterative refinement
+  # Ma57 info(1): a negative value is an error in the factorization.
+  # Ma57 info(1): a value of 4 indicates that the matrix is singular.
+  if workspace.M.info.info[1] < 0 || workspace.M.info.info[1] == 4
+    workspace.status = :failed
+    return
+  else
+    workspace.factorized = true
+  end
+
+  # Step 2: Compute
   # [x₁] = [σI+ξI  Aᵀ]⁻¹[u]
   # [x₁] = [A     -αI]  [u]
-  ldiv!(x1, workspace.M, u)
-  if any(isnan, x1)
+
+  # Ma57 icntl(9): Controls the max number of iterative refinement steps.
+  workspace.M.control.icntl[9] = 10
+
+  # Ma57 control.cntl(3): If the norm of the scaled residuals does not decrease by a factor of at least cntl(3), 
+  # then the iterative refinement stops.
+  workspace.M.control.cntl[3] = one(eltype(u)) # Perform iterative refinement
+  try 
+    ma57_solve!(workspace.M, u, x1, workspace.dx, workspace.work, 10)
+  catch e
+    !(e isa HSL.Ma57Exception) && rethrow(e)
+  end
+  if any(isnan, x1) || workspace.M.info.info[1] < 0
     workspace.status = :failed
     return
   end
@@ -233,8 +261,12 @@ function solve_system!(
 
   @views Z1[1:n, 1:p] .= Uk .* (-1)
   @views Z1[1:n, (p+1):(2*p)] .= Vk
-  ldiv!(workspace.M, Z1)
-  if any(isnan, Z1)
+  try 
+    ma57_solve!(workspace.M, Z1, workspace._qn_work)
+  catch e
+    !(e isa HSL.Ma57Exception) && rethrow(e)
+  end
+  if any(isnan, Z1) || workspace.M.info.info[1] < 0
     workspace.status = :failed
     return
   end
@@ -272,8 +304,12 @@ function solve_system!(
   # Step 7: Solve
   # [x₃] = [σI+ξI  Aᵀ]⁻¹[x₂]
   # [x₃] = [A     -αI]  [x₂]
-  ldiv!(x3, workspace.M, x2)
-  if any(isnan, x3)
+  try 
+    ma57_solve!(workspace.M, x2, x3, workspace.dx, workspace.work, 10)
+  catch e
+    !(e isa HSL.Ma57Exception) && rethrow(e)
+  end
+  if any(isnan, x3) || workspace.M.info.info[1] < 0
     workspace.status = :failed
     return
   end
