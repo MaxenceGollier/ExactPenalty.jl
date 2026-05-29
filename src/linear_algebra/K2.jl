@@ -35,7 +35,8 @@ function K2(
   α::T,
   σ::T,
   A::M1,
-  B::M2,
+  B::M2;
+  format::Symbol = :coo
 ) where {T,M1<:SparseMatrixCOO,M2<:SparseMatrixCSC}
 
   I, J, V = Vector{Int}(), Vector{Int}(), Vector{T}()
@@ -67,23 +68,20 @@ function K2(
     push!(V, A.vals[k])
   end
 
-  # Step 3: Construct the sparse CSC matrix
-  H = sparse(I, J, V, n+m, n+m)
-
-  # Step 4: Initialize inertia corrections
+  # Step 3: Initialize inertia corrections
   # Produces 
   # [ Bᵀ+σI Aᵀ ]
   # [ 0    -αI ]
   α_temp = iszero(α) ? eps(T) : α
   σ_temp = iszero(σ) ? eps(T) : σ
+  
+  append!(I, 1:(n+m))
+  append!(J, 1:(n+m))
+  append!(V, fill(σ_temp, n))
+  append!(V, fill(-α_temp, m))
 
-  @inbounds for i = 1:n
-    H[i, i] += σ_temp
-  end
-
-  @inbounds for i = (n+1):(n+m)
-    H[i, i] -= α_temp
-  end
+  # Step 4: Construct the sparse matrix
+  H = format == :coo ? SparseMatrixCOO(n+m, n+m, I, J, V) : sparse(I, J, V, n+m, n+m)
 
   return Symmetric(H)
 end
