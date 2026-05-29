@@ -30,8 +30,10 @@ include("types/PenalizedProblem.jl")
 include("types/ShiftedPenalizedProblem.jl")
 
 include("subsolvers/more-sorensen.jl")
+include("subsolvers/soc.jl")
 
 include("ir2n.jl")
+include("soc.jl")
 
 include("algorithm.jl")
 
