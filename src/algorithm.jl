@@ -154,7 +154,7 @@ function SolverCore.solve!(
   x::V = nlp.meta.x0,
   atol::T = √eps(T),
   rtol::T = √eps(T),
-  sub_rtol = T(1e-1),
+  sub_rtol = T(1e-2),
   sub_atol = zero(T),
   infeasible_tol = T(1e-2),
   infeasible_iter = 10,
