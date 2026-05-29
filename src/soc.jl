@@ -4,7 +4,7 @@ function second_order_correction!(
   stats::GenericExecutionStats{T,V};
   callback = (args...) -> nothing,
   verbose::Int = 0,
-  max_iter::Int = 1,
+  max_iter::Int = 10,
   max_time::Float64 = 30.0,
   max_eval::Int = -1,
   η1::T = √√eps(T),

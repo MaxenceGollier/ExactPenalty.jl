@@ -226,14 +226,14 @@ function SolverCore.solve!(
         σk = max(sqrt(stats.dual_feas), σk * γ)
         first_increase = false
 
-      elseif ρk < 0 && hk - hkn < 0
+      elseif ρk < 0 && hk - hkn < 0 && fk - fkn > 0
 
         second_order_correction!(
           solver,
           reg_nlp,
           stats;
           verbose = verbose,
-          max_iter = 1,
+          max_iter = 10,
           max_time = max_time - stats.elapsed_time,
           max_eval = max_eval - neval_obj(nlp),
           η1 = η1,
