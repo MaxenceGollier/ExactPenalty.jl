@@ -1,5 +1,24 @@
 function second_order_correction!(
   solver::PenaltyR2NSolver{T,V},
+  reg_nlp::L2PenalizedProblem{T,V,P},
+  stats::GenericExecutionStats{T,V};
+  callback = (args...) -> nothing,
+  verbose::Int = 0,
+  max_iter::Int = 10,
+  max_time::Float64 = 30.0,
+  max_eval::Int = -1,
+  η1::T = √√eps(T),
+  η2::T = T(0.1),
+  γ::T = T(3),
+  ρk::T = zero(T),
+  min_ratio::T = T(1e-1),
+) where {T,V, P <: NullHessianModel{T, V}}
+  # Just reject the step for this type of model.
+  stats.solver_specific[:sigma] = stats.solver_specific[:sigma] * γ
+end
+
+function second_order_correction!(
+  solver::PenaltyR2NSolver{T,V},
   reg_nlp::AbstractRegularizedNLPModel{T,V},
   stats::GenericExecutionStats{T,V};
   callback = (args...) -> nothing,
