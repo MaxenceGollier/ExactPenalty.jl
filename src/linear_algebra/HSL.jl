@@ -8,7 +8,7 @@ mutable struct PenaltyMA57Workspace{
   H::K2
   x::V
   work::V
-  r::V
+  dx::V
   σ::T
   n::Int
   m::Int
@@ -163,8 +163,12 @@ function solve_system!(
 
   # Ma57 icntl(9): Controls the max number of iterative refinement steps.
   workspace.M.control.icntl[9] = 10
+
+  # Ma57 control.cntl(3): If the norm of the scaled residuals does not decrease by a factor of at least cntl(3), 
+  # then the iterative refinement stops.
+  workspace.M.control.cntl[3] = one(eltype(u)) # Perform iterative refinement
   try 
-    ma57_solve!(workspace.M, u, workspace.x, workspace.r, workspace.work, 10)
+    ma57_solve!(workspace.M, u, workspace.x, workspace.dx, workspace.work, 10)
   catch e
     !(e isa HSL.Ma57Exception) && rethrow(e)
   end
