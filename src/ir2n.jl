@@ -218,7 +218,14 @@ function SolverCore.solve!(
     end
 
     if η2 ≤ ρk < Inf
-      σk = σk / γ
+      #println(σk)
+      σp = σk - more_sorensen_sigma!(solver.subsolver, solver.subpb, solver.substats; Δ = norm(s) * γ)
+      σmin_spec = minimum(d for d in solver.subsolver.workspace.M.D if d > 0)
+      #println(σmin_spec - σk)
+      #println(σk / γ)
+      #println(σp)
+      #σk = σk / γ
+      σk = max(max(σp, (σmin_spec - σk) / γ), σmin)
     end
 
     if ρk < η1 || ρk == Inf
@@ -226,7 +233,8 @@ function SolverCore.solve!(
         σk = max(sqrt(stats.dual_feas), σk * γ)
         first_increase = false
       else
-        σk = σk * γ
+        σk = σk - more_sorensen_sigma!(solver.subsolver, solver.subpb, solver.substats; Δ = norm(s) / 3)
+        #σk = σk * γ
       end
     end
 
