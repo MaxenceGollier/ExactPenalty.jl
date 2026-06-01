@@ -145,7 +145,7 @@ function SolverCore.solve!(
         :normx => "‖x‖",
         :norms => "‖s‖",
         :arrow => "PenaltyR2N",
-        :iter_type => "IterType"
+        :iter_type => "IterType",
       ),
       colsep = 1,
     )
@@ -161,7 +161,7 @@ function SolverCore.solve!(
         norm(xk),
         norm(s),
         (η2 ≤ ρk < Inf) ? '↘' : (ρk < η1 ? '↗' : '='),
-        "init"
+        "init",
       ],
       colsep = 1,
     )
@@ -240,8 +240,8 @@ function SolverCore.solve!(
           max_eval = max_eval - neval_obj(nlp),
           η1 = η1,
           η2 = η2,
-          γ  = γ,
-          ρk = ρk
+          γ = γ,
+          ρk = ρk,
         )
         fk, hk = stats.solver_specific[:smooth_obj], stats.solver_specific[:nonsmooth_obj]
         σk = stats.solver_specific[:sigma]
@@ -291,7 +291,7 @@ function SolverCore.solve!(
           norm(xk),
           norm(s),
           (η2 ≤ ρk < Inf) ? '↘' : (ρk < η1 ? '↗' : '='),
-          "ms"
+          "ms",
         ],
         colsep = 1,
       )
