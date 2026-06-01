@@ -12,7 +12,7 @@ function second_order_correction!(
   γ::T = T(3),
   ρk::T = zero(T),
   min_ratio::T = T(1e-1),
-) where {T,V, P <: NullHessianModel{T, V}}
+) where {T,V,P<:NullHessianModel{T,V}}
   # Just reject the step for this type of model.
   stats.solver_specific[:sigma] = stats.solver_specific[:sigma] * γ
 end
@@ -45,7 +45,7 @@ function second_order_correction!(
 
   m_monotone = length(m_fh_hist) + 1
 
-   # Logging
+  # Logging
   if verbose > 0 && stats.iter % verbose == 0
     @info log_row(
       Any[
@@ -59,7 +59,7 @@ function second_order_correction!(
         norm(xk),
         norm(s),
         '=',
-        "soc"
+        "soc",
       ],
       colsep = 1,
     )
@@ -71,14 +71,10 @@ function second_order_correction!(
 
   while ρk < η1 && k < max_iter && !done
 
-    second_order_correction!(
-      solver.subsolver,
-      solver.subpb,
-      solver.substats
-    )
-    
+    second_order_correction!(solver.subsolver, solver.subpb, solver.substats)
+
     s_soc = @view solver.subsolver.workspace.x[1:n]
-    
+
     xkn .+= s_soc
     s .+= s_soc
 
@@ -99,24 +95,24 @@ function second_order_correction!(
 
     set_iter!(stats, stats.iter + 1)
     if verbose > 0 && stats.iter % verbose == 0
-    @info log_row(
-      Any[
-        stats.iter,
-        solver.substats.iter,
-        fk,
-        hk,
-        stats.dual_feas,
-        ρk,
-        stats.solver_specific[:sigma],
-        norm(xk),
-        norm(s),
-        '=',
-        "soc"
-      ],
-      colsep = 1,
-    )
-  end
-  
+      @info log_row(
+        Any[
+          stats.iter,
+          solver.substats.iter,
+          fk,
+          hk,
+          stats.dual_feas,
+          ρk,
+          stats.solver_specific[:sigma],
+          norm(xk),
+          norm(s),
+          '=',
+          "soc",
+        ],
+        colsep = 1,
+      )
+    end
+
   end
 
   # Step acceptance
