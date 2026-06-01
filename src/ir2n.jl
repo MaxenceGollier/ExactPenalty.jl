@@ -134,8 +134,8 @@ function SolverCore.solve!(
   # Logging
   if verbose > 0
     @info log_header(
-      [:outer, :inner, :fx, :hx, :xi, :ρ, :σ, :normx, :norms, :arrow],
-      [Int, Int, T, T, T, T, T, T, T, Char],
+      [:outer, :inner, :fx, :hx, :xi, :ρ, :σ, :normx, :norms, :arrow, :iter_type],
+      [Int, Int, T, T, T, T, T, T, T, Char, String],
       hdr_override = Dict{Symbol,String}(
         :fx => "f(x)",
         :hx => "h(x)",
@@ -143,6 +143,7 @@ function SolverCore.solve!(
         :normx => "‖x‖",
         :norms => "‖s‖",
         :arrow => "PenaltyR2N",
+        :iter_type => "IterType"
       ),
       colsep = 1,
     )
@@ -158,6 +159,7 @@ function SolverCore.solve!(
         norm(xk),
         norm(s),
         (η2 ≤ ρk < Inf) ? '↘' : (ρk < η1 ? '↗' : '='),
+        "init"
       ],
       colsep = 1,
     )
@@ -223,6 +225,25 @@ function SolverCore.solve!(
       if first_increase && ρk < 0
         σk = max(sqrt(stats.dual_feas), σk * γ)
         first_increase = false
+
+      elseif ρk < 0 && hk - hkn < 0 && fk - fkn >= 0
+
+        second_order_correction!(
+          solver,
+          reg_nlp,
+          stats;
+          verbose = verbose,
+          max_iter = 10,
+          max_time = max_time - stats.elapsed_time,
+          max_eval = max_eval - neval_obj(nlp),
+          η1 = η1,
+          η2 = η2,
+          γ  = γ,
+          ρk = ρk
+        )
+        fk, hk = stats.solver_specific[:smooth_obj], stats.solver_specific[:nonsmooth_obj]
+        σk = stats.solver_specific[:sigma]
+
       else
         σk = σk * γ
       end
@@ -267,6 +288,7 @@ function SolverCore.solve!(
           norm(xk),
           norm(s),
           (η2 ≤ ρk < Inf) ? '↘' : (ρk < η1 ? '↗' : '='),
+          "ms"
         ],
         colsep = 1,
       )
