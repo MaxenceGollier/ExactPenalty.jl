@@ -30,6 +30,7 @@ include("types/PenalizedProblem.jl")
 include("types/ShiftedPenalizedProblem.jl")
 
 include("subsolvers/more-sorensen.jl")
+include("subsolvers/more-sorensen-sigma.jl")
 
 include("ir2n.jl")
 
