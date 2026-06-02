@@ -203,7 +203,7 @@ function SolverCore.solve!(
     Δobj = fhmax - (fkn + hkn) + max(1, abs(fk + hk)) * 10 * eps()
     Δmod = fhmax - (fk + mks) + max(1, abs(fhmax)) * 10 * eps()
 
-    ρk = Δobj / Δmod
+    ρk = Δmod < 0 ? 0 : Δobj / Δmod
 
     if η1 ≤ ρk < Inf
       xk .= xkn
