@@ -227,7 +227,8 @@ function SolverCore.solve!(
         σk = max(sqrt(stats.dual_feas), σk * γ)
         first_increase = false
       else
-        σk = isa(nlp, QuasiNewtonModel) ? σk * γ : σk - more_sorensen_sigma!(solver.subsolver, solver.subpb, solver.substats; Δ = norm(s) / γ)
+        σp = σk - more_sorensen_sigma!(solver.subsolver, solver.subpb, solver.substats; Δ = norm(s) / γ)
+        σk = isa(nlp, QuasiNewtonModel) ? σk * γ : clamp(σp, σk * γ^(1/10), σp)
       end
     end
 
