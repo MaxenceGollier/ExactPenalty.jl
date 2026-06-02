@@ -176,7 +176,7 @@ end
 function refine!(
   workspace::PenaltyLDLTWorkspace,
   u::V;
-  max_iter::Int = 10,
+  max_iter::Int = 5,
   tol::T = eps(T),
 ) where {T,V<:AbstractVector{T}}
 
