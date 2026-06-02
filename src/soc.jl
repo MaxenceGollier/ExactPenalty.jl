@@ -78,12 +78,17 @@ function second_order_correction!(
     xkn .+= s_soc
     s .+= s_soc
 
-    fkn, hkn = obj(nlp, xkn), h(xkn)
-    mks = dot(∇fk, s) + ψ(s)
-
     fhmax = m_monotone > 1 ? maximum(m_fh_hist) : fk + hk
-    Δobj = fhmax - (fkn + hkn) + max(1, abs(fk + hk)) * 10 * eps()
+    mks = dot(∇fk, s) + ψ(s)
     Δmod = fhmax - (fk + mks) + max(1, abs(fhmax)) * 10 * eps()
+
+    if Δmod < 0
+      done = true
+      continue
+    end
+
+    fkn, hkn = obj(nlp, xkn), h(xkn)
+    Δobj = fhmax - (fkn + hkn) + max(1, abs(fk + hk)) * 10 * eps()
 
     ρkn = Δobj / Δmod
     if ρk / ρkn > min_ratio && ρkn < η1
