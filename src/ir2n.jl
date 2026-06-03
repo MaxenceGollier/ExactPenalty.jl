@@ -52,7 +52,8 @@ function PenaltyR2NSolver(
   )
 end
 
-function SolverCore.reset!(solver::PenaltyR2NSolver)
+function SolverCore.reset!(solver::PenaltyR2NSolver{T}) where{T}
+  fill!(solver.m_fh_hist, T(-Inf))
   reset!(solver.subpb)
 end
 
@@ -94,7 +95,7 @@ function SolverCore.solve!(
   ∇fk = solver.subpb.model.data.c
   xkn = solver.xkn
   s, y, dual_res = solver.s, solver.y, solver.dual_res
-  m_fh_hist = solver.m_fh_hist .= T(-Inf)
+  m_fh_hist = solver.m_fh_hist
 
   m_monotone = length(m_fh_hist) + 1
 
