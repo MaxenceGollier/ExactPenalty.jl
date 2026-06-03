@@ -75,8 +75,8 @@ function second_order_correction!(
 
     s_soc = @view solver.subsolver.workspace.x[1:n]
 
-    xkn .+= s_soc
-    s .+= s_soc
+    xkn .= xk .+ s_soc
+    s .= s_soc
 
     fhmax = m_monotone > 1 ? maximum(m_fh_hist) : fk + hk
     mks = dot(∇fk, s) + ψ(s)
