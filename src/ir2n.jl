@@ -52,7 +52,7 @@ function PenaltyR2NSolver(
   )
 end
 
-function SolverCore.reset!(solver::PenaltyR2NSolver{T}) where{T}
+function SolverCore.reset!(solver::PenaltyR2NSolver{T}) where {T}
   fill!(solver.m_fh_hist, T(-Inf))
   reset!(solver.subpb)
 end
