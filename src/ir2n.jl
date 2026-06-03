@@ -228,7 +228,7 @@ function SolverCore.solve!(
         first_increase = false
       else
         σp = σk - more_sorensen_sigma!(solver.subsolver, solver.subpb, solver.substats; Δ = norm(s) / γ)
-        σk = isa(nlp, QuasiNewtonModel) ? σk * γ : clamp(σp, σk * γ^(1/10), σp)
+        σk = isa(nlp, QuasiNewtonModel) ? σk * γ : clamp(σp, σk * γ^(1/10), σk * γ^10)
       end
     end
 
