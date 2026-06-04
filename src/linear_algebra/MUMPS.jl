@@ -29,7 +29,7 @@ function construct_mumps_workspace(
   u1::V,
   n,
   m,
-) where {T,V<:AbstractVector{T},M}
+) where {T,V<:AbstractVector{T},M <: Symmetric}
   # Set params : TODO
   cntl = T == Float64 ? default_cntl64 : default_cntl32
   icntl = default_icntl
@@ -50,6 +50,58 @@ function construct_mumps_workspace(
 
   # Associate the row, cols and vals of the mumps structure with those of H.
   irn, jcn, a = H.data.rows, H.data.cols, H.data.vals
+  S.irn, S.jcn, S.a = pointer.((irn, jcn, a))
+  S.n = m+n
+  S.nnz = length(irn)
+  S._irn_gc_haven = irn
+  S._jcn_gc_haven = jcn
+  S._a_gc_haven = a
+
+  # Associate the size and number of the right hand side
+  x = similar(u1)
+  S.lrhs = n + m
+  S.nrhs = 1
+  S.rhs = pointer(x)
+  S._y_gc_haven = x
+
+  return PenaltyMUMPSWorkspace(
+    S,
+    H,
+    x,
+    zero(T),
+    n,
+    m,
+    :uninitialized,
+    false,
+  )
+end
+
+function construct_mumps_workspace(
+  H::M,
+  u1::V,
+  n,
+  m,
+) where {T,V<:AbstractVector{T},M <: CompactBFGSK2}
+  # Set params : TODO
+  cntl = T == Float64 ? default_cntl64 : default_cntl32
+  icntl = default_icntl
+
+  ## Set Parameters
+
+  # Deactivate Logging
+  icntl[2], icntl[3], icntl[4] = 0, 0, 0
+
+  # Deactivate permutation/scaling
+  icntl[6], icntl[7] = 0, 0
+
+  # Max number of iterative refinement steps
+  icntl[10] = 10
+  
+  MPI.Init()
+  S = Mumps{T}(mumps_symmetric, icntl, cntl)
+
+  # Associate the row, cols and vals of the mumps structure with those of H.
+  irn, jcn, a = H.H.data.rows, H.H.data.cols, H.H.data.vals
   S.irn, S.jcn, S.a = pointer.((irn, jcn, a))
   S.n = m+n
   S.nnz = length(irn)
