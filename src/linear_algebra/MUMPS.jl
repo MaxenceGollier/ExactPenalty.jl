@@ -202,7 +202,7 @@ function solve_system!(
 
   workspace.x .= u
   MUMPS.mumps_solve!(workspace.x, mumps; rhs_changed = true)
-
+  #mumps.infog[15] > 0 && error("done") # It seems that mumps doesn't use the itref.. infog15 is the num of itref steps.
   # Check solve status : TODO
   return
 end
@@ -215,7 +215,15 @@ function get_status(workspace::PenaltyMUMPSWorkspace)
   return workspace.status
 end
 
-function get_inertia(workspace::PenaltyMUMPSWorkspace)
-  m, n = workspace.m, workspace.n
-  return n, 0, m # TODO
+function get_inertia(workspace::PenaltyMUMPSWorkspace{WP,K2}) where{WP,K2}
+
+  n, m = workspace.n, workspace.m
+  (npos, nzero, nneg) = (0, 0, 0)
+
+  nneg = workspace.M.infog[12]
+  rank = n + m - workspace.M.infog[28]
+  nzero = n + m - rank
+  npos = n + m - nzero - nneg
+  
+  return npos, nzero, nneg
 end
