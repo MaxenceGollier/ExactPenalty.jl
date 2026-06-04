@@ -198,7 +198,7 @@ function K2(
   return Symmetric(H)
 end
 
-function K2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2; format::Symbol = :coo) where {T,M1,M2 <: AbstractLinearOperator}
+function K2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2; format::Symbol = :coo, int_type::Type = Int64) where {T,M1,M2 <: AbstractLinearOperator}
   return OpK2(n, m, nrow, ncol, α, σ, A, B)
 end
 
