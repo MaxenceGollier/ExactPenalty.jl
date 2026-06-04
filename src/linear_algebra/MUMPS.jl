@@ -195,6 +195,20 @@ function solve_system!(
     job = mumps.job
     mumps.job = MUMPS.INITIALIZE
     factorize!(mumps)
+
+    k, max_iter = 0, 5
+    # MUMPS Documentation - infog(1) = -9
+    # The main internal real/complex workarray S is too small. If INFO(2) is positive, then the number
+    # of entries that are missing in S at the moment when the error is raised is available in INFO(2).
+    # If INFO(2) is negative, then its absolute value should be multiplied by 1 million. If an error –9
+    # occurs, the user should increase the value of ICNTL(14) before calling the factorization (JOB=
+    # 2) again, except if LWK USER is provided LWK USER should be increased.
+    while mumps.infog[1] == -9 && k < max_iter
+      MUMPS.set_icntl!(mumps, 14, mumps.icntl[14] * 2)
+      mumps.job = MUMPS.FACTOR
+      factorize!(mumps)
+      k = k + 1
+    end
     workspace.factorized = true
   end
 
