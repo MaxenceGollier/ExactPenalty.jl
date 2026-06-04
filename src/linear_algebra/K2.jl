@@ -38,10 +38,11 @@ function K2(
   σ::T,
   A::M1,
   B::M2;
-  format::Symbol = :coo
+  format::Symbol = :coo,
+  int_type::Type = Int64
 ) where {T,M1<:SparseMatrixCOO,M2<:SparseMatrixCSC}
 
-  I, J, V = Vector{Int}(), Vector{Int}(), Vector{T}()
+  I, J, V = Vector{int_type}(), Vector{int_type}(), Vector{T}()
 
   # Step 1: Add the transpose of B to the K2 matrix.
   # Produces
@@ -98,9 +99,10 @@ function K2(
   A::M1,
   B::M2;
   format = :coo,
+  int_type::Type = Int64,
 ) where {T,M1<:SparseMatrixCOO,M2<:CompactBFGS}
 
-  I, J, V = Vector{Int}(), Vector{Int}(), Vector{T}()
+  I, J, V = Vector{int_type}(), Vector{int_type}(), Vector{T}()
 
   # Step 1: Add the transpose of A to the K2 matrix.
   # Produces 
@@ -151,9 +153,10 @@ function K2(
   A::M1,
   B::M2;
   format::Symbol = :coo,
+  int_type::Type = Int64
 ) where {T,M1<:SparseMatrixCOO,M2<:SparseMatrixCOO}
 
-  I, J, V = Vector{Int}(), Vector{Int}(), Vector{T}()
+  I, J, V = Vector{int_type}(), Vector{int_type}(), Vector{T}()
 
   # Step 1: Add the transpose of B to the K2 matrix.
   # Produces
