@@ -35,6 +35,7 @@ function construct_mumps_workspace(
   icntl = default_icntl
 
   ## Set Parameters
+  cntl[2] = eps(T) # Tolerance for iterative refinement
 
   # Deactivate Logging
   icntl[2], icntl[3], icntl[4] = 0, 0, 0
@@ -87,6 +88,7 @@ function construct_mumps_workspace(
   icntl = default_icntl
 
   ## Set Parameters
+  cntl[2] = eps(T) # Tolerance for iterative refinement
 
   # Deactivate Logging
   icntl[2], icntl[3], icntl[4] = 0, 0, 0
@@ -216,7 +218,6 @@ function solve_system!(
 
   workspace.x .= u
   MUMPS.mumps_solve!(workspace.x, mumps; rhs_changed = true)
-  #mumps.infog[15] > 0 && error("done") # It seems that mumps doesn't use the itref.. infog15 is the num of itref steps.
   # Check solve status : TODO
   return
 end
