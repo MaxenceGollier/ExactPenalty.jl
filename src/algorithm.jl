@@ -233,7 +233,7 @@ function SolverCore.solve!(
   solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol
 
   ## Initialize penalty parameter
-  τ = max(norm(solver.y, 1), T(1))
+  τ = max(norm(solver.y, 2), T(1))
   set_penalty!(mk, τ)
   νsub = 1 / β4
 
@@ -334,7 +334,7 @@ function SolverCore.solve!(
     if primal_feas > primal_ktol || (dual_ktol ≤ dual_tol && primal_feas > primal_tol)
       # Update penalty parameter
       compute_least_square_multipliers!(solver)
-      τ₊ = max(τ + β1, norm(solver.y, 1))
+      τ₊ = max(τ + β1, norm(solver.y, 2))
       solver.subsolver.y .*= τ₊ / τ
       if extrapolate!(x, solver, τ₊, τ)
         shift!(mk, x, y = solver.subsolver.y)
