@@ -46,8 +46,13 @@ function extrapolate!(
   ρk = Δmod < 0 ? 0 : Δobj / Δmod
   ρk <= 0 && return false
 
+  set_solver_specific!(substats, :smooth_obj, fk)
+  set_solver_specific!(substats, :nonsmooth_obj, hk)
   xk .= xkn
   shift!(mk, xk, y = y)
+
+  # Step 3.5. If norm(y) < τ₁ the derivative is still 0
+  norm(y) < τ₁ && return false
 
   # Step 4. Construct u = [0  y]
   @. ms_solver.u1[1:n] = 0
