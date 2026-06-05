@@ -128,6 +128,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     set_status!(stats, :first_order)
 
     !is_descent && set_status!(stats, :not_desc)
+    set_solver_specific!(stats, :alpha, α)
     return
   end
 
@@ -156,6 +157,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     if is_descent && accept_descent
       set_solution!(stats, @view x1[1:n])
       set_status!(stats, :first_order)
+      set_solver_specific!(stats, :alpha, α)
       return
     end
 
@@ -185,6 +187,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
 
   set_solution!(stats, @view x1[1:n])
   set_status!(stats, :first_order)
+  set_solver_specific!(stats, :alpha, α)
 
   stats.iter >= max_iter && set_status!(stats, :max_iter)
   stats.elapsed_time >= max_time && set_status!(stats, :max_time)

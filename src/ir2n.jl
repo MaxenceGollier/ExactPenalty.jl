@@ -37,6 +37,7 @@ function PenaltyR2NSolver(
 
   subpb = shifted(penalty_nlp, xk, ∇f = ∇fk)
   substats = GenericExecutionStats(subpb, solver_specific = Dict{Symbol,T}())
+  set_solver_specific!(substats, :alpha, 0)
   subsolver = subsolver(subpb)
 
   return PenaltyR2NSolver{T,V,typeof(subsolver),typeof(subpb)}(
