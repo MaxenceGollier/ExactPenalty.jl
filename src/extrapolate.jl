@@ -14,65 +14,76 @@ function extrapolate!(
   τ₁::T,
 ) where {T,V,S,N<:AbstractNLPModel{T,V},PB<:L2PenalizedProblem{T,V,N}}
 
-  φ, ψ = solver.subsolver.subpb.model, solver.subsolver.subpb.h
-  nlp, h = solver.subsolver.subpb.parent.model, solver.subsolver.subpb.parent.h
+  # Retrieve workspace
+  subsolver, substats = solver.subsolver, solver.substats
+  ms_solver, ms_stats = subsolver.subsolver, subsolver.substats
+  mk = subsolver.subpb
+  φ, ψ = mk.model, mk.h
+  nlp, h = mk.parent.model, mk.parent.h
+  fk, hk = substats.solver_specific[:smooth_obj], substats.solver_specific[:nonsmooth_obj]
+  xk, xkn, s, y = subsolver.xk, subsolver.xkn, subsolver.s, subsolver.y
+  ∇fk = φ.data.c
+  n, m = nlp.meta.nvar, nlp.meta.ncon
 
-  c, norm_c = ψ.b, norm(ψ.b)
+  norm(y) < τ₁ && return false
 
   # Update multipliers
-  y = solver.y .= (τ₁/norm_c) .* c
+  φ.data.σ = substats.solver_specific[:sigma]
+  solve!(ms_solver, mk, ms_stats; accept_descent = false)
+  get_primal_dual_sol!(s, y, ms_solver)
 
-  # Prepare the linear solver
-  linear_solver = solver.subsolver.subsolver.workspace
-  u1, x1, x2 = solver.subsolver.subsolver.u1,
-  solver.subsolver.subsolver.x1,
-  solver.subsolver.subsolver.x2
-  m, n = size(ψ.A)
+  ms_stats.status != :first_order && return false
 
-  update_workspace!(linear_solver, φ.data.H, ψ.A, zero(T), norm_c/τ₁)
+  # Step acceptance
+  xkn .= xk .+ s
+  fkn, hkn = obj(nlp, xkn), h(xkn)
+  mks = dot(∇fk, s) + ψ(s)
 
-  @views u1[1:n] .= 0
-  @views u1[(n+1):(n+m)] .= c ./ (-τ₁)
+  Δobj = fk + hk - (fkn + hkn) + max(1, abs(fk + hk)) * 10 * eps()
+  Δmod = fk + hk - (fk + mks) + max(1, abs(fk + hk)) * 10 * eps()
 
-  # [ H     Aᵀ    ][x] = -[0]
-  # [ A   -‖c‖/τI ][y] = -[c/τ] 
-  solve_system!(linear_solver, u1)
-  get_solution!(x1, linear_solver)
-  status = get_status(linear_solver)
-  npos, nzero, nneg = get_inertia(linear_solver)
+  ρk = Δmod < 0 ? 0 : Δobj / Δmod
+  ρk <= 0 && return false
+
+  xk .= xkn
+  shift!(mk, xk, y = y)
+
+  # Create problem
+  @. ms_solver.u1[1:n] = 0
+  @. ms_solver.u1[(n+1):(n+m)] = y
+
+  update_workspace!(
+    ms_solver.workspace,
+    φ.data.H,
+    ψ.A,
+    φ.data.σ,
+    ms_stats.solver_specific[:alpha],
+  )
+
+  solve_system!(ms_solver.workspace, ms_solver.u1)
+  get_solution!(ms_solver.x1, ms_solver.workspace)
+  status = get_status(ms_solver.workspace)
+  npos, nzero, nneg = get_inertia(ms_solver.workspace)
   check_inertia = npos == n && nzero == 0 && nneg == m
 
   (status != :success || !check_inertia) && return false
-  # TODO print warning
 
-  # [ H     Aᵀ    ][x] = -[0]
-  # [ A   -‖c‖/τI ][y] = -[c/√(τ*norm_c)]  
-  @views u1[(n+1):(n+m)] .= c ./ (-sqrt(norm_c*τ₁))
-  solve_system!(linear_solver, u1)
-  get_solution!(x2, linear_solver)
-  status = get_status(linear_solver)
+  u1x1 = dot(ms_solver.u1, ms_solver.x1)
 
-  status != :success && return false
-  # TODO print warning
+  abs(u1x1) < (norm(ms_solver.u1)*norm(ms_solver.x1)) * sqrt(eps(T)) && return false
 
-  # u = √(τ/norm_c)*J(x)ᵀc/norm_c = J(x)ᵀy/√(τ*norm_c)
-  @views mul!(u1[1:n], ψ.A', y, 1/sqrt(τ₁*norm_c), zero(T))
+  scale = τ₁ / dot(ms_solver.u1, ms_solver.x1)
 
-  dx_dτ = @view x1[1:n]
+  scale == Inf && return false
+  ms_solver.x1 .*= scale
 
-  @views dx_dτ .-= x2[1:n] .* (dot(x1[1:n], u1[1:n])/(1 + dot(x2[1:n], u1[1:n])))
-  xn = solver.xn .= solver.x .+ dx_dτ .* (τ₂ - τ₁)
+  solver.x .= xk .+ ms_solver.x1[1:n] #.* (τ₂ - τ₁)
+  solver.y .= y .+ ms_solver.x1[n+1:end] #.* (τ₂ - τ₁)
 
-  # Step acceptance
+  norm(solver.y) > τ₂ && (solver.y .*= τ₂ / norm(solver.y))
+  
+  shift!(mk, solver.x, y = solver.y)
+  set_solver_specific!(substats, :smooth_obj, obj(nlp, solver.x))
 
-  ## Check constraints
-  cons!(nlp, xn, solver.cn) # TODO: remove rundancy when we call shift afterwards
-  norm_cn = norm(solver.cn)
-  if norm_cn < norm_c
-    x .= xn
-    return true
-  else
-    return false
-  end
-
+  return true
 end
