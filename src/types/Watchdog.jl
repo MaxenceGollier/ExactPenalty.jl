@@ -1,10 +1,10 @@
-mutable struct watchdog_checkpoint{T, V}
+mutable struct watchdog_checkpoint{T, V, HV}
   xk::V
   ∇fk::V
   ck::V
   yk::V
   Jkvals::V
-  Hkvals::V
+  Hkvals::HV
   active::Bool
   iter::Int
   primal_feas::T
@@ -12,7 +12,7 @@ mutable struct watchdog_checkpoint{T, V}
   σk::T
 end
 
-function watchdog_checkpoint(nlp::ShiftedL2PenalizedProblem{T, V}) where{T, V}
+function watchdog_checkpoint(nlp::ShiftedL2PenalizedProblem{T, V, M, H, P}) where{T, V, M, H, P}
   φ, ψ = nlp.model, nlp.h
   ∇f_model, b_model = φ.data.c, ψ.b
   xk, ∇fk = similar(∇f_model), similar(∇f_model)
@@ -34,7 +34,38 @@ function watchdog_checkpoint(nlp::ShiftedL2PenalizedProblem{T, V}) where{T, V}
   )
 end
 
-function save!(checkpoint::watchdog_checkpoint, nlp::ShiftedL2PenalizedProblem, x, y, stats)
+function watchdog_checkpoint(
+  nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
+) where {
+  T,
+  V,
+  M,
+  H,
+  O<:QuasiNewtonModel,
+  P<:L2PenalizedProblem{T,V,O},
+}
+  φ, ψ = nlp.model, nlp.h
+  ∇f_model, b_model = φ.data.c, ψ.b
+  xk, ∇fk = similar(∇f_model), similar(∇f_model)
+  ck, yk = similar(b_model), similar(b_model)
+  Jkvals = similar(ψ.A.vals)
+  Hk = similar(φ.data.H)
+  return watchdog_checkpoint(
+    xk,
+    ∇fk,
+    ck,
+    yk,
+    Jkvals,
+    Hk,
+    false,
+    0,
+    zero(T),
+    zero(T),
+    zero(T)
+  )
+end
+
+function save!(checkpoint::watchdog_checkpoint, nlp::ShiftedL2PenalizedProblem{T,V,M,H,P}, x, y, stats) where{T,V,M,H,P}
   φ, ψ = nlp.model, nlp.h
   
   checkpoint.xk .= x
@@ -49,13 +80,65 @@ function save!(checkpoint::watchdog_checkpoint, nlp::ShiftedL2PenalizedProblem, 
   checkpoint.iter = stats.iter
 end
 
-function fallback!(nlp::ShiftedL2PenalizedProblem, x, y, checkpoint::watchdog_checkpoint)
+function save!(
+  checkpoint::watchdog_checkpoint, 
+  nlp::ShiftedL2PenalizedProblem{T,V,M,H,P}, 
+  x, 
+  y, 
+  stats,
+  ) where{
+  T,
+  V,
+  M,
+  H,
+  O<:QuasiNewtonModel,
+  P<:L2PenalizedProblem{T,V,O},
+}
+  φ, ψ = nlp.model, nlp.h
+  
+  checkpoint.xk .= x
+  checkpoint.yk .= y
+  checkpoint.∇fk .= φ.data.c
+  copy!(checkpoint.Hkvals, φ.data.H)
+  checkpoint.σk = φ.data.σ
+  checkpoint.ck .= ψ.b
+  checkpoint.Jkvals .= ψ.A.vals
+  checkpoint.primal_feas = stats.primal_feas
+  checkpoint.dual_feas = stats.dual_feas
+  checkpoint.iter = stats.iter
+end
+
+function fallback!(nlp::ShiftedL2PenalizedProblem{T,V,M,H,P}, x, y, checkpoint::watchdog_checkpoint) where{T,V,M,H,P}
   φ, ψ = nlp.model, nlp.h
 
   x .= checkpoint.xk
   y .= checkpoint.yk
   φ.data.c .= checkpoint.∇fk
   φ.data.H.vals .= checkpoint.Hkvals
+  φ.data.σ = checkpoint.σk
+  ψ.b .= checkpoint.b
+  ψ.A.vals .= checkpoint.Jkvals
+end
+
+function fallback!(
+  nlp::ShiftedL2PenalizedProblem{T,V,M,H,P}, 
+  x, 
+  y, 
+  checkpoint::watchdog_checkpoint, 
+  ) where{
+  T,
+  V,
+  M,
+  H,
+  O<:QuasiNewtonModel,
+  P<:L2PenalizedProblem{T,V,O},
+}
+  φ, ψ = nlp.model, nlp.h
+
+  x .= checkpoint.xk
+  y .= checkpoint.yk
+  φ.data.c .= checkpoint.∇fk
+  copy!(φ.data.H, checkpoint.Hkvals)
   φ.data.σ = checkpoint.σk
   ψ.b .= checkpoint.b
   ψ.A.vals .= checkpoint.Jkvals

@@ -174,3 +174,62 @@ end
 get_model(nlp::CompactBFGSModel) = nlp.model
 get_op(nlp::CompactBFGSModel) = nlp.op
 @default_counters CompactBFGSModel model
+
+# Copying API
+function Base.copy(op::CompactBFGS{T,V,MT}) where {T,V,MT}
+  return CompactBFGS(
+    op.scaling,
+    op.ξ,
+    copy(op.Sk),
+    copy(op.Yk),
+    copy(op.Lk),
+    copy(op._Dkinvsq),
+    copy(op._DLk),
+    copy(op.Mk),
+    copy(op.Uk),
+    copy(op.Vk),
+    copy(op._y),
+    op._mem,
+    op._insert,
+    op._nskip,
+    op._max_skip,
+  )
+end
+
+function Base.similar(op::CompactBFGS{T,V,MT}) where {T,V,MT}
+  return CompactBFGS(
+    op.scaling,
+    op.ξ,
+    similar(op.Sk),
+    similar(op.Yk),
+    similar(op.Lk),
+    similar(op._Dkinvsq),
+    similar(op._DLk),
+    similar(op.Mk),
+    similar(op.Uk),
+    similar(op.Vk),
+    similar(op._y),
+    op._mem,
+    op._insert,
+    op._nskip,
+    op._max_skip,
+  )
+end
+
+function Base.copy!(dest::CompactBFGS{T,V,MT}, src::CompactBFGS{T,V,MT}) where {T,V,MT}
+  @assert dest.scaling == src.scaling
+  dest.ξ = src.ξ
+  copyto!(dest.Sk, src.Sk)
+  copyto!(dest.Yk, src.Yk)
+  copyto!(dest.Lk, src.Lk)
+  copyto!(dest._Dkinvsq, src._Dkinvsq)
+  copyto!(dest._DLk, src._DLk)
+  copyto!(dest.Mk, src.Mk)
+  copyto!(dest.Uk, src.Uk)
+  copyto!(dest.Vk, src.Vk)
+  copyto!(dest._y, src._y)
+  dest._mem = src._mem
+  dest._insert = src._insert
+  dest._nskip = src._nskip
+  dest._max_skip = src._max_skip
+end
