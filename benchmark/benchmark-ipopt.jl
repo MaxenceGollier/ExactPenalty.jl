@@ -12,6 +12,7 @@ problem_names = CUTEst.select_sif_problems(
 problem_list = (CUTEstModel(name) for name in problem_names)
 
 tol = 1e-6
+max_time = 300.0
 
 solvers = Dict(
   :ipopt_exact =>
@@ -25,6 +26,8 @@ solvers = Dict(
       acceptable_iter = 0,
       s_max = 1e12,
       nlp_scaling_method = "none",
+      max_cpu_time = max_time,
+      max_iter = typemax(Int)
     ),
   :ipopt_lbfgs =>
     nlp -> ipopt(
@@ -38,6 +41,8 @@ solvers = Dict(
       s_max = 1e12,
       hessian_approximation = "limited-memory",
       nlp_scaling_method = "none",
+      max_cpu_time = max_time,
+      max_iter = typemax(Int)
     ),
 )
 

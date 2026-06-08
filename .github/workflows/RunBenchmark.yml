@@ -31,12 +31,6 @@ jobs:
             mkpath("benchmark/result")
             '
       
-      - name: Run benchmarks with null Hessian (R2)
-        run: |
-          julia --project=benchmark -e '
-              include("benchmark/benchmark-cutest-null-hessian.jl")
-              '
-      
       - name: Run benchmarks with LBFGS
         run: |
           julia --project=benchmark -e '
@@ -56,3 +50,11 @@ jobs:
           path: benchmark/result
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compare benchmarks
+        if: >
+          github.event_name == 'pull_request' &&
+          contains(github.event.pull_request.labels.*.name, 'run CUTEst benchmark')
+        uses: 
+          ./.github/workflows/CompareBenchmarks.yml
+

@@ -107,7 +107,6 @@ load_stats(reference_dir, stats, "_reference")
 p = plot(
   pairwise_plot(stats, [:l2penalty_exact_reference, :l2penalty_exact_current]),
   pairwise_plot(stats, [:l2penalty_lbfgs_reference, :l2penalty_lbfgs_current]),
-  pairwise_plot(stats, [:l2penalty_r2_reference, :l2penalty_r2_current]),
   layout = (3, 1),
   size = (1920, 1080),
 )
