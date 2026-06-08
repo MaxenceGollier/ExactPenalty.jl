@@ -27,7 +27,7 @@ solvers = Dict(
       s_max = 1e12,
       nlp_scaling_method = "none",
       max_cpu_time = max_time,
-      max_iter = typemax(Int),
+      max_iter = typemax(Int32),
     ),
   :ipopt_lbfgs =>
     nlp -> ipopt(
@@ -42,7 +42,7 @@ solvers = Dict(
       hessian_approximation = "limited-memory",
       nlp_scaling_method = "none",
       max_cpu_time = max_time,
-      max_iter = typemax(Int),
+      max_iter = typemax(Int32),
     ),
 )
 
