@@ -5,7 +5,7 @@ using Printf
 using SolverBenchmark
 using Plots
 
-const METHODS = (:exact, :lbfgs, :r2)
+const METHODS = (:exact, :lbfgs)
 
 function load_stats(dir::AbstractString, stats, suffix = "")
 
@@ -42,7 +42,7 @@ function pairwise_plot(stats, keys)
   parts_1 = Symbol.(split(string(keys[1]), "_"))
   parts_2 = Symbol.(split(string(keys[2]), "_"))
 
-  models = Dict(:exact => "∇²L(x, y)", :lbfgs => "BFGS", :r2 => "σI")
+  models = Dict(:exact => "∇²L(x, y)", :lbfgs => "BFGS")
   precision = Dict(:imprecise => "1e-3", :precise => "1e-9")
 
   suptitle = "\nHessian model: Bₖ(x) = " * models[parts_1[2]]
