@@ -239,3 +239,7 @@ function get_primal_dual_sol!(s, y, solver::MoreSorensenSolver)
   s .= @view solver.x1[1:n]
   y .= @view solver.x1[(n+1):end]
 end
+
+function SolverCore.reset!(solver::MoreSorensenSolver{T}) where {T}
+  set_n_fact!(solver.workspace, 0)
+end

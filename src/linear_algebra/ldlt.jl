@@ -3,7 +3,7 @@ mutable struct PenaltyLDLTWorkspace{
   K2<:AbstractMatrix,
   V<:AbstractVector,
   T<:Real,
-}
+} <: PenaltyDirectWorkspace
   M::WP
   H::K2
   x::V
@@ -13,6 +13,7 @@ mutable struct PenaltyLDLTWorkspace{
   n::Int
   m::Int
   status::Symbol
+  _n_fact::Int
 end
 
 function get_H(
@@ -42,6 +43,7 @@ function construct_ldlt_workspace(
     n,
     m,
     :uninitialized,
+    0
   )
 end
 
@@ -62,6 +64,7 @@ function construct_ldlt_workspace(
     n,
     m,
     :uninitialized,
+    0
   )
 end
 
@@ -210,7 +213,10 @@ function solve_system!(
 ) where {V<:AbstractVector,WP,K2}
   workspace.status = :success
 
-  factorized(workspace.M) || ldl_factorize!(workspace.H, workspace.M)
+  if !factorized(workspace.M) 
+    ldl_factorize!(workspace.H, workspace.M)
+    workspace._n_fact += 1
+  end
   if !factorized(workspace.M)
     workspace.status = :failed
     return
@@ -254,7 +260,10 @@ function solve_system!(
   # Step 1: Factorize
   # [σI+ξI  Aᵀ]
   # [A     -αI]
-  factorized(workspace.M) || ldl_factorize!(workspace.H.H, workspace.M)
+  if !factorized(workspace.M) 
+    ldl_factorize!(workspace.H.H, workspace.M)
+    workspace._n_fact += 1
+  end
   if !factorized(workspace.M)
     workspace.status = :failed
     return

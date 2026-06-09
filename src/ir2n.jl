@@ -54,6 +54,7 @@ end
 
 function SolverCore.reset!(solver::PenaltyR2NSolver{T}) where {T}
   fill!(solver.m_fh_hist, T(-Inf))
+  reset!(solver.subsolver)
   reset!(solver.subpb)
 end
 
@@ -236,6 +237,7 @@ function SolverCore.solve!(
     set_solver_specific!(stats, :smooth_obj, fk)
     set_solver_specific!(stats, :nonsmooth_obj, hk)
     set_solver_specific!(stats, :sigma, σk)
+    set_solver_specific!(stats, :n_fact, get_n_fact(solver.subsolver.workspace))
     set_iter!(stats, stats.iter + 1)
     set_time!(stats, time() - start_time)
 
