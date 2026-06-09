@@ -57,6 +57,7 @@ function test_problem(name, primal_solution, dual_solution, expected_status)
       ) ≤ 100*tol
     end
     @test stats.primal_feas == norm(cons(nlp, stats.solution), Inf)
+    @test stats.solver_specific[:n_fact] > 0
 
     # Test stability and allocations
     NLPModels.reset!(LBFGS_model)
@@ -72,6 +73,7 @@ function test_problem(name, primal_solution, dual_solution, expected_status)
     @test all(stats_optimized.multipliers .== stats.multipliers)
     @test all(stats_optimized.solution .== stats.solution)
     @test stats_optimized.iter == stats.iter
+    @test stats_optimized.solver_specific[:n_fact] == stats.solver_specific[:n_fact]
   end
 
   @testset "Exact" begin
@@ -90,6 +92,7 @@ function test_problem(name, primal_solution, dual_solution, expected_status)
       ) ≤ 100*tol
     end
     @test stats.primal_feas == norm(cons(nlp, stats.solution), Inf)
+    @test stats.solver_specific[:n_fact] > 0
 
     # Test stability and allocations
     solver = L2PenaltySolver(nlp)
@@ -105,6 +108,7 @@ function test_problem(name, primal_solution, dual_solution, expected_status)
     @test all(stats_optimized.multipliers .== stats.multipliers)
     @test all(stats_optimized.solution .== stats.solution)
     @test stats_optimized.iter == stats.iter
+    @test stats_optimized.solver_specific[:n_fact] == stats.solver_specific[:n_fact]
   end
 
   finalize(nlp)
