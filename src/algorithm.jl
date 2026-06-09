@@ -37,6 +37,7 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T,V}) where {T,V}
 
   set_solver_specific!(substats, :primal_ktol, T(0))
   set_solver_specific!(substats, :dual_ktol, T(0))
+  set_solver_specific!(substats, :n_fact, T(0))
 
   return L2PenaltySolver(
     x,
