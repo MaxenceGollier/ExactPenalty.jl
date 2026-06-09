@@ -27,7 +27,7 @@ function load_stats(dir::AbstractString, stats, suffix = "")
   return stats
 end
 
-function pairwise_plot(stats, keys)
+function pairwise_plot(stats, keys; compare_n_fact = false)
   solved(df) = (df.status .== :first_order) # TODO: add infeasible problems
   costs = [
     df -> .!solved(df) * Inf + df.elapsed_time,
@@ -35,6 +35,11 @@ function pairwise_plot(stats, keys)
     df -> .!solved(df) * Inf + df.neval_grad,
   ]
   costnames = ["CPU Time", "# Objective Evals", "# Gradient Evals"]
+
+  if compare_n_fact && hasproperty(stats, :n_fact)
+    costnames[1] ="# Factorizations"
+    costs[1] = df -> .!solved(df) * Inf + df.n_fact
+  end
 
   stats_subset = filter(kv -> kv[1] in keys, stats)
 
@@ -105,8 +110,8 @@ load_stats(current_dir, stats, "_current")
 load_stats(reference_dir, stats, "_reference")
 
 p = plot(
-  pairwise_plot(stats, [:l2penalty_exact_reference, :l2penalty_exact_current]),
-  pairwise_plot(stats, [:l2penalty_lbfgs_reference, :l2penalty_lbfgs_current]),
+  pairwise_plot(stats, [:l2penalty_exact_reference, :l2penalty_exact_current], compare_n_fact = true),
+  pairwise_plot(stats, [:l2penalty_lbfgs_reference, :l2penalty_lbfgs_current], compare_n_fact = true),
   layout = (2, 1),
   size = (1920, 1080),
 )
