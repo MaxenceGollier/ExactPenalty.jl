@@ -36,9 +36,9 @@ function pairwise_plot(stats, keys; compare_n_fact = false)
   ]
   costnames = ["CPU Time", "# Objective Evals", "# Gradient Evals"]
 
-  if compare_n_fact && hasproperty(stats, :n_fact)
+  if compare_n_fact && hasproperty(stats[keys[1]], :n_fact) && hasproperty(stats[keys[2]], :n_fact)
     costnames[1] ="# Factorizations"
-    costs[1] = df -> .!solved(df) * Inf + df.n_fact
+    costs[1] = df -> .!solved(df) * Inf .+ coalesce.(df.n_fact, Inf)
   end
 
   stats_subset = filter(kv -> kv[1] in keys, stats)
