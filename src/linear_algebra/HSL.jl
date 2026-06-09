@@ -3,7 +3,7 @@ mutable struct PenaltyMA57Workspace{
   K2<:AbstractMatrix,
   V<:AbstractVector,
   T<:Real,
-}
+} <: PenaltyDirectWorkspace
   M::WP
   H::K2
   x::V
@@ -15,6 +15,7 @@ mutable struct PenaltyMA57Workspace{
   m::Int
   status::Symbol
   factorized::Bool
+  _n_fact::Int
 end
 
 function get_H(
@@ -46,6 +47,7 @@ function construct_ma57_workspace(
     m,
     :uninitialized,
     false,
+    0,
   )
 end
 
@@ -68,6 +70,7 @@ function construct_ma57_workspace(
     m,
     :uninitialized,
     false,
+    0,
   )
 end
 
@@ -150,6 +153,7 @@ function solve_system!(
     catch e
       !(e isa HSL.Ma57Exception) && rethrow(e)
     end
+    workspace._n_fact += 1
   end
   
   # Ma57 info(1): a negative value is an error in the factorization.
@@ -214,6 +218,7 @@ function solve_system!(
     catch e
       !(e isa HSL.Ma57Exception) && rethrow(e)
     end
+    workspace._n_fact += 1
   end
 
   # Ma57 info(1): a negative value is an error in the factorization.
