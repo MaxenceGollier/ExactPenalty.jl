@@ -407,6 +407,7 @@ function SolverCore.solve!(
     set_objective!(stats, fx)
     set_residuals!(stats, primal_feas, dual_feas)
     set_constraint_multipliers!(stats, solver.y)
+    set_solver_specific!(stats, :n_fact, solver.substats.solver_specific[:n_fact])
 
     set_status!(
       stats,
