@@ -10,9 +10,12 @@ mutable struct watchdog_checkpoint{T, V, HV}
   primal_feas::T
   dual_feas::T
   σk::T
+  fk::T
+  hk::T
+  m_fh_hist::V
 end
 
-function watchdog_checkpoint(nlp::ShiftedL2PenalizedProblem{T, V, M, H, P}) where{T, V, M, H, P}
+function watchdog_checkpoint(nlp::ShiftedL2PenalizedProblem{T, V, M, H, P}; m_monotone = 5) where{T, V, M, H, P}
   φ, ψ = nlp.model, nlp.h
   ∇f_model, b_model = φ.data.c, ψ.b
   xk, ∇fk = similar(∇f_model), similar(∇f_model)
@@ -30,12 +33,15 @@ function watchdog_checkpoint(nlp::ShiftedL2PenalizedProblem{T, V, M, H, P}) wher
     0,
     zero(T),
     zero(T),
-    zero(T)
+    zero(T),
+    zero(T),
+    zero(T),
+    similar(∇f_model, m_monotone-1)
   )
 end
 
 function watchdog_checkpoint(
-  nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
+  nlp::ShiftedL2PenalizedProblem{T,V,M,H,P}; m_monotone = 5
 ) where {
   T,
   V,
@@ -49,7 +55,7 @@ function watchdog_checkpoint(
   xk, ∇fk = similar(∇f_model), similar(∇f_model)
   ck, yk = similar(b_model), similar(b_model)
   Jkvals = similar(ψ.A.vals)
-  Hk = similar(φ.data.H)
+  Hk = isa(φ.data.H, AbstractLinearOperator) ? nothing : similar(φ.data.H)
   return watchdog_checkpoint(
     xk,
     ∇fk,
@@ -61,7 +67,10 @@ function watchdog_checkpoint(
     0,
     zero(T),
     zero(T),
-    zero(T)
+    zero(T),
+    zero(T),
+    zero(T),
+    similar(∇f_model, m_monotone-1)
   )
 end
 
@@ -78,6 +87,8 @@ function save!(checkpoint::watchdog_checkpoint, nlp::ShiftedL2PenalizedProblem{T
   checkpoint.primal_feas = stats.primal_feas
   checkpoint.dual_feas = stats.dual_feas
   checkpoint.iter = stats.iter
+  checkpoint.fk = stats.solver_specific[:smooth_obj]
+  checkpoint.hk = stats.solver_specific[:nonsmooth_obj]
 end
 
 function save!(
@@ -99,13 +110,15 @@ function save!(
   checkpoint.xk .= x
   checkpoint.yk .= y
   checkpoint.∇fk .= φ.data.c
-  copy!(checkpoint.Hkvals, φ.data.H)
+  !isnothing(checkpoint.Hkvals) && copy!(checkpoint.Hkvals, φ.data.H)
   checkpoint.σk = φ.data.σ
   checkpoint.ck .= ψ.b
   checkpoint.Jkvals .= ψ.A.vals
   checkpoint.primal_feas = stats.primal_feas
   checkpoint.dual_feas = stats.dual_feas
   checkpoint.iter = stats.iter
+  checkpoint.fk = stats.solver_specific[:smooth_obj]
+  checkpoint.hk = stats.solver_specific[:nonsmooth_obj]
 end
 
 function fallback!(nlp::ShiftedL2PenalizedProblem{T,V,M,H,P}, x, y, checkpoint::watchdog_checkpoint) where{T,V,M,H,P}
@@ -116,7 +129,7 @@ function fallback!(nlp::ShiftedL2PenalizedProblem{T,V,M,H,P}, x, y, checkpoint::
   φ.data.c .= checkpoint.∇fk
   φ.data.H.vals .= checkpoint.Hkvals
   φ.data.σ = checkpoint.σk
-  ψ.b .= checkpoint.b
+  ψ.b .= checkpoint.ck
   ψ.A.vals .= checkpoint.Jkvals
 end
 
@@ -138,9 +151,9 @@ function fallback!(
   x .= checkpoint.xk
   y .= checkpoint.yk
   φ.data.c .= checkpoint.∇fk
-  copy!(φ.data.H, checkpoint.Hkvals)
+  !isnothing(checkpoint.Hkvals) && copy!(φ.data.H, checkpoint.Hkvals)
   φ.data.σ = checkpoint.σk
-  ψ.b .= checkpoint.b
+  ψ.b .= checkpoint.ck
   ψ.A.vals .= checkpoint.Jkvals
 end
 
@@ -155,11 +168,17 @@ end
 is_active(checkpoint::watchdog_checkpoint) = checkpoint.active
 
 function check_watchdog!(checkpoint::watchdog_checkpoint, stats)
-  fail = (is_active(checkpoint) && (stats.iter - checkpoint.iter > 10) && 
-            (stats.dual_feas > checkpoint.dual_feas || 
-            stats.primal_feas > checkpoint.primal_feas))
-  if !fail && stats.iter - checkpoint.iter <= 10
+  achieve_reduction = (stats.objective < checkpoint.fk + checkpoint.hk) || (stats.dual_feas < checkpoint.dual_feas)
+  max_iter = stats.iter - checkpoint.iter > 10
+
+  if !is_active(checkpoint)
+    return false
+  elseif achieve_reduction
     deactivate!(checkpoint)
+    return false
+  elseif !max_iter
+    return false
+  else
+    return true
   end
-  return fail
 end

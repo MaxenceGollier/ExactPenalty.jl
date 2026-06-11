@@ -40,7 +40,7 @@ function PenaltyR2NSolver(
   substats = GenericExecutionStats(subpb, solver_specific = Dict{Symbol,T}())
   subsolver = subsolver(subpb)
 
-  checkpoint = watchdog_checkpoint(subpb)
+  checkpoint = watchdog_checkpoint(subpb; m_monotone = m_monotone)
 
   return PenaltyR2NSolver{T,V,typeof(subsolver),typeof(subpb)}(
     xk,
@@ -179,6 +179,7 @@ function SolverCore.solve!(
     # Check stopping criteria
     dual_res .= ∇fk
     mul!(dual_res, ψ.A', y, one(T), one(T))
+    set_primal_residual!(stats, norm(ψ.b, Inf))
     set_dual_residual!(stats, norm(dual_res, Inf))
     solved = stats.dual_feas ≤ atol
 
@@ -198,10 +199,11 @@ function SolverCore.solve!(
 
     # Check the watchdog
     if check_watchdog!(watchdog_checkpoint, stats)
-      println("watchdog failed.")
       fallback!(mk, xk, y, watchdog_checkpoint)
-      mk.data.σk *= γ
-
+      φ.data.σ *= γ^10
+      σk = φ.data.σ
+      hk, fk = watchdog_checkpoint.hk, watchdog_checkpoint.fk
+      m_fh_hist .= watchdog_checkpoint.m_fh_hist
       deactivate!(watchdog_checkpoint)
     end
 
@@ -241,7 +243,7 @@ function SolverCore.solve!(
       if first_increase && ρk < 0
         σk = max(sqrt(stats.dual_feas), σk * γ)
         first_increase = false
-      elseif ρk < 0 && !is_active(watchdog_checkpoint) # Watchdog procedure
+      elseif ρk < 0 && !is_active(watchdog_checkpoint) && !isa(nlp, NullHessianModel) # Watchdog procedure
         
           # Check acceptance w.r.t f
           d∇fks = dot(∇fk, s)
@@ -249,6 +251,7 @@ function SolverCore.solve!(
           if η2 ≤ fρk < Inf # Activate watchdog
             activate!(watchdog_checkpoint)
             save!(watchdog_checkpoint, mk, xk, y, stats)
+            watchdog_checkpoint.m_fh_hist .= m_fh_hist
             xk .= xkn
 
             #update functions
@@ -303,7 +306,7 @@ function SolverCore.solve!(
           σk,
           norm(xk),
           norm(s),
-          (η2 ≤ ρk < Inf) ? '↘' : (ρk < η1 ? '↗' : '='),
+          is_active(watchdog_checkpoint) ? 'w' : (η2 ≤ ρk < Inf) ? '↘' : (ρk < η1 ? '↗' : '='),
         ],
         colsep = 1,
       )
