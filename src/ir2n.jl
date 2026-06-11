@@ -7,6 +7,7 @@ mutable struct PenaltyR2NSolver{
   V<:AbstractVector{T},
   ST<:AbstractOptimizationSolver,
   PB<:AbstractRegularizedNLPModel,
+  WC<:watchdog_checkpoint,
 } <: AbstractOptimizationSolver
   xk::V
   y::V
@@ -17,7 +18,7 @@ mutable struct PenaltyR2NSolver{
   subsolver::ST
   subpb::PB
   substats::GenericExecutionStats{T,V,V,T}
-  checkpoint::watchdog_checkpoint{T, V}
+  checkpoint::WC
 end
 
 function PenaltyR2NSolver(
@@ -42,7 +43,7 @@ function PenaltyR2NSolver(
 
   checkpoint = watchdog_checkpoint(subpb; m_monotone = m_monotone)
 
-  return PenaltyR2NSolver{T,V,typeof(subsolver),typeof(subpb)}(
+  return PenaltyR2NSolver{T,V,typeof(subsolver),typeof(subpb), typeof(checkpoint)}(
     xk,
     y,
     dual_res,
