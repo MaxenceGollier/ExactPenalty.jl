@@ -129,9 +129,19 @@ end
   test_problem("MARATOS", primal_solution, dual_solution, :first_order)
 end
 
+# Test an infeasible problem
 @testset "VANDANIUMS" begin
   test_problem("VANDANIUMS", Float64[], Float64[], :infeasible)
 end
 
+# Test a problem that requires the watchdog technique
+@testset "SSINE" begin
+  # The problem is infeasible but the primal feas is arbitrarily small for some ||x|| -> inf.
+  # Only test that we converge to first order
+  nlp = CUTEstModel("SSINE")
+  stats = L2Penalty(nlp, atol = 1e-6, rtol = 1e-6)
+  @test stats.status == :first_order
+  finalize(nlp)
+end
 # Test an ill-conditionned problem
 # TODO: Add MSS1
