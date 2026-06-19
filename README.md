@@ -27,7 +27,7 @@ It is designed to find (local) solutions of mathematical optimization problems o
 ```math
     \min f(x) \quad \text{s.t.} \ c(x) = 0.
 ```
-where $f: \R^n \to \R$ and $c : \R^n \to \R^m$ are the objective and the constraint function, respectively.
+where $f: R^n \to R$ and $c : R^n \to R^m$ are the objective and the constraint function, respectively.
 Both $f$ and $c$ can be nonlinear and nonconvex but they are assumed to be continuously differentiable.
 Moreover, it is assumed that $m \leq n$.
 
