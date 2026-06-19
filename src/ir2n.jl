@@ -199,7 +199,7 @@ function SolverCore.solve!(
     end
 
     # Check the watchdog
-    if check_watchdog!(watchdog_checkpoint, stats)
+    if check_watchdog!(watchdog_checkpoint, stats, mk, xk, η1)
       fallback!(mk, xk, y, watchdog_checkpoint)
       φ.data.σ *= γ^10
       σk = φ.data.σ

@@ -52,6 +52,7 @@ end
 # The meta of the compact BFGSModel will have 0 for the nnzh which is fine.
 SparseArrays.nnz(::CompactBFGS) = 0
 LinearAlgebra.Symmetric(op::CompactBFGS, ::Symbol) = op
+Base.size(op::CompactBFGS) = (size(op.Sk, 1), size(op.Sk, 1))
 
 # TODO: test this: compare with LinearOperators.jl
 function LinearAlgebra.mul!(
