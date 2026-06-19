@@ -13,6 +13,8 @@ mutable struct watchdog_checkpoint{T, V, HV}
   fk::T
   hk::T
   m_fh_hist::V
+  s::V
+  v::V
 end
 
 function watchdog_checkpoint(nlp::ShiftedL2PenalizedProblem{T, V, M, H, P}; m_monotone = 5) where{T, V, M, H, P}
@@ -36,7 +38,9 @@ function watchdog_checkpoint(nlp::ShiftedL2PenalizedProblem{T, V, M, H, P}; m_mo
     zero(T),
     zero(T),
     zero(T),
-    similar(∇f_model, m_monotone-1)
+    similar(∇f_model, m_monotone-1),
+    similar(xk),
+    similar(xk),
   )
 end
 
@@ -70,7 +74,9 @@ function watchdog_checkpoint(
     zero(T),
     zero(T),
     zero(T),
-    similar(∇f_model, m_monotone-1)
+    similar(∇f_model, m_monotone-1),
+    similar(xk),
+    similar(xk),
   )
 end
 
@@ -168,12 +174,13 @@ end
 is_active(checkpoint::watchdog_checkpoint) = checkpoint.active
 
 function check_watchdog!(checkpoint::watchdog_checkpoint{T, V, V}, stats, mk, xk, η1) where{T, V}
-  println(typeof(checkpoint))
-  s = xk - checkpoint.xk
+  s, v = checkpoint.s, checkpoint.v
   H = mk.model.data.H
   (m, n) = size(H)
   Hcp = SparseMatrixCOO(m, n, H.rows, H.cols, checkpoint.Hkvals)
-  v = Hcp*s
+
+  s .= xk .- checkpoint.xk
+  mul!(v, Hcp, s)
   sHs = checkpoint.σk*norm(s)^2 + dot(v, s)
   achieve_reduction = 
     (checkpoint.fk + checkpoint.hk - stats.objective > 1/2*η1*sHs) || 
@@ -193,9 +200,33 @@ function check_watchdog!(checkpoint::watchdog_checkpoint{T, V, V}, stats, mk, xk
 end
 
 function check_watchdog!(checkpoint::watchdog_checkpoint{T, V, HV}, stats, mk, xk, η1) where{T, V, HV <: CompactBFGS}
-  s = xk - checkpoint.xk
-  v = checkpoint.Hkvals*s
+  s, v = checkpoint.s, checkpoint.v
+
+  s .= xk .- checkpoint.xk
+  mul!(v, checkpoint.Hkvals, s)
   sHs = checkpoint.σk*norm(s)^2 + dot(v, s)
+  achieve_reduction = 
+    (checkpoint.fk + checkpoint.hk - stats.objective > 1/2*η1*sHs) || 
+    (stats.dual_feas < (1-η1)*checkpoint.dual_feas)
+  max_iter = stats.iter - checkpoint.iter > 10
+
+  if !is_active(checkpoint)
+    return false
+  elseif achieve_reduction
+    deactivate!(checkpoint)
+    return false
+  elseif !max_iter
+    return false
+  else
+    return true
+  end
+end
+
+function check_watchdog!(checkpoint::watchdog_checkpoint{T, V, HV}, stats, mk, xk, η1) where{T, V, HV <: Nothing}
+  s, v = checkpoint.s, checkpoint.v
+
+  s .= xk .- checkpoint.xk
+  sHs = checkpoint.σk*norm(s)^2
   achieve_reduction = 
     (checkpoint.fk + checkpoint.hk - stats.objective > 1/2*η1*sHs) || 
     (stats.dual_feas < (1-η1)*checkpoint.dual_feas)
