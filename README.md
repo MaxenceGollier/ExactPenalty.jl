@@ -1,25 +1,37 @@
-# ExactPenalty
+# ExactPenalty.jl: A Large-Scale Equality-Constrained Optimization Solver 
 
-[![Stable Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://MaxenceGollier.github.io/ExactPenalty.jl/stable)
-[![Development documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://MaxenceGollier.github.io/ExactPenalty.jl/dev)
-[![Test workflow status](https://github.com/MaxenceGollier/ExactPenalty.jl/actions/workflows/Test.yml/badge.svg?branch=main)](https://github.com/MaxenceGollier/ExactPenalty.jl/actions/workflows/Test.yml?query=branch%3Amain)
-[![Coverage](https://codecov.io/gh/MaxenceGollier/ExactPenalty.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/MaxenceGollier/ExactPenalty.jl)
-[![Docs workflow Status](https://github.com/MaxenceGollier/ExactPenalty.jl/actions/workflows/Docs.yml/badge.svg?branch=main)](https://github.com/MaxenceGollier/ExactPenalty.jl/actions/workflows/Docs.yml?query=branch%3Amain)
-[![Build Status](https://api.cirrus-ci.com/github/MaxenceGollier/ExactPenalty.jl.svg)](https://cirrus-ci.com/github/MaxenceGollier/ExactPenalty.jl)
-[![DOI](https://zenodo.org/badge/DOI/FIXME)](https://doi.org/FIXME)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
-[![All Contributors](https://img.shields.io/github/all-contributors/MaxenceGollier/ExactPenalty.jl?labelColor=5e1ec7&color=c0ffee&style=flat-square)](#contributors)
-[![BestieTemplate](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/JuliaBesties/BestieTemplate.jl/main/docs/src/assets/badge.json)](https://github.com/JuliaBesties/BestieTemplate.jl)
+| **License** | **Documentation** | **CI** | **Coverage** | **Contributors** | **doi** |
+|:-----------:|:-----------------:|:------:|:------------:|:----------------:|:-------:|
+| [![license-img]][license-url] | [![docs-stable-img]][docs-stable-url] [![docs-dev-img]][docs-dev-url] | [![ci-test-img]][ci-test-url] |  [![coverage-img]][coverage-url] | [![contributors-img]][contributors-url] | [![doi-img]][doi-url] |
 
-ExactPenalty is a solver for the smooth, constrained, nonlinear problem,
+
+[license-img]:     https://img.shields.io/badge/License-MPL--2.0-blue
+[license-url]:     https://github.com/MaxenceGollier/ExactPenalty.jl/blob/main/LICENSE
+[docs-stable-img]:  https://img.shields.io/badge/docs-stable-blue.svg
+[docs-stable-url]:  https://MaxenceGollier.github.io/ExactPenalty.jl/stable
+[docs-dev-img]:     https://img.shields.io/badge/docs-dev-purple.svg
+[docs-dev-url]:     https://MaxenceGollier.github.io/ExactPenalty.jl/dev
+[ci-test-img]:      https://github.com/MaxenceGollier/ExactPenalty.jl/actions/workflows/Test.yml/badge.svg?branch=main
+[ci-test-url]:      https://github.com/MaxenceGollier/ExactPenalty.jl/actions/workflows/Test.yml?query=branch%3Amain
+[coverage-img]:     https://codecov.io/gh/MaxenceGollier/ExactPenalty.jl/branch/main/graph/badge.svg
+[coverage-url]:     https://codecov.io/gh/MaxenceGollier/ExactPenalty.jl
+[doi-img]:          https://zenodo.org/badge/DOI/FIXME
+[doi-url]:          https://doi.org/FIXME
+[contributors-img]: https://img.shields.io/github/all-contributors/MaxenceGollier/ExactPenalty.jl?labelColor=5e1ec7&color=c0ffee&style=flat-square
+[contributors-url]: #contributors
+
+## Content
+
+ExactPenalty.jl is a software package for large-scale, equality-constrained, [nonlinear programming](https://en.wikipedia.org/wiki/Nonlinear_programming).
+It is designed to find (local) solutions of mathematical optimization problems of the form
 ```math
     \min f(x) \quad \text{s.t.} \ c(x) = 0.
 ```
-The above is solved by computing an approximate solution of the non-smooth penalized problem
-```math
-    \min f(x) + \tau \| c(x) \|,
-```
-for some penalty parameter $$\tau > 0$$ and some norm $$\|\cdot\|$$.
+where $f: \R^n \to \R$ and $c : \R^n \to \R^m$ are the objective and the constraint function, respectively.
+Both $f$ and $c$ can be nonlinear and nonconvex but they are assumed to be continuously differentiable.
+Moreover, it is assumed that $m \leq n$.
+
+The solver is based on the exact [penalty algorithm](https://en.wikipedia.org/wiki/Penalty_method).
 
 ## How to Cite
 
@@ -30,14 +42,3 @@ If you use ExactPenalty.jl in your work, please cite using the reference given i
 If you want to make contributions of any kind, please first that a look into our [contributing guide directly on GitHub](docs/src/90-contributing.md) or the [contributing page on the website](https://MaxenceGollier.github.io/ExactPenalty.jl/dev/90-contributing/)
 
 ---
-
-### Contributors
-
-<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-<!-- prettier-ignore-start -->
-<!-- markdownlint-disable -->
-
-<!-- markdownlint-restore -->
-<!-- prettier-ignore-end -->
-
-<!-- ALL-CONTRIBUTORS-LIST:END -->
