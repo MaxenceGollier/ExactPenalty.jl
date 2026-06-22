@@ -7,6 +7,7 @@ mutable struct PenaltyR2NSolver{
   V<:AbstractVector{T},
   ST<:AbstractOptimizationSolver,
   PB<:AbstractRegularizedNLPModel,
+  WC<:watchdog_checkpoint,
 } <: AbstractOptimizationSolver
   xk::V
   y::V
@@ -17,6 +18,7 @@ mutable struct PenaltyR2NSolver{
   subsolver::ST
   subpb::PB
   substats::GenericExecutionStats{T,V,V,T}
+  checkpoint::WC
 end
 
 function PenaltyR2NSolver(
@@ -39,7 +41,9 @@ function PenaltyR2NSolver(
   substats = GenericExecutionStats(subpb, solver_specific = Dict{Symbol,T}())
   subsolver = subsolver(subpb)
 
-  return PenaltyR2NSolver{T,V,typeof(subsolver),typeof(subpb)}(
+  checkpoint = watchdog_checkpoint(subpb; m_monotone = m_monotone)
+
+  return PenaltyR2NSolver{T,V,typeof(subsolver),typeof(subpb), typeof(checkpoint)}(
     xk,
     y,
     dual_res,
@@ -49,6 +53,7 @@ function PenaltyR2NSolver(
     subsolver,
     subpb,
     substats,
+    checkpoint,
   )
 end
 
@@ -97,6 +102,7 @@ function SolverCore.solve!(
   xkn = solver.xkn
   s, y, dual_res = solver.s, solver.y, solver.dual_res
   m_fh_hist = solver.m_fh_hist
+  watchdog_checkpoint = solver.checkpoint
 
   m_monotone = length(m_fh_hist) + 1
 
@@ -174,6 +180,7 @@ function SolverCore.solve!(
     # Check stopping criteria
     dual_res .= ∇fk
     mul!(dual_res, ψ.A', y, one(T), one(T))
+    set_primal_residual!(stats, norm(ψ.b, Inf))
     set_dual_residual!(stats, norm(dual_res, Inf))
     solved = stats.dual_feas ≤ atol
 
@@ -183,12 +190,24 @@ function SolverCore.solve!(
     end
 
     solved = primal_decrease ? solved && hk < h0 : solved
+    solved = solved && !is_active(watchdog_checkpoint)
 
     if solved
       set_status!(stats, :first_order)
       done = true
       continue
     end
+
+    # Check the watchdog
+    if check_watchdog!(watchdog_checkpoint, stats, mk, xk, η1^2)
+      fallback!(mk, xk, y, watchdog_checkpoint)
+      φ.data.σ *= γ^10
+      σk = φ.data.σ
+      hk, fk = watchdog_checkpoint.hk, watchdog_checkpoint.fk
+      m_fh_hist .= watchdog_checkpoint.m_fh_hist
+      deactivate!(watchdog_checkpoint)
+    end
+
 
     # Compute a step 
     solver.subpb.model.data.σ = σk
@@ -225,6 +244,25 @@ function SolverCore.solve!(
       if first_increase && ρk < 0
         σk = max(sqrt(stats.dual_feas), σk * γ)
         first_increase = false
+      elseif ρk < 0 && !is_active(watchdog_checkpoint) && !isa(nlp, NullHessianModel) # Watchdog procedure
+        
+          # Check acceptance w.r.t f
+          d∇fks = dot(∇fk, s)
+          fρk = d∇fks <= 0 ? (fk - fkn + max(1, abs(fk)) * 10 * eps())/(-d∇fks + max(1, abs(fk)) * 10 * eps()) : zero(T)
+          if η2 ≤ fρk < Inf # Activate watchdog
+            activate!(watchdog_checkpoint)
+            save!(watchdog_checkpoint, mk, xk, y, stats)
+            watchdog_checkpoint.m_fh_hist .= m_fh_hist
+            xk .= xkn
+
+            #update functions
+            fk, hk = fkn, hkn
+
+            shift!(mk, xk, y = y)
+
+          else
+            σk = σk * γ
+          end
       else
         σk = σk * γ
       end
@@ -269,7 +307,7 @@ function SolverCore.solve!(
           σk,
           norm(xk),
           norm(s),
-          (η2 ≤ ρk < Inf) ? '↘' : (ρk < η1 ? '↗' : '='),
+          is_active(watchdog_checkpoint) ? 'w' : (η2 ≤ ρk < Inf) ? '↘' : (ρk < η1 ? '↗' : '='),
         ],
         colsep = 1,
       )

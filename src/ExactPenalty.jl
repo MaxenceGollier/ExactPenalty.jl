@@ -28,6 +28,7 @@ include("linear_algebra/ldlt.jl")
 
 include("types/PenalizedProblem.jl")
 include("types/ShiftedPenalizedProblem.jl")
+include("types/Watchdog.jl")
 
 include("subsolvers/more-sorensen.jl")
 
