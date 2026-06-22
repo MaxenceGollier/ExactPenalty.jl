@@ -27,7 +27,19 @@ function MoreSorensenSolver(
   x1 = zeros(eltype(x0), n+m)
   x2 = zeros(eltype(x0), n+m)
 
-  solver = isa(reg_nlp.model.data.H, AbstractLinearOperator) ? :minres_qlp : LIBHSL_isfunctional() ? :ma57 : :ldlt
+  # Choose linear solver automatically
+
+  # Use LDLFactorizations.jl by default
+  solver = :ldlt
+
+  # Check for HSL
+  hsl_loaded = !isnothing(Base.get_extension(@__MODULE__, :ExactPenaltyHSLExt))
+  hsl_functional = hsl_loaded && LIBHSL_isfunctional()
+  solver = hsl_functional ? :ma57 : solver
+
+  # Check for Krylov
+  linear_op = isa(reg_nlp.model.data.H, AbstractLinearOperator)
+  solver = linear_op ? :minres_qlp : solver
 
   H = K2(n, m, n+m, n+m, zero(T), reg_nlp.model.data.σ, reg_nlp.h.A, reg_nlp.model.data.H; format = solver == :ma57 ? :coo : :csc)
   workspace = construct_workspace(H, u1, n, m; solver = solver)
