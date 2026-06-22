@@ -237,7 +237,8 @@ function SolverCore.solve!(
     end
 
     if η2 ≤ ρk < Inf
-      σk = σk / γ
+      σp = σk - more_sorensen_sigma!(solver.subsolver, solver.subpb, solver.substats; Δ = norm(s) * γ^2)
+      σk = isa(nlp, QuasiNewtonModel) ? max(σk/γ,σmin) : clamp(σp, max(σk/γ^3,σmin), σk)
     end
 
     if ρk < η1 || ρk == Inf
@@ -264,7 +265,8 @@ function SolverCore.solve!(
             σk = σk * γ
           end
       else
-        σk = σk * γ
+        σp = σk - more_sorensen_sigma!(solver.subsolver, solver.subpb, solver.substats; Δ = norm(s) / γ)
+        σk = (solver.substats.status != :first_order || isa(nlp, QuasiNewtonModel)) ? σk * γ : clamp(σp, σk * γ^(1/2), σk * γ^2)
       end
     end
 
