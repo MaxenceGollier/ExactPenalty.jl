@@ -1,4 +1,4 @@
-export CompactBFGSModel
+export CompactBFGS, CompactBFGSModel
 
 mutable struct CompactBFGS{T,V<:AbstractVector{T},MT<:AbstractMatrix{T}} <:
                AbstractMatrix{T}

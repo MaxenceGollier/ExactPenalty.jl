@@ -1,3 +1,5 @@
+export OpK2, CompactBFGSK2
+
 mutable struct OpK2{T<:Real,M1,M2<:AbstractLinearOperator} <: AbstractLinearOperator{T}
   n::Int
   m::Int

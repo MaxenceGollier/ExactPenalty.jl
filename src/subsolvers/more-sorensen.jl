@@ -34,8 +34,8 @@ function MoreSorensenSolver(
 
   # Check for HSL
   hsl_loaded = !isnothing(Base.get_extension(@__MODULE__, :ExactPenaltyHSLExt))
-  hsl_functional = hsl_loaded && LIBHSL_isfunctional()
-  solver = hsl_functional ? :ma57 : solver
+  hsl_isfunctional = hsl_loaded && hsl_functional()
+  solver = hsl_isfunctional ? :ma57 : solver
 
   # Check for Krylov
   linear_op = isa(reg_nlp.model.data.H, AbstractLinearOperator)
