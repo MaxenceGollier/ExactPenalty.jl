@@ -173,7 +173,7 @@ end
 
 is_active(checkpoint::watchdog_checkpoint) = checkpoint.active
 
-function check_watchdog!(checkpoint::watchdog_checkpoint{T, V, V}, stats, mk, xk, η1) where{T, V}
+function check_watchdog!(checkpoint::watchdog_checkpoint{T, V, V}, stats, mk, xk, η0) where{T, V}
   s, v = checkpoint.s, checkpoint.v
   H = mk.model.data.H
   (m, n) = size(H)
@@ -183,8 +183,8 @@ function check_watchdog!(checkpoint::watchdog_checkpoint{T, V, V}, stats, mk, xk
   mul!(v, Hcp, s)
   sHs = checkpoint.σk*norm(s)^2 + dot(v, s)
   achieve_reduction = 
-    (checkpoint.fk + checkpoint.hk - stats.objective > 1/2*η1*sHs) || 
-    (stats.dual_feas < (1-η1)*checkpoint.dual_feas)
+    (checkpoint.fk + checkpoint.hk - stats.objective > 1/2*η0*sHs) || 
+    (stats.dual_feas < (1-η0)*checkpoint.dual_feas)
   max_iter = stats.iter - checkpoint.iter > 10
 
   if !is_active(checkpoint)
@@ -199,15 +199,15 @@ function check_watchdog!(checkpoint::watchdog_checkpoint{T, V, V}, stats, mk, xk
   end
 end
 
-function check_watchdog!(checkpoint::watchdog_checkpoint{T, V, HV}, stats, mk, xk, η1) where{T, V, HV <: CompactBFGS}
+function check_watchdog!(checkpoint::watchdog_checkpoint{T, V, HV}, stats, mk, xk, η0) where{T, V, HV <: CompactBFGS}
   s, v = checkpoint.s, checkpoint.v
 
   s .= xk .- checkpoint.xk
   mul!(v, checkpoint.Hkvals, s)
   sHs = checkpoint.σk*norm(s)^2 + dot(v, s)
   achieve_reduction = 
-    (checkpoint.fk + checkpoint.hk - stats.objective > 1/2*η1*sHs) || 
-    (stats.dual_feas < (1-η1)*checkpoint.dual_feas)
+    (checkpoint.fk + checkpoint.hk - stats.objective > 1/2*η0*sHs) || 
+    (stats.dual_feas < (1-η0)*checkpoint.dual_feas)
   max_iter = stats.iter - checkpoint.iter > 10
 
   if !is_active(checkpoint)
@@ -222,14 +222,14 @@ function check_watchdog!(checkpoint::watchdog_checkpoint{T, V, HV}, stats, mk, x
   end
 end
 
-function check_watchdog!(checkpoint::watchdog_checkpoint{T, V, HV}, stats, mk, xk, η1) where{T, V, HV <: Nothing}
+function check_watchdog!(checkpoint::watchdog_checkpoint{T, V, HV}, stats, mk, xk, η0) where{T, V, HV <: Nothing}
   s, v = checkpoint.s, checkpoint.v
 
   s .= xk .- checkpoint.xk
   sHs = checkpoint.σk*norm(s)^2
   achieve_reduction = 
-    (checkpoint.fk + checkpoint.hk - stats.objective > 1/2*η1*sHs) || 
-    (stats.dual_feas < (1-η1)*checkpoint.dual_feas)
+    (checkpoint.fk + checkpoint.hk - stats.objective > 1/2*η0*sHs) || 
+    (stats.dual_feas < (1-η0)*checkpoint.dual_feas)
   max_iter = stats.iter - checkpoint.iter > 10
 
   if !is_active(checkpoint)
