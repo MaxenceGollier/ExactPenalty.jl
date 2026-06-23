@@ -214,15 +214,168 @@ function solve_system!(
       workspace._n_fact += 1
       k = k + 1
     end
-    workspace.factorized = true
-  end
 
-  # Check factorization status : TODO
+    # MUMPS infog(1): a negative value is an error in the factorization.
+    if mumps.infog[1] < 0
+      workspace.status = :failed
+      return
+    else
+      workspace.factorized = true
+    end
+  end
 
   workspace.x .= u
   MUMPS.mumps_solve!(workspace.x, mumps; rhs_changed = true)
-  # Check solve status : TODO
+  
+  # MUMPS infog(1): a negative value is an error in the factorization.
+  if any(isnan, workspace.x) || mumps.infog[1] < 0
+    workspace.status = :failed
+  end
+
   return
+end
+
+function solve_system!(
+  workspace::PenaltyMUMPSWorkspace{WP,K2},
+  u::V,
+) where {V<:AbstractVector,WP,K2<:CompactBFGSK2}
+  workspace.status = :success
+  H = workspace.H
+  B = workspace.H.B
+  mumps = workspace.M
+  n, m = workspace.n, workspace.m
+  p = min(B._insert - 1, B._mem)
+  x1, x2, x3, y1, y2 = H.x1, H.x2, H.x3, H.y1, H.y2
+  Z1, Z2 = H.Z1, H.Z2
+
+  Uk = @view B.Uk[:, 1:p]
+  Vk = @view B.Vk[:, 1:p]
+
+  # Step 0: Write
+  # [B  Aᵀ] = [σI+ξI  Aᵀ] + [-U V]([U V])ᵀ
+  # [A -αI] = [A     -αI] + [ 0 0]([0 0])
+  # Hence,
+  # [B  Aᵀ] = [σI+ξI  Aᵀ] + EFᵀ
+  # [A -αI] = [A     -αI] + EFᵀ
+
+  # Step 1: Factorize
+  # [σI+ξI  Aᵀ]
+  # [A     -αI]
+  
+  if !workspace.factorized
+    job = mumps.job
+    mumps.job = MUMPS.INITIALIZE
+    factorize!(mumps)
+    workspace._n_fact += 1
+
+    k, max_iter = 0, 5
+    # MUMPS Documentation - infog(1) = -9
+    # The main internal real/complex workarray S is too small. If INFO(2) is positive, then the number
+    # of entries that are missing in S at the moment when the error is raised is available in INFO(2).
+    # If INFO(2) is negative, then its absolute value should be multiplied by 1 million. If an error –9
+    # occurs, the user should increase the value of ICNTL(14) before calling the factorization (JOB=
+    # 2) again, except if LWK USER is provided LWK USER should be increased.
+    while mumps.infog[1] == -9 && k < max_iter
+      MUMPS.set_icntl!(mumps, 14, mumps.icntl[14] * 2)
+      mumps.job = MUMPS.FACTOR
+      factorize!(mumps)
+      workspace._n_fact += 1
+      k = k + 1
+    end
+
+    # MUMPS infog(1): a negative value is an error in the factorization.
+    if mumps.infog[1] < 0
+      workspace.status = :failed
+      return
+    else
+      workspace.factorized = true
+    end
+  end
+
+  # Step 2: Compute
+  # [x₁] = [σI+ξI  Aᵀ]⁻¹[u]
+  # [x₁] = [A     -αI]  [u]
+
+  x1 .= u
+  MUMPS.associate_rhs!(mumps, x1)
+  MUMPS.mumps_solve!(x1, mumps; rhs_changed = true)
+  
+  # MUMPS infog(1): a negative value is an error in the factorization.
+  if any(isnan, x1) || mumps.infog[1] < 0
+    workspace.status = :failed
+  end
+
+  # Step 3: Compute
+  # y₁ = Fᵀx₁ = [Uᵀx₁(1:n)]
+  # y₁ = Fᵀx₁ = [Vᵀx₁(1:n)]
+  @views mul!(y1[1:p], Uk', x1[1:n])
+  @views mul!(y1[(p+1):(2*p)], Vk', x1[1:n])
+
+
+  # Step 4: Assemble Schur complement (I + Fᵀ [σI+ξI  Aᵀ]⁻¹ E )
+  #                                   (       [A     -αI]     )
+  # Step 4.1: Compute 
+  # Z₁ = [σI+ξI  Aᵀ]⁻¹ E = [σI+ξI  Aᵀ]⁻¹[-U V]
+  # Z₁ = [A     -αI]   E = [A     -αI]  [ 0 0]
+  Z1 .= 0
+
+  @views Z1[1:n, 1:p] .= Uk .* (-1)
+  @views Z1[1:n, (p+1):(2*p)] .= Vk
+
+  MUMPS.associate_rhs!(mumps, Z1)
+  MUMPS.mumps_solve!(Z1, mumps; rhs_changed = true)
+  
+  # MUMPS infog(1): a negative value is an error in the factorization.
+  if any(isnan, Z1) || mumps.infog[1] < 0
+    workspace.status = :failed
+  end
+
+  # Step 4.2: Compute 
+  # Z₂ = FᵀZ₁ = UᵀZ₁[1:n]
+  # Z₂ = FᵀZ₁ = VᵀZ₁[1:n]
+  Z2 .= 0
+  @views mul!(Z2[1:p, 1:(2*p)], Uk', Z1[1:n, (1:(2*p))])
+  @views mul!(Z2[(p+1):(2*p), 1:(2*p)], Vk', Z1[1:n, (1:(2*p))])
+
+  # Step 4.3: Compute 
+  # Z₂ = I + Z₂
+  for i = 1:(2*p)
+    Z2[i, i] += 1
+  end
+
+  # Step 5: Solve
+  # (I + Fᵀ [σI+ξI  Aᵀ]⁻¹ E )⁻¹[y₁]
+  # (       [A     -αI]     )  [y₁]
+  # using Julia LinearALgebra's lu!
+  F = lu!(Z2[1:(2*p), 1:(2*p)], check = false) # FIXME ?
+  @views ldiv!(y2[1:(2*p)], F, y1[1:(2*p)])
+  if any(isnan, y2)
+    workspace.status = :failed
+    return
+  end
+
+  # Step 6: Compute
+  # x₂ = E[y₂] = [-U V][y₂] = [-Uy₂ + Vy₂]
+  # x₂ = E[y₂] = [ 0 0][y₂] = [0]
+  @views mul!(x2[1:n], Vk, y2[(p+1):(2*p)])
+  @views mul!(x2[1:n], Uk, y2[1:p], -one(eltype(y2)), one(eltype(y2)))
+
+  # Step 7: Solve
+  # [x₃] = [σI+ξI  Aᵀ]⁻¹[x₂]
+  # [x₃] = [A     -αI]  [x₂]
+  x3 .= x2
+  MUMPS.associate_rhs!(mumps, x3)
+  MUMPS.mumps_solve!(x3, mumps; rhs_changed = true)
+  
+  # MUMPS infog(1): a negative value is an error in the factorization.
+  if any(isnan, x3) || mumps.infog[1] < 0
+    workspace.status = :failed
+  end
+
+  # Step 8:
+  # [B  Aᵀ]⁻¹[u] = x₁ - x₃ 
+  # [A -αI]  [u] = x₁ - x₃
+  workspace.x .= x1 .- x3
 end
 
 function get_solution!(x::V, workspace::PenaltyMUMPSWorkspace) where {V<:AbstractVector}
