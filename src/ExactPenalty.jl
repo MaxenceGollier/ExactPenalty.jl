@@ -5,8 +5,6 @@ using NLPModels, NLPModelsModifiers, RegularizedProblems
 using Krylov,
   LDLFactorizations,
   LinearOperators,
-  MPI,
-  MUMPS,
   ProximalOperators,
   QRMumps,
   QuadraticModels,

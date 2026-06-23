@@ -32,6 +32,10 @@ function MoreSorensenSolver(
   # Use LDLFactorizations.jl by default
   solver = :ldlt
 
+  # Check for MUMPS
+  mumps_loaded = !isnothing(Base.get_extension(@__MODULE__, :ExactPenaltyMUMPSExt))
+  solver = mumps_loaded ? :mumps : solver
+
   # Check for HSL
   hsl_loaded = !isnothing(Base.get_extension(@__MODULE__, :ExactPenaltyHSLExt))
   hsl_isfunctional = hsl_loaded && hsl_functional()
