@@ -3,7 +3,7 @@ mutable struct PenaltyMUMPSWorkspace{
   K2<:AbstractMatrix,
   V<:AbstractVector,
   T<:Real,
-}
+} <: PenaltyDirectWorkspace
   M::WP
   H::K2
   x::V
@@ -12,6 +12,7 @@ mutable struct PenaltyMUMPSWorkspace{
   m::Int
   status::Symbol
   factorized::Bool
+  _n_fact::Int
 end
 
 function get_H(
@@ -46,7 +47,6 @@ function construct_mumps_workspace(
   # Max number of iterative refinement steps
   icntl[10] = 10
   
-  MPI.Init()
   S = Mumps{T}(mumps_symmetric, icntl, cntl)
 
   # Associate the row, cols and vals of the mumps structure with those of H.
@@ -74,6 +74,7 @@ function construct_mumps_workspace(
     m,
     :uninitialized,
     false,
+    0,
   )
 end
 
@@ -99,7 +100,6 @@ function construct_mumps_workspace(
   # Max number of iterative refinement steps
   icntl[10] = 10
   
-  MPI.Init()
   S = Mumps{T}(mumps_symmetric, icntl, cntl)
 
   # Associate the row, cols and vals of the mumps structure with those of H.
@@ -127,6 +127,7 @@ function construct_mumps_workspace(
     m,
     :uninitialized,
     false,
+    0,
   )
 end
 
@@ -197,6 +198,7 @@ function solve_system!(
     job = mumps.job
     mumps.job = MUMPS.INITIALIZE
     factorize!(mumps)
+    workspace._n_fact += 1
 
     k, max_iter = 0, 5
     # MUMPS Documentation - infog(1) = -9
@@ -209,6 +211,7 @@ function solve_system!(
       MUMPS.set_icntl!(mumps, 14, mumps.icntl[14] * 2)
       mumps.job = MUMPS.FACTOR
       factorize!(mumps)
+      workspace._n_fact += 1
       k = k + 1
     end
     workspace.factorized = true

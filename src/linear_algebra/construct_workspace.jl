@@ -25,6 +25,11 @@ function construct_ma57_workspace(H, u1, n, m)
     error("MA57 not available. Load ExactPenaltyHSLExt.")
 end
 
+# MUMPS Misc.
+function construct_mumps_workspace(H, u1, n, m)
+    error("MUMPS not available. Load ExactPenaltyMUMPSExt.")
+end
+
 get_n_fact(workspace::PenaltyIterativeWorkspace) = 0
 get_n_fact(workspace::PenaltyDirectWorkspace) = workspace._n_fact
 
