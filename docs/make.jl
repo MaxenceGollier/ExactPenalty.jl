@@ -12,12 +12,12 @@ const numbered_pages = [
 makedocs(;
   modules = [ExactPenalty],
   authors = "Maxence Gollier maxence-2.gollier@polymtl.ca",
-  repo = "https://github.com/JuliaSmoothOptimizers/ExactPenalty.jl/blob/{commit}{path}#{line}",
+  repo = "https://github.com/MaxenceGollier/ExactPenalty.jl/blob/{commit}{path}#{line}",
   sitename = "ExactPenalty.jl",
   format = Documenter.HTML(;
-    canonical = "https://JuliaSmoothOptimizers.github.io/ExactPenalty.jl",
+    canonical = "https://MaxenceGollier.github.io/ExactPenalty.jl",
   ),
   pages = ["index.md"; numbered_pages],
 )
 
-deploydocs(; repo = "github.com/JuliaSmoothOptimizers/ExactPenalty.jl")
+deploydocs(; repo = "github.com/MaxenceGollier/ExactPenalty.jl")
