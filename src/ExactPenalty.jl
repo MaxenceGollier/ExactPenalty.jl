@@ -21,6 +21,8 @@ include("ExactPenaltyExecutionStats.jl")
 include("types/quasi-newton/NullHessian.jl")
 include("types/quasi-newton/CompactBFGS.jl")
 
+include("utils.jl")
+
 include("linear_algebra/K2.jl")
 include("linear_algebra/construct_workspace.jl")
 include("linear_algebra/krylov.jl")

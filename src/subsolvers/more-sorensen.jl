@@ -74,7 +74,8 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   @. u1[1:n] = -reg_nlp.model.data.c
   @. u1[(n+1):(n+m)] = -reg_nlp.h.b
 
-  α = zero(T)
+  α = eps(T)^(0.9)
+  reg_nlp.model.data.σ = max(reg_nlp.model.data.σ, -lambda_min_upper_bound(reg_nlp.model.data.H))
   update_workspace!(
     solver_workspace,
     reg_nlp.model.data.H,
