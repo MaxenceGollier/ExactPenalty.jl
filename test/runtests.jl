@@ -20,10 +20,15 @@ include("allocations-macro.jl")
 include("instances/instance-reader.jl")
 include("instances/instance-generator.jl")
 
-include("test-quasi-newton.jl")
-include("test-subsolvers.jl")
+@testset "quasi-Newton" begin
+  include("test-quasi-newton.jl")
+end
 
-testset "CUTEst-default" begin
+@testset "Subsolvers" begin
+  include("test-subsolvers.jl")
+end
+
+@testset "CUTEst-default" begin
   @test isnothing(Base.get_extension(ExactPenalty, :ExactPenaltyMUMPSExt)) # Check that the extension is not loaded.
   include("test/cutest.jl")
 end
