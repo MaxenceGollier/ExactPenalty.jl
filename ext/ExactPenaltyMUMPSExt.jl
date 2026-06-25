@@ -1,6 +1,6 @@
 module ExactPenaltyMUMPSExt
 
-using MUMPS, MPI
+using MPI, MUMPS
 using ExactPenalty
 
 using LinearAlgebra, SparseMatricesCOO
@@ -10,7 +10,6 @@ import ExactPenalty: get_inertia, get_solution!, get_status
 import ExactPenalty: set_dual_inertia!, set_primal_inertia!
 
 function __init__()
-  ENV["MUMPS_SEQ"] = "1"
   MPI.Init()
 end
 
