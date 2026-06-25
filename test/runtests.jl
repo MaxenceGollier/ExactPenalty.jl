@@ -30,11 +30,11 @@ end
 
 @testset "CUTEst-default" begin
   @test isnothing(Base.get_extension(ExactPenalty, :ExactPenaltyMUMPSExt)) # Check that the extension is not loaded.
-  include("test/cutest.jl")
+  include("test-cutest.jl")
 end
 
 using MPI, MUMPS
 @testset "CUTEst-MUMPS" begin
   @test !isnothing(Base.get_extension(ExactPenalty, :ExactPenaltyMUMPSExt))
-  include("test/cutest.jl")
+  include("test-cutest.jl")
 end
