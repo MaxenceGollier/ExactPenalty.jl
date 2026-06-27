@@ -326,6 +326,18 @@ function solve_system!(
   # MUMPS infog(1): a negative value is an error in the factorization.
   if any(isnan, x1) || mumps.infog[1] < 0
     workspace.status = :failed
+    return
+  end
+
+  if mumps.rinfog[6] > sqrt(eps(eltype(workspace.x))) || 
+     mumps.rinfog[7] > sqrt(eps(eltype(workspace.x))) ||
+     mumps.rinfog[8] > sqrt(eps(eltype(workspace.x)))
+    workspace.status = :failed
+
+    # Switch to symmetric indefinite factorization
+    mumps_switch_to_indefinite!(workspace)
+
+    return
   end
 
   # Step 3: Compute
@@ -351,6 +363,17 @@ function solve_system!(
   # MUMPS infog(1): a negative value is an error in the factorization.
   if any(isnan, Z1) || mumps.infog[1] < 0
     workspace.status = :failed
+    return
+  end
+
+  if mumps.rinfog[6] > sqrt(eps(eltype(workspace.x))) || 
+     mumps.rinfog[7] > sqrt(eps(eltype(workspace.x))) ||
+     mumps.rinfog[8] > sqrt(eps(eltype(workspace.x)))
+    workspace.status = :failed
+
+    # Switch to symmetric indefinite factorization
+    mumps_switch_to_indefinite!(workspace)
+    return
   end
 
   # Step 4.2: Compute 
@@ -393,6 +416,18 @@ function solve_system!(
   # MUMPS infog(1): a negative value is an error in the factorization.
   if any(isnan, x3) || mumps.infog[1] < 0
     workspace.status = :failed
+    return
+  end
+
+  if mumps.rinfog[6] > sqrt(eps(eltype(workspace.x))) || 
+     mumps.rinfog[7] > sqrt(eps(eltype(workspace.x))) ||
+     mumps.rinfog[8] > sqrt(eps(eltype(workspace.x)))
+    workspace.status = :failed
+
+    # Switch to symmetric indefinite factorization
+    mumps_switch_to_indefinite!(workspace)
+
+    return
   end
 
   # Step 8:
