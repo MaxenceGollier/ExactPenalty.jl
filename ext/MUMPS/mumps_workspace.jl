@@ -459,7 +459,7 @@ end
 
 function mumps_switch_to_indefinite!(workspace::PenaltyMUMPSWorkspace)
   mumps = workspace.M
-  H, x = workspace.H, workspace.x
+  H, x = get_H(workspace), workspace.x
   n, m = workspace.n, workspace.m
   mumps.sym == 2 && return
 
@@ -468,7 +468,7 @@ function mumps_switch_to_indefinite!(workspace::PenaltyMUMPSWorkspace)
   MUMPS.invoke_mumps_unsafe!(mumps)
 
   # Associate the row, cols and vals of the mumps structure with those of H.
-  irn, jcn, a = H.data.rows, H.data.cols, H.data.vals
+  irn, jcn, a = H.rows, H.cols, H.vals
   mumps.irn, mumps.jcn, mumps.a = pointer.((irn, jcn, a))
   mumps.n = m+n
   mumps.nnz = length(irn)
