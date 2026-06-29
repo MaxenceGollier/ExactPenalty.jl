@@ -1,5 +1,6 @@
 using JLD2
 
+using MPI, MUMPS
 using CUTEst, ExactPenalty, SolverBenchmark
 
 nmax = 10000

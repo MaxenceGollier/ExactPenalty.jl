@@ -22,10 +22,12 @@ SparseMatricesCOO = "fa32481b-f100-4b48-8dc8-c62f61b13870"
 [weakdeps]
 HSL = "34c5aeac-e683-54a6-a0e9-6e0fdc586c50"
 HSL_jll = "017b0a0e-03f4-516a-9b91-836bbd1904dd"
+MUMPS = "55d2b088-9f4e-11e9-26c0-150b02ea6a46"
+MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
 
 [extensions]
 ExactPenaltyHSLExt = "HSL"
-
+ExactPenaltyMUMPSExt = ["MPI", "MUMPS"]
 
 [compat]
 CUTEst = "1.3.6"
@@ -34,6 +36,8 @@ Krylov = "0.10"
 LDLFactorizations = "0.10.2"
 LinearAlgebra = "1.10"
 LinearOperators = "2.10.0"
+MPI = "0.20.26"
+MUMPS = "1.6.1"
 NLPModels = "0.20, 0.21"
 NLPModelsModifiers = "0.7.2"
 ProximalOperators = "0.15.3, 0.16"
@@ -53,4 +57,4 @@ Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["CUTEst", "Test", "Random"]
+test = ["CUTEst", "MPI", "MUMPS", "Test", "Random"]

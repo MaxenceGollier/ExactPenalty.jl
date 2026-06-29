@@ -11,6 +11,8 @@ function construct_workspace(H::M, u1::V, n::Int, m::Int; solver = :minres_qlp) 
     return construct_ldlt_workspace(H, u1, n, m)
   elseif solver == :ma57
     return construct_ma57_workspace(H, u1, n, m)
+  elseif solver == :mumps
+    return construct_mumps_workspace(H, u1, n, m)
   end
 end
 
@@ -21,6 +23,11 @@ _set_hsl_available(flag::Bool) = (_HSL_AVAILABLE[] = flag)
 
 function construct_ma57_workspace(H, u1, n, m)
     error("MA57 not available. Load ExactPenaltyHSLExt.")
+end
+
+# MUMPS Misc.
+function construct_mumps_workspace(H, u1, n, m)
+    error("MUMPS not available. Load ExactPenaltyMUMPSExt.")
 end
 
 get_n_fact(workspace::PenaltyIterativeWorkspace) = 0

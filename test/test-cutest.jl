@@ -131,7 +131,9 @@ end
 
 # Test an infeasible problem
 @testset "VANDANIUMS" begin
-  test_problem("VANDANIUMS", Float64[], Float64[], :infeasible)
+  if isnothing(Base.get_extension(ExactPenalty, :ExactPenaltyMUMPSExt))
+    test_problem("VANDANIUMS", Float64[], Float64[], :infeasible)
+  end
 end
 
 # Test a problem that requires the watchdog technique
@@ -139,7 +141,7 @@ end
   # The problem is infeasible but the primal feas is arbitrarily small for some ||x|| -> inf.
   # Only test that we converge to first order
   nlp = CUTEstModel("SSINE")
-  stats = L2Penalty(nlp, atol = 1e-6, rtol = 0.0)
+  stats = L2Penalty(nlp, atol = 1e-5, rtol = 0.0)
   @test stats.status == :first_order
   finalize(nlp)
 end

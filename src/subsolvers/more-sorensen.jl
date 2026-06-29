@@ -32,6 +32,10 @@ function MoreSorensenSolver(
   # Use LDLFactorizations.jl by default
   solver = :ldlt
 
+  # Check for MUMPS
+  mumps_loaded = !isnothing(Base.get_extension(@__MODULE__, :ExactPenaltyMUMPSExt))
+  solver = mumps_loaded ? :mumps : solver
+
   # Check for HSL
   hsl_loaded = !isnothing(Base.get_extension(@__MODULE__, :ExactPenaltyHSLExt))
   hsl_isfunctional = hsl_loaded && hsl_functional()
@@ -41,7 +45,7 @@ function MoreSorensenSolver(
   linear_op = isa(reg_nlp.model.data.H, AbstractLinearOperator)
   solver = linear_op ? :minres_qlp : solver
 
-  H = K2(n, m, n+m, n+m, zero(T), reg_nlp.model.data.σ, reg_nlp.h.A, reg_nlp.model.data.H; format = solver == :ma57 ? :coo : :csc)
+  H = K2(n, m, n+m, n+m, zero(T), reg_nlp.model.data.σ, reg_nlp.h.A, reg_nlp.model.data.H; format = solver ∈ [:ma57, :mumps] ? :coo : :csc, int_type = solver == :mumps ? Int32 : Int64)
   workspace = construct_workspace(H, u1, n, m; solver = solver)
 
   return MoreSorensenSolver(u1, u2, x1, x2, H, workspace)
@@ -74,7 +78,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   @. u1[1:n] = -reg_nlp.model.data.c
   @. u1[(n+1):(n+m)] = -reg_nlp.h.b
 
-  α = zero(T)
+  α = eps(T)
   update_workspace!(
     solver_workspace,
     reg_nlp.model.data.H,
