@@ -5,7 +5,6 @@ using NLPModels, NLPModelsModifiers, RegularizedProblems
 using LDLFactorizations,
   LinearOperators,
   ProximalOperators,
-  QRMumps,
   QuadraticModels,
   ShiftedProximalOperators,
   SolverCore,
