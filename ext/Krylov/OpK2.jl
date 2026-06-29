@@ -46,4 +46,3 @@ function Base.show(io::IO, op::OpK2)
   s = "K2 Linear operator\n"
   print(io, s)
 end
-
