@@ -3,13 +3,13 @@ expected_status = [:first_order, :first_order, :infeasible, :infeasible]
 
 tol = 1e-3
 
-function test_problem(name, primal_solution, dual_solution, expected_status)
+function test_problem(name, primal_solution, dual_solution, expected_status; kwargs...)
   nlp = CUTEstModel(name)
 
   # Test with R2
   @testset "NullHessian" begin
     null_model = NullHessianModel(nlp)
-    stats = L2Penalty(null_model, atol = tol, rtol = tol)
+    stats = L2Penalty(null_model, atol = tol, rtol = tol; kwargs...)
 
     # Test whether the outputs are well defined
     @test stats.status == expected_status
@@ -44,7 +44,7 @@ function test_problem(name, primal_solution, dual_solution, expected_status)
   # Test with BFGS
   @testset "BFGS" begin
     LBFGS_model = CompactBFGSModel(nlp)
-    stats = L2Penalty(LBFGS_model, atol = tol, rtol = tol)
+    stats = L2Penalty(LBFGS_model, atol = tol, rtol = tol; kwargs...)
 
     @test stats.status == expected_status
     if expected_status == :first_order
@@ -78,7 +78,7 @@ function test_problem(name, primal_solution, dual_solution, expected_status)
 
   @testset "Exact" begin
 
-    stats = L2Penalty(nlp, atol = tol, rtol = tol)
+    stats = L2Penalty(nlp, atol = tol, rtol = tol; kwargs...)
 
     # Test whether the outputs are well defined
     @test stats.status == expected_status
@@ -131,7 +131,7 @@ end
 
 # Test an infeasible problem
 @testset "VANDANIUMS" begin
-  test_problem("VANDANIUMS", Float64[], Float64[], :infeasible)
+  test_problem("VANDANIUMS", Float64[], Float64[], :infeasible; max_time = 120.0)
 end
 
 # Test a problem that requires the watchdog technique
