@@ -1,5 +1,6 @@
 using ExactPenalty
 using CUTEst,
+  Krylov,
   LinearOperators,
   NLPModels,
   NLPModelsModifiers,
