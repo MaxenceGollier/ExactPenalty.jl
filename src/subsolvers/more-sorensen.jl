@@ -42,7 +42,8 @@ function MoreSorensenSolver(
   solver = hsl_isfunctional ? :ma57 : solver
 
   # Check for Krylov
-  linear_op = isa(reg_nlp.model.data.H, AbstractLinearOperator)
+  krylov_loaded = !isnothing(Base.get_extension(@__MODULE__, :ExactPenaltyKrylovExt))
+  linear_op = krylov_loaded ? isa(reg_nlp.model.data.H, AbstractLinearOperator) : false
   solver = linear_op ? :minres_qlp : solver
 
   H = K2(

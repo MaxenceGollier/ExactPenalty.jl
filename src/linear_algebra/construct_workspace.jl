@@ -25,6 +25,11 @@ function construct_ma57_workspace(H, u1, n, m)
   error("MA57 not available. Load ExactPenaltyHSLExt.")
 end
 
+# Krylov Misc.
+function construct_minres_qlp_workspace(H, u1, n, m)
+  error("MINRES-QLP not available. Load ExactPenaltyKrylovExt.")
+end
+
 # MUMPS Misc.
 function construct_mumps_workspace(H, u1, n, m)
   error("MUMPS not available. Load ExactPenaltyMUMPSExt.")
