@@ -1,7 +1,7 @@
 export PenaltyWorkspace, PenaltyDirectWorkspace, PenaltyIterativeWorkspace
 
 abstract type PenaltyWorkspace end
-abstract type PenaltyDirectWorkspace    <: PenaltyWorkspace end
+abstract type PenaltyDirectWorkspace <: PenaltyWorkspace end
 abstract type PenaltyIterativeWorkspace <: PenaltyWorkspace end
 
 function construct_workspace(H::M, u1::V, n::Int, m::Int; solver = :minres_qlp) where {M,V}
@@ -22,12 +22,12 @@ hsl_functional() = _HSL_AVAILABLE[]
 _set_hsl_available(flag::Bool) = (_HSL_AVAILABLE[] = flag)
 
 function construct_ma57_workspace(H, u1, n, m)
-    error("MA57 not available. Load ExactPenaltyHSLExt.")
+  error("MA57 not available. Load ExactPenaltyHSLExt.")
 end
 
 # MUMPS Misc.
 function construct_mumps_workspace(H, u1, n, m)
-    error("MUMPS not available. Load ExactPenaltyMUMPSExt.")
+  error("MUMPS not available. Load ExactPenaltyMUMPSExt.")
 end
 
 get_n_fact(workspace::PenaltyIterativeWorkspace) = 0

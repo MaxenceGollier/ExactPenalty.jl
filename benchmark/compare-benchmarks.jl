@@ -36,8 +36,10 @@ function pairwise_plot(stats, keys; compare_n_fact = false)
   ]
   costnames = ["CPU Time", "# Objective Evals", "# Gradient Evals"]
 
-  if compare_n_fact && hasproperty(stats[keys[1]], :n_fact) && hasproperty(stats[keys[2]], :n_fact)
-    costnames[1] ="# Factorizations"
+  if compare_n_fact &&
+     hasproperty(stats[keys[1]], :n_fact) &&
+     hasproperty(stats[keys[2]], :n_fact)
+    costnames[1] = "# Factorizations"
     costs[1] = df -> .!solved(df) * Inf .+ coalesce.(df.n_fact, Inf)
   end
 
@@ -110,8 +112,16 @@ load_stats(current_dir, stats, "_current")
 load_stats(reference_dir, stats, "_reference")
 
 p = plot(
-  pairwise_plot(stats, [:l2penalty_exact_reference, :l2penalty_exact_current], compare_n_fact = true),
-  pairwise_plot(stats, [:l2penalty_lbfgs_reference, :l2penalty_lbfgs_current], compare_n_fact = true),
+  pairwise_plot(
+    stats,
+    [:l2penalty_exact_reference, :l2penalty_exact_current],
+    compare_n_fact = true,
+  ),
+  pairwise_plot(
+    stats,
+    [:l2penalty_lbfgs_reference, :l2penalty_lbfgs_current],
+    compare_n_fact = true,
+  ),
   layout = (2, 1),
   size = (1920, 1080),
 )

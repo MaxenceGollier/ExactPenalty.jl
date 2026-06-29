@@ -30,7 +30,7 @@ function construct_mumps_workspace(
   u1::V,
   n,
   m,
-) where {T,V<:AbstractVector{T},M <: Symmetric}
+) where {T,V<:AbstractVector{T},M<:Symmetric}
   # Set params : TODO
   cntl = T == Float64 ? default_cntl64 : default_cntl32
   icntl = default_icntl
@@ -79,17 +79,7 @@ function construct_mumps_workspace(
   S.rhs = pointer(x)
   S._y_gc_haven = x
 
-  return PenaltyMUMPSWorkspace(
-    S,
-    H,
-    x,
-    zero(T),
-    n,
-    m,
-    :uninitialized,
-    false,
-    0,
-  )
+  return PenaltyMUMPSWorkspace(S, H, x, zero(T), n, m, :uninitialized, false, 0)
 end
 
 function construct_mumps_workspace(
@@ -97,7 +87,7 @@ function construct_mumps_workspace(
   u1::V,
   n,
   m,
-) where {T,V<:AbstractVector{T},M <: CompactBFGSK2}
+) where {T,V<:AbstractVector{T},M<:CompactBFGSK2}
   # Set params : TODO
   cntl = T == Float64 ? default_cntl64 : default_cntl32
   icntl = default_icntl
@@ -132,17 +122,7 @@ function construct_mumps_workspace(
   S.rhs = pointer(x)
   S._y_gc_haven = x
 
-  return PenaltyMUMPSWorkspace(
-    S,
-    H,
-    x,
-    zero(T),
-    n,
-    m,
-    :uninitialized,
-    false,
-    0,
-  )
+  return PenaltyMUMPSWorkspace(S, H, x, zero(T), n, m, :uninitialized, false, 0)
 end
 
 function update_workspace!(
@@ -158,9 +138,9 @@ function update_workspace!(
   H = get_H(solver_workspace)
 
   H.vals[1:nnz_B] .= B.vals
-  H.vals[(nnz_B + 1):(nnz_B + nnz_A)] .= A.vals
-  H.vals[(nnz_B + nnz_A + 1):(nnz_B + nnz_A + n)] .= σ
-  H.vals[(nnz_B + nnz_A + n + 1):(nnz_B + nnz_A + n + m)] .= -α
+  H.vals[(nnz_B+1):(nnz_B+nnz_A)] .= A.vals
+  H.vals[(nnz_B+nnz_A+1):(nnz_B+nnz_A+n)] .= σ
+  H.vals[(nnz_B+nnz_A+n+1):(nnz_B+nnz_A+n+m)] .= -α
 
   solver_workspace.σ = σ
   solver_workspace.factorized = false
@@ -179,8 +159,8 @@ function update_workspace!(
   H = get_H(solver_workspace)
 
   H.vals[1:nnz_A] .= A.vals
-  H.vals[(nnz_A + 1):(nnz_A + n)] .= σ + B.ξ
-  H.vals[(nnz_A + n + 1):(nnz_A + n + m)] .= -α
+  H.vals[(nnz_A+1):(nnz_A+n)] .= σ + B.ξ
+  H.vals[(nnz_A+n+1):(nnz_A+n+m)] .= -α
 
   solver_workspace.σ = σ
   solver_workspace.factorized = false
@@ -189,14 +169,14 @@ end
 function set_dual_inertia!(solver_workspace::PenaltyMUMPSWorkspace, α)
   n, m = solver_workspace.n, solver_workspace.m
   H = get_H(solver_workspace)
-  H.vals[end-m+1:end] .= -α
+  H.vals[(end-m+1):end] .= -α
   solver_workspace.factorized = false
 end
 
 function set_primal_inertia!(solver_workspace::PenaltyMUMPSWorkspace, σ)
   n, m = solver_workspace.n, solver_workspace.m
   H = get_H(solver_workspace)
-  H.vals[end-m-n+1:end-m] .= σ
+  H.vals[(end-m-n+1):(end-m)] .= σ
   solver_workspace.σ = σ
   solver_workspace.factorized = false
 end
@@ -240,13 +220,13 @@ function solve_system!(
 
   workspace.x .= u
   MUMPS.mumps_solve!(workspace.x, mumps; rhs_changed = true)
-  
+
   # MUMPS infog(1): a negative value is an error in the factorization.
   if any(isnan, workspace.x) || mumps.infog[1] < 0
     workspace.status = :failed
   end
 
-  if mumps.rinfog[6] > sqrt(eps(eltype(workspace.x))) || 
+  if mumps.rinfog[6] > sqrt(eps(eltype(workspace.x))) ||
      mumps.rinfog[7] > sqrt(eps(eltype(workspace.x))) ||
      mumps.rinfog[8] > sqrt(eps(eltype(workspace.x)))
     workspace.status = :failed
@@ -284,7 +264,7 @@ function solve_system!(
   # Step 1: Factorize
   # [σI+ξI  Aᵀ]
   # [A     -αI]
-  
+
   if !workspace.factorized
     job = mumps.job
     mumps.job = MUMPS.INITIALIZE
@@ -322,14 +302,14 @@ function solve_system!(
   x1 .= u
   MUMPS.associate_rhs!(mumps, x1)
   MUMPS.mumps_solve!(x1, mumps; rhs_changed = true)
-  
+
   # MUMPS infog(1): a negative value is an error in the factorization.
   if any(isnan, x1) || mumps.infog[1] < 0
     workspace.status = :failed
     return
   end
 
-  if mumps.rinfog[6] > sqrt(eps(eltype(workspace.x))) || 
+  if mumps.rinfog[6] > sqrt(eps(eltype(workspace.x))) ||
      mumps.rinfog[7] > sqrt(eps(eltype(workspace.x))) ||
      mumps.rinfog[8] > sqrt(eps(eltype(workspace.x)))
     workspace.status = :failed
@@ -359,14 +339,14 @@ function solve_system!(
 
   MUMPS.associate_rhs!(mumps, Z1)
   MUMPS.mumps_solve!(Z1, mumps; rhs_changed = true)
-  
+
   # MUMPS infog(1): a negative value is an error in the factorization.
   if any(isnan, Z1) || mumps.infog[1] < 0
     workspace.status = :failed
     return
   end
 
-  if mumps.rinfog[6] > sqrt(eps(eltype(workspace.x))) || 
+  if mumps.rinfog[6] > sqrt(eps(eltype(workspace.x))) ||
      mumps.rinfog[7] > sqrt(eps(eltype(workspace.x))) ||
      mumps.rinfog[8] > sqrt(eps(eltype(workspace.x)))
     workspace.status = :failed
@@ -412,14 +392,14 @@ function solve_system!(
   x3 .= x2
   MUMPS.associate_rhs!(mumps, x3)
   MUMPS.mumps_solve!(x3, mumps; rhs_changed = true)
-  
+
   # MUMPS infog(1): a negative value is an error in the factorization.
   if any(isnan, x3) || mumps.infog[1] < 0
     workspace.status = :failed
     return
   end
 
-  if mumps.rinfog[6] > sqrt(eps(eltype(workspace.x))) || 
+  if mumps.rinfog[6] > sqrt(eps(eltype(workspace.x))) ||
      mumps.rinfog[7] > sqrt(eps(eltype(workspace.x))) ||
      mumps.rinfog[8] > sqrt(eps(eltype(workspace.x)))
     workspace.status = :failed
@@ -444,7 +424,7 @@ function get_status(workspace::PenaltyMUMPSWorkspace)
   return workspace.status
 end
 
-function get_inertia(workspace::PenaltyMUMPSWorkspace{WP,K2}) where{WP,K2}
+function get_inertia(workspace::PenaltyMUMPSWorkspace{WP,K2}) where {WP,K2}
 
   n, m = workspace.n, workspace.m
   (npos, nzero, nneg) = (0, 0, 0)
@@ -453,7 +433,7 @@ function get_inertia(workspace::PenaltyMUMPSWorkspace{WP,K2}) where{WP,K2}
   rank = n + m - workspace.M.infog[28]
   nzero = n + m - rank
   npos = n + m - nzero - nneg
-  
+
   return npos, nzero, nneg
 end
 
@@ -481,7 +461,7 @@ function mumps_switch_to_indefinite!(workspace::PenaltyMUMPSWorkspace)
   mumps.nrhs = 1
   mumps.rhs = pointer(x)
   mumps._y_gc_haven = x
-  
+
   icntl = mumps.icntl
 
   # Deactivate Logging

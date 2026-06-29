@@ -45,7 +45,18 @@ function MoreSorensenSolver(
   linear_op = isa(reg_nlp.model.data.H, AbstractLinearOperator)
   solver = linear_op ? :minres_qlp : solver
 
-  H = K2(n, m, n+m, n+m, zero(T), reg_nlp.model.data.σ, reg_nlp.h.A, reg_nlp.model.data.H; format = solver ∈ [:ma57, :mumps] ? :coo : :csc, int_type = solver == :mumps ? Int32 : Int64)
+  H = K2(
+    n,
+    m,
+    n+m,
+    n+m,
+    zero(T),
+    reg_nlp.model.data.σ,
+    reg_nlp.h.A,
+    reg_nlp.model.data.H;
+    format = solver ∈ [:ma57, :mumps] ? :coo : :csc,
+    int_type = solver == :mumps ? Int32 : Int64,
+  )
   workspace = construct_workspace(H, u1, n, m; solver = solver)
 
   return MoreSorensenSolver(u1, u2, x1, x2, H, workspace)

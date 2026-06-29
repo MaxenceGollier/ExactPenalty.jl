@@ -39,7 +39,7 @@ function K2(
   A::M1,
   B::M2;
   format::Symbol = :coo,
-  int_type::Type = Int64
+  int_type::Type = Int64,
 ) where {T,M1<:SparseMatrixCOO,M2<:SparseMatrixCSC}
 
   I, J, V = Vector{int_type}(), Vector{int_type}(), Vector{T}()
@@ -77,7 +77,7 @@ function K2(
   # [ 0    -αI ]
   α_temp = iszero(α) ? eps(T) : α
   σ_temp = iszero(σ) ? eps(T) : σ
-  
+
   append!(I, 1:(n+m))
   append!(J, 1:(n+m))
   append!(V, fill(σ_temp, n))
@@ -153,7 +153,7 @@ function K2(
   A::M1,
   B::M2;
   format::Symbol = :coo,
-  int_type::Type = Int64
+  int_type::Type = Int64,
 ) where {T,M1<:SparseMatrixCOO,M2<:SparseMatrixCOO}
 
   I, J, V = Vector{int_type}(), Vector{int_type}(), Vector{T}()
@@ -198,7 +198,18 @@ function K2(
   return Symmetric(H)
 end
 
-function K2(n::Int, m::Int, nrow::Int, ncol::Int, α::T, σ::T, A::M1, B::M2; format::Symbol = :coo, int_type::Type = Int64) where {T,M1,M2 <: AbstractLinearOperator}
+function K2(
+  n::Int,
+  m::Int,
+  nrow::Int,
+  ncol::Int,
+  α::T,
+  σ::T,
+  A::M1,
+  B::M2;
+  format::Symbol = :coo,
+  int_type::Type = Int64,
+) where {T,M1,M2<:AbstractLinearOperator}
   return OpK2(n, m, nrow, ncol, α, σ, A, B)
 end
 

@@ -43,7 +43,7 @@ function construct_ldlt_workspace(
     n,
     m,
     :uninitialized,
-    0
+    0,
   )
 end
 
@@ -64,7 +64,7 @@ function construct_ldlt_workspace(
     n,
     m,
     :uninitialized,
-    0
+    0,
   )
 end
 
@@ -213,7 +213,7 @@ function solve_system!(
 ) where {V<:AbstractVector,WP,K2}
   workspace.status = :success
 
-  if !factorized(workspace.M) 
+  if !factorized(workspace.M)
     ldl_factorize!(workspace.H, workspace.M)
     workspace._n_fact += 1
   end
@@ -260,7 +260,7 @@ function solve_system!(
   # Step 1: Factorize
   # [σI+ξI  Aᵀ]
   # [A     -αI]
-  if !factorized(workspace.M) 
+  if !factorized(workspace.M)
     ldl_factorize!(workspace.H.H, workspace.M)
     workspace._n_fact += 1
   end

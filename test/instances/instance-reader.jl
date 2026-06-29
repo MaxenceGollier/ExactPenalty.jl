@@ -16,7 +16,7 @@ function read_instance(file::String; type = Float64, Hessian_modifier = H -> H)
     elseif key in ["J", "Q"]
       matrix = []
       while i <= length(lines) &&
-        !(strip(lines[i]) in ["tau", "sigma", "nabla", "c", "J", "Q"])
+            !(strip(lines[i]) in ["tau", "sigma", "nabla", "c", "J", "Q"])
         row = parse.(type, split(strip(lines[i])))
         push!(matrix, row)
         i += 1
