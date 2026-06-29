@@ -35,7 +35,7 @@ macro wrappedallocs(expr)
     function g($(argnames...); kwargs_dict...)
       $(Expr(expr.head, argnames..., kwargs...))
       SolverCore.reset!($(argnames[2]))
-      if VERSION > v"1.11" 
+      if VERSION > v"1.11"
         # @allocated changed its behavior after lts... It is now more precise, on lts, the solver seems to allocate with the MUMPS extension.
         return @allocated $(Expr(expr.head, argnames..., kwargs...))
       else

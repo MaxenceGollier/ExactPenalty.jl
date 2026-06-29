@@ -1,4 +1,4 @@
-mutable struct watchdog_checkpoint{T, V, HV}
+mutable struct watchdog_checkpoint{T,V,HV}
   xk::V
   ∇fk::V
   ck::V
@@ -17,7 +17,10 @@ mutable struct watchdog_checkpoint{T, V, HV}
   v::V
 end
 
-function watchdog_checkpoint(nlp::ShiftedL2PenalizedProblem{T, V, M, H, P}; m_monotone = 5) where{T, V, M, H, P}
+function watchdog_checkpoint(
+  nlp::ShiftedL2PenalizedProblem{T,V,M,H,P};
+  m_monotone = 5,
+) where {T,V,M,H,P}
   φ, ψ = nlp.model, nlp.h
   ∇f_model, b_model = φ.data.c, ψ.b
   xk, ∇fk = similar(∇f_model), similar(∇f_model)
@@ -45,15 +48,9 @@ function watchdog_checkpoint(nlp::ShiftedL2PenalizedProblem{T, V, M, H, P}; m_mo
 end
 
 function watchdog_checkpoint(
-  nlp::ShiftedL2PenalizedProblem{T,V,M,H,P}; m_monotone = 5
-) where {
-  T,
-  V,
-  M,
-  H,
-  O<:QuasiNewtonModel,
-  P<:L2PenalizedProblem{T,V,O},
-}
+  nlp::ShiftedL2PenalizedProblem{T,V,M,H,P};
+  m_monotone = 5,
+) where {T,V,M,H,O<:QuasiNewtonModel,P<:L2PenalizedProblem{T,V,O}}
   φ, ψ = nlp.model, nlp.h
   ∇f_model, b_model = φ.data.c, ψ.b
   xk, ∇fk = similar(∇f_model), similar(∇f_model)
@@ -80,9 +77,15 @@ function watchdog_checkpoint(
   )
 end
 
-function save!(checkpoint::watchdog_checkpoint, nlp::ShiftedL2PenalizedProblem{T,V,M,H,P}, x, y, stats) where{T,V,M,H,P}
+function save!(
+  checkpoint::watchdog_checkpoint,
+  nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
+  x,
+  y,
+  stats,
+) where {T,V,M,H,P}
   φ, ψ = nlp.model, nlp.h
-  
+
   checkpoint.xk .= x
   checkpoint.yk .= y
   checkpoint.∇fk .= φ.data.c
@@ -98,21 +101,14 @@ function save!(checkpoint::watchdog_checkpoint, nlp::ShiftedL2PenalizedProblem{T
 end
 
 function save!(
-  checkpoint::watchdog_checkpoint, 
-  nlp::ShiftedL2PenalizedProblem{T,V,M,H,P}, 
-  x, 
-  y, 
+  checkpoint::watchdog_checkpoint,
+  nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
+  x,
+  y,
   stats,
-  ) where{
-  T,
-  V,
-  M,
-  H,
-  O<:QuasiNewtonModel,
-  P<:L2PenalizedProblem{T,V,O},
-}
+) where {T,V,M,H,O<:QuasiNewtonModel,P<:L2PenalizedProblem{T,V,O}}
   φ, ψ = nlp.model, nlp.h
-  
+
   checkpoint.xk .= x
   checkpoint.yk .= y
   checkpoint.∇fk .= φ.data.c
@@ -127,7 +123,12 @@ function save!(
   checkpoint.hk = stats.solver_specific[:nonsmooth_obj]
 end
 
-function fallback!(nlp::ShiftedL2PenalizedProblem{T,V,M,H,P}, x, y, checkpoint::watchdog_checkpoint) where{T,V,M,H,P}
+function fallback!(
+  nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
+  x,
+  y,
+  checkpoint::watchdog_checkpoint,
+) where {T,V,M,H,P}
   φ, ψ = nlp.model, nlp.h
 
   x .= checkpoint.xk
@@ -140,18 +141,11 @@ function fallback!(nlp::ShiftedL2PenalizedProblem{T,V,M,H,P}, x, y, checkpoint::
 end
 
 function fallback!(
-  nlp::ShiftedL2PenalizedProblem{T,V,M,H,P}, 
-  x, 
-  y, 
-  checkpoint::watchdog_checkpoint, 
-  ) where{
-  T,
-  V,
-  M,
-  H,
-  O<:QuasiNewtonModel,
-  P<:L2PenalizedProblem{T,V,O},
-}
+  nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
+  x,
+  y,
+  checkpoint::watchdog_checkpoint,
+) where {T,V,M,H,O<:QuasiNewtonModel,P<:L2PenalizedProblem{T,V,O}}
   φ, ψ = nlp.model, nlp.h
 
   x .= checkpoint.xk
@@ -173,7 +167,13 @@ end
 
 is_active(checkpoint::watchdog_checkpoint) = checkpoint.active
 
-function check_watchdog!(checkpoint::watchdog_checkpoint{T, V, V}, stats, mk, xk, η0) where{T, V}
+function check_watchdog!(
+  checkpoint::watchdog_checkpoint{T,V,V},
+  stats,
+  mk,
+  xk,
+  η0,
+) where {T,V}
   s, v = checkpoint.s, checkpoint.v
   H = mk.model.data.H
   (m, n) = size(H)
@@ -182,8 +182,8 @@ function check_watchdog!(checkpoint::watchdog_checkpoint{T, V, V}, stats, mk, xk
   s .= xk .- checkpoint.xk
   mul!(v, Hcp, s)
   sHs = checkpoint.σk*norm(s)^2 + dot(v, s)
-  achieve_reduction = 
-    (checkpoint.fk + checkpoint.hk - stats.objective > 1/2*η0*sHs) || 
+  achieve_reduction =
+    (checkpoint.fk + checkpoint.hk - stats.objective > 1/2*η0*sHs) ||
     (stats.dual_feas < (1-η0)*checkpoint.dual_feas)
   max_iter = stats.iter - checkpoint.iter > 10
 
@@ -199,14 +199,20 @@ function check_watchdog!(checkpoint::watchdog_checkpoint{T, V, V}, stats, mk, xk
   end
 end
 
-function check_watchdog!(checkpoint::watchdog_checkpoint{T, V, HV}, stats, mk, xk, η0) where{T, V, HV <: CompactBFGS}
+function check_watchdog!(
+  checkpoint::watchdog_checkpoint{T,V,HV},
+  stats,
+  mk,
+  xk,
+  η0,
+) where {T,V,HV<:CompactBFGS}
   s, v = checkpoint.s, checkpoint.v
 
   s .= xk .- checkpoint.xk
   mul!(v, checkpoint.Hkvals, s)
   sHs = checkpoint.σk*norm(s)^2 + dot(v, s)
-  achieve_reduction = 
-    (checkpoint.fk + checkpoint.hk - stats.objective > 1/2*η0*sHs) || 
+  achieve_reduction =
+    (checkpoint.fk + checkpoint.hk - stats.objective > 1/2*η0*sHs) ||
     (stats.dual_feas < (1-η0)*checkpoint.dual_feas)
   max_iter = stats.iter - checkpoint.iter > 10
 
@@ -222,13 +228,19 @@ function check_watchdog!(checkpoint::watchdog_checkpoint{T, V, HV}, stats, mk, x
   end
 end
 
-function check_watchdog!(checkpoint::watchdog_checkpoint{T, V, HV}, stats, mk, xk, η0) where{T, V, HV <: Nothing}
+function check_watchdog!(
+  checkpoint::watchdog_checkpoint{T,V,HV},
+  stats,
+  mk,
+  xk,
+  η0,
+) where {T,V,HV<:Nothing}
   s, v = checkpoint.s, checkpoint.v
 
   s .= xk .- checkpoint.xk
   sHs = checkpoint.σk*norm(s)^2
-  achieve_reduction = 
-    (checkpoint.fk + checkpoint.hk - stats.objective > 1/2*η0*sHs) || 
+  achieve_reduction =
+    (checkpoint.fk + checkpoint.hk - stats.objective > 1/2*η0*sHs) ||
     (stats.dual_feas < (1-η0)*checkpoint.dual_feas)
   max_iter = stats.iter - checkpoint.iter > 10
 
