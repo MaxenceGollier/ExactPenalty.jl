@@ -4,7 +4,6 @@ version = "0.1.0"
 authors = ["Maxence Gollier maxence-2.gollier@polymtl.ca"]
 
 [deps]
-Krylov = "ba0b0d4f-ebba-5204-a429-3ac8c609bfb7"
 LDLFactorizations = "40e66cde-538c-5869-a4ad-c39174c6795b"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 LinearOperators = "5c8ed15e-5a4c-59e4-a42b-c7e8811fb125"
@@ -22,11 +21,13 @@ SparseMatricesCOO = "fa32481b-f100-4b48-8dc8-c62f61b13870"
 [weakdeps]
 HSL = "34c5aeac-e683-54a6-a0e9-6e0fdc586c50"
 HSL_jll = "017b0a0e-03f4-516a-9b91-836bbd1904dd"
+Krylov = "ba0b0d4f-ebba-5204-a429-3ac8c609bfb7"
 MUMPS = "55d2b088-9f4e-11e9-26c0-150b02ea6a46"
 MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
 
 [extensions]
 ExactPenaltyHSLExt = "HSL"
+ExactPenaltyKrylovExt = "Krylov"
 ExactPenaltyMUMPSExt = ["MPI", "MUMPS"]
 
 [compat]

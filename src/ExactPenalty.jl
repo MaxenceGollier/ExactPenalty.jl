@@ -2,8 +2,7 @@ module ExactPenalty
 
 using LinearAlgebra, SparseArrays
 using NLPModels, NLPModelsModifiers, RegularizedProblems
-using Krylov,
-  LDLFactorizations,
+using LDLFactorizations,
   LinearOperators,
   ProximalOperators,
   QRMumps,
@@ -23,7 +22,6 @@ include("types/quasi-newton/CompactBFGS.jl")
 
 include("linear_algebra/K2.jl")
 include("linear_algebra/construct_workspace.jl")
-include("linear_algebra/krylov.jl")
 include("linear_algebra/ldlt.jl")
 
 include("types/PenalizedProblem.jl")
