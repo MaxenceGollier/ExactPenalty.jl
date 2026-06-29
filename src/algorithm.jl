@@ -59,6 +59,8 @@ function SolverCore.reset!(solver::L2PenaltySolver)
   SolverCore.reset!(solver.subsolver)
 end
 
+include("logging.jl")
+
 """
     L2Penalty(nlp; kwargs…)
 
@@ -187,22 +189,8 @@ function SolverCore.solve!(
   hx = norm(ψ.b)
 
   if verbose > 0
-    @info log_header(
-      [:iter, :sub_iter, :fx, :pr_feas, :pr_feas_k, :du_feas, :du_feas_k, :tau, :normx],
-      [Int, Int, Float64, Float64, Float64, Float64, Float64, Float64, Float64],
-      hdr_override = Dict{Symbol,String}(   # TODO: Add this as constant dict elsewhere
-        :iter => "outer",
-        :sub_iter => "inner",
-        :fx => "f(x)",
-        :pr_feas => "pr_feas",
-        :pr_feas_k => "pεₖ",
-        :du_feas => "du_feas",
-        :du_feas_k => "dεₖ",
-        :tau => "τ",
-        :normx => "‖x‖",
-      ),
-      colsep = 1,
-    )
+    @info introduction_message(solver::L2PenaltySolver, nlp::AbstractNLPModel)
+    @info header_message()
   end
 
   set_iter!(stats, 0)
@@ -317,20 +305,7 @@ function SolverCore.solve!(
     ## Log status
     verbose > 0 &&
       stats.iter % verbose == 0 &&
-      @info log_row(
-        Any[
-          stats.iter,
-          solver.substats.iter,
-          fx,
-          primal_feas,
-          primal_ktol,
-          dual_feas,
-          dual_ktol,
-          τ,
-          norm(x),
-        ],
-        colsep = 1,
-      )
+      @info log_iteration(solver, nlp, stats)
 
     if primal_feas > primal_ktol || (dual_ktol ≤ dual_tol && primal_feas > primal_tol)
       # Update penalty parameter
