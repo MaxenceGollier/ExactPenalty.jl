@@ -18,36 +18,41 @@ function introduction_message(solver::L2PenaltySolver, nlp::AbstractNLPModel)
   """
 end
 
+const W_ITER  = 6
+const W_LARGE = 16
+const W_MED   = 12
+const W_SMALL = 8
+
+const FMT_OBJ   = "%+-16.7e"
+const FMT_MED   = "%-12.2e"
+const FMT_SMALL = "%+-8.1f"
+
+function separator()
+    repeat("-", textwidth(header_message()))
+end
+
 function header_message()
-  return log_header(
-      [:iter, :fx, :primal_feas, :dual_feas, :lg_tau, :norms, :lg_sigma],
-      [Int, Float64, Float64, Float64, Float64, Float64, Float64],
-      hdr_override = Dict{Symbol,String}(
-        :iter => "iter",
-        :fx => "f(x)",
-        :primal_feas => "Primal",
-        :dual_feas => "Dual",
-        :pr_feas_k => "pεₖ",
-        :lg_tau => "lg(τ)",
-        :norms => "‖s‖",
-        :lg_sigma => "lg(σ)",
-      ),
-      colsep = 2,
+    @sprintf(
+        "%-*s%-*s%-*s%-*s%-*s%-*s%-*s",
+        W_ITER,  "Iter",
+        W_LARGE, "Objective",
+        W_MED,   "Primal_Feas",
+        W_MED,   "Dual_Feas",
+        W_SMALL, "log(τ)",
+        W_MED,   "‖x‖₂",
+        W_SMALL, "log(σ)",
     )
 end
 
-function log_iteration(
-  solver::L2PenaltySolver,
-  nlp::AbstractNLPModel,
-  stats::GenericExecutionStats,
-)
-  log = ""
-  log *= stats.iter * " "
-  log *= @sprintf("%+8.7e", stats.objective) * " "
-  log *= @sprintf("%3.2e", stats.primal_feas) * " "
-  log *= @sprintf("%3.2e", stats.dual_feas) * " "
-  log *= @sprintf("%+2.1f", log10(stats.solver_specific[:tau])) * " "
-  log *= @sprintf("%3.2e", norm(solver.substats.solution)) * " "
-  log *= @sprintf("%+2.1f", log10(stats.solver_specific[:sigma])) * " "
-  return log
+function log_iteration(solver, nlp, stats)
+    @sprintf(
+        "%-6d%-+16.7e%-12.2e%-12.2e%-+8.1f%-12.2e%-+8.1f",
+        stats.iter,
+        stats.objective,
+        stats.primal_feas,
+        stats.dual_feas,
+        log10(solver.substats.solver_specific[:tau]),
+        norm(solver.substats.solution),
+        log10(solver.substats.solver_specific[:sigma]),
+    )
 end

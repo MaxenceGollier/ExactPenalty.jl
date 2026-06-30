@@ -38,6 +38,7 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T,V}) where {T,V}
   set_solver_specific!(substats, :primal_ktol, T(0))
   set_solver_specific!(substats, :dual_ktol, T(0))
   set_solver_specific!(substats, :n_fact, T(0))
+  set_solver_specific!(substats, :tau, T(0))
 
   return L2PenaltySolver(
     x,
@@ -190,7 +191,6 @@ function SolverCore.solve!(
 
   if verbose > 0
     @info introduction_message(solver::L2PenaltySolver, nlp::AbstractNLPModel)
-    @info header_message()
   end
 
   set_iter!(stats, 0)
@@ -225,6 +225,7 @@ function SolverCore.solve!(
   τ = max(norm(solver.y, 1), T(1))
   set_penalty!(mk, τ)
   νsub = 1 / β4
+  set_solver_specific!(solver.substats, :tau, τ)
 
   ## Initialize Model
   shift!(mk, x, ∇f = solver.∇fk, y = y)
@@ -302,9 +303,14 @@ function SolverCore.solve!(
     dual_feas = kkt_dual_feas!(solver)
 
     ## Log status
-    verbose > 0 &&
-      stats.iter % verbose == 0 &&
+    if verbose > 0 && stats.iter % verbose == 0
+      if stats.iter % (10 * verbose) == 0 
+        @info separator()
+        @info header_message()
+        @info separator()
+      end
       @info log_iteration(solver, nlp, stats)
+    end
 
     if primal_feas > primal_ktol || (dual_ktol ≤ dual_tol && primal_feas > primal_tol)
       # Update penalty parameter
@@ -332,6 +338,7 @@ function SolverCore.solve!(
       # Add a relative tolerance for the subsolver
       dual_ktol = dual_tol
       set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
+      set_solver_specific!(solver.substats, :tau, τ)
       dual_krtol = sub_rtol
     else
       # Tighten tolerances
@@ -402,6 +409,10 @@ function SolverCore.solve!(
 
     done = stats.status != :unknown
   end
+
+  ## Log status
+    verbose > 0 &&
+      @info log_iteration(solver, nlp, stats)
 
   set_solution!(stats, x)
   return stats
