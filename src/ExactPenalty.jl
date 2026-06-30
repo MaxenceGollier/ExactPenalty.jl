@@ -1,6 +1,6 @@
 module ExactPenalty
 
-using LinearAlgebra, SparseArrays
+using LinearAlgebra, Printf, SparseArrays
 using NLPModels, NLPModelsModifiers, RegularizedProblems
 using LDLFactorizations,
   LinearOperators,
