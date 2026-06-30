@@ -38,6 +38,9 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T,V}) where {T,V}
   set_solver_specific!(substats, :primal_ktol, T(0))
   set_solver_specific!(substats, :dual_ktol, T(0))
   set_solver_specific!(substats, :n_fact, T(0))
+  set_solver_specific!(substats, :tau, T(0))
+  set_solver_specific!(substats, :sigma, T(0))
+  set_solver_specific!(substats, :rho, T(0))
 
   return L2PenaltySolver(
     x,
@@ -58,6 +61,8 @@ end
 function SolverCore.reset!(solver::L2PenaltySolver)
   SolverCore.reset!(solver.subsolver)
 end
+
+include("logging.jl")
 
 """
     L2Penalty(nlp; kwargs…)
@@ -165,8 +170,8 @@ function SolverCore.solve!(
   max_eval::Int = -1,
   sub_max_eval::Int = -1,
   max_decreas_iter::Int = 10,
-  verbose::Int = 0,
-  sub_verbose::Int = 0,
+  print_level::Int = 0,
+  verbose::Int = 1,
   τ::T = T(100),
   β1::T = T(1),
   β3::T = 1e-4/τ,
@@ -185,25 +190,6 @@ function SolverCore.solve!(
   shift!(ψ, x)
   fx = obj(nlp, x)
   hx = norm(ψ.b)
-
-  if verbose > 0
-    @info log_header(
-      [:iter, :sub_iter, :fx, :pr_feas, :pr_feas_k, :du_feas, :du_feas_k, :tau, :normx],
-      [Int, Int, Float64, Float64, Float64, Float64, Float64, Float64, Float64],
-      hdr_override = Dict{Symbol,String}(   # TODO: Add this as constant dict elsewhere
-        :iter => "outer",
-        :sub_iter => "inner",
-        :fx => "f(x)",
-        :pr_feas => "pr_feas",
-        :pr_feas_k => "pεₖ",
-        :du_feas => "du_feas",
-        :du_feas_k => "dεₖ",
-        :tau => "τ",
-        :normx => "‖x‖",
-      ),
-      colsep = 1,
-    )
-  end
 
   set_iter!(stats, 0)
   rem_eval = max_eval
@@ -230,6 +216,7 @@ function SolverCore.solve!(
 
   set_solver_specific!(solver.substats, :primal_ktol, primal_ktol)
   set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
+  set_residuals!(stats, dual_feas, primal_feas)
 
   solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol
 
@@ -237,6 +224,16 @@ function SolverCore.solve!(
   τ = max(norm(solver.y, 1), T(1))
   set_penalty!(mk, τ)
   νsub = 1 / β4
+  set_solver_specific!(solver.substats, :tau, τ)
+
+  ## Logging
+  if print_level > 0
+    @info introduction_message(solver, nlp)
+    @info separator()
+    @info header_message()
+    @info separator()
+    @info log_iteration(solver, nlp, stats)
+  end
 
   ## Initialize Model
   shift!(mk, x, ∇f = solver.∇fk, y = y)
@@ -277,7 +274,8 @@ function SolverCore.solve!(
       x = x,
       atol = dual_ktol,
       rtol = dual_krtol,
-      verbose = sub_verbose,
+      print_level = print_level - 1,
+      verbose = verbose,
       max_iter = sub_max_iter,
       max_time = max_time - stats.elapsed_time,
       max_eval = min(rem_eval, sub_max_eval),
@@ -314,24 +312,6 @@ function SolverCore.solve!(
     primal_feas = kkt_primal_feas!(solver)
     dual_feas = kkt_dual_feas!(solver)
 
-    ## Log status
-    verbose > 0 &&
-      stats.iter % verbose == 0 &&
-      @info log_row(
-        Any[
-          stats.iter,
-          solver.substats.iter,
-          fx,
-          primal_feas,
-          primal_ktol,
-          dual_feas,
-          dual_ktol,
-          τ,
-          norm(x),
-        ],
-        colsep = 1,
-      )
-
     if primal_feas > primal_ktol || (dual_ktol ≤ dual_tol && primal_feas > primal_tol)
       # Update penalty parameter
       τ₊ = max(τ + β1, norm(solver.subsolver.y, 1))
@@ -358,6 +338,7 @@ function SolverCore.solve!(
       # Add a relative tolerance for the subsolver
       dual_ktol = dual_tol
       set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
+      set_solver_specific!(solver.substats, :tau, τ)
       dual_krtol = sub_rtol
     else
       # Tighten tolerances
@@ -424,9 +405,23 @@ function SolverCore.solve!(
       ),
     )
 
+    ## Log status
+    if print_level > 0 && stats.iter % verbose == 0
+      if stats.iter % (20 * verbose) == 0 && stats.iter > 0
+        @info separator()
+        @info header_message()
+        @info separator()
+      end
+      @info log_iteration(solver, nlp, stats)
+    end
+
     callback(nlp, solver, stats)
 
     done = stats.status != :unknown
+  end
+
+  if print_level > 0
+    @info conclusion_message(solver, nlp, stats)
   end
 
   set_solution!(stats, x)
