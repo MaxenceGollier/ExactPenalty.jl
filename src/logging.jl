@@ -3,9 +3,24 @@ function get_linear_solver(
 ) where{T, V, H, WP, MSS <: MoreSorensenSolver{T, V, H, WP},S <: PenaltyR2NSolver{T, V, MSS}, PB}
   if WP <: PenaltyLDLTWorkspace
     return "LDLFactorizations.jl v$(pkgversion(LDLFactorizations))"
+  elseif WP <: AbstractMUMPSWorkspace
+    # The MUMPS struct exposes the version number.
+    version = solver.subsolver.subsolver.workspace.M.version_number
+    version = decode_mumps_version(version)
+    return "MUMPS v$(version)"
   else
     return ""
   end
+end
+
+function decode_mumps_version(v::NTuple)
+    bytes = collect(UInt8.(v))
+    i = findfirst(iszero, bytes)
+    if i === nothing
+        return String(bytes)
+    else
+        return String(bytes[1:i-1])
+    end
 end
 
 function introduction_message(solver::L2PenaltySolver, nlp::AbstractNLPModel)
