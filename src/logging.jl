@@ -118,7 +118,15 @@ end
 
 function conclusion_message(solver, nlp, stats; type = :outer_loop)
   if type == :outer_loop
-    return ""
+    log = "\n"
+    log *=          "Number of Iterations: $(stats.iter)\n"
+    log *= "\n\n"
+    log *= @sprintf("Objective...........: %-+16.15e\n", stats.objective)
+    log *= @sprintf("Primal Feasibility..:  %16.15e\n", stats.primal_feas)
+    log *= @sprintf("Dual Feasibility....:  %16.15e\n", stats.dual_feas)
+    log *= "\n\n"
+    log *= "EXIT: $(stats.status).\n"
+    return log
   elseif type == :inner_loop
     return "  |
         |  Subproblem solved with status $(stats.status) after $(stats.iter) iterations. 
