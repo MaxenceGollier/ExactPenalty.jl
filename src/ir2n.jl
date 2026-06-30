@@ -280,7 +280,7 @@ function SolverCore.solve!(
 
     ## Log status
     if print_level > 0 && stats.iter % verbose == 0
-      if stats.iter % (10 * verbose) == 0 && stats.iter > 0
+      if stats.iter % (20 * verbose) == 0 && stats.iter > 0
         @info separator(type = :inner_loop)
         @info header_message(type = :inner_loop)
         @info separator(type = :inner_loop)

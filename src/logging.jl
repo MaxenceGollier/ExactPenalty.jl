@@ -34,12 +34,12 @@ function introduction_message(solver::L2PenaltySolver, nlp::AbstractNLPModel)
 end
 
 function introduction_message(solver::PenaltyR2NSolver, nlp::AbstractNLPModel, stats::GenericExecutionStats)
-  return @sprintf("
-        |  Solving subproblem minₓ f(x) + %-3.2e ‖c(x)‖₂ with tolerance %-3.2e...", 
+  return separator(type = :inner_loop) *
+  @sprintf("\n        |  Solving subproblem minₓ f(x) + %-3.2e ‖c(x)‖₂ with tolerance %-3.2e...", 
   stats.solver_specific[:tau], stats.solver_specific[:dual_ktol])
 end
 
-const W_ITER  = 6
+const W_ITER  = 7
 const W_LARGE = 16
 const W_MED   = 12
 const W_SMALL = 8
@@ -59,27 +59,29 @@ end
 function header_message(; type = :outer_loop)
   if type == :outer_loop
     return @sprintf(
-        "%-*s%-*s%-*s%-*s%-*s%-*s%-*s%-*s",
+        "%-*s%-*s%-*s%-*s%-*s%-*s%-*s%-*s%-*s",
         W_ITER,  "Iter",
+        W_ITER,  "sIter",
         W_LARGE, "Objective",
         W_MED,   "pfeas",
         W_MED,   "dfeas",
         W_MED,   "τ",
         W_MED,   "ptol",
         W_MED,   "dtol",
-        W_MED,   "‖x‖₂",
+        W_MED,   "‖x‖",
     )
   elseif type == :inner_loop
     return @sprintf(
-        "  | %-*s%-*s%-*s%-*s%-*s%-*s%-*s%-*s",
+        "  | %-*s%-*s%-*s%-*s%-*s%-*s%-*s%-*s%-*s",
         W_ITER,  "Iter",
+        W_ITER,  "sIter",
         W_LARGE, "Objective",
         W_MED,   "pfeas",
         W_MED,   "dfeas",
         W_MED,   "σ",
         W_MED,   "ρ",
-        W_MED,   "‖x‖₂",
-        W_MED,   "‖s‖₂",
+        W_MED,   "‖x‖",
+        W_MED,   "‖s‖",
     )
   end
 end
@@ -87,8 +89,9 @@ end
 function log_iteration(solver, nlp, stats; type = :outer_loop)
   if type == :outer_loop
     return @sprintf(
-      "%-6d%-+16.7e%-12.2e%-12.2e%-12.2e%-12.2e%-12.2e%-12.2e",
+      "%-7d%-7d%-+16.7e%-12.2e%-12.2e%-12.2e%-12.2e%-12.2e%-12.2e",
       stats.iter,
+      max(solver.substats.iter, 0),
       stats.objective,
       stats.primal_feas,
       stats.dual_feas,
@@ -99,8 +102,9 @@ function log_iteration(solver, nlp, stats; type = :outer_loop)
     )
   elseif type == :inner_loop
     return @sprintf(
-      "  | %-6d%-+16.7e%-12.2e%-12.2e%-12.2e%-+12.2e%-12.2e%-12.2e",
+      "  | %-7d%-7d%-+16.7e%-12.2e%-12.2e%-12.2e%-+12.2e%-12.2e%-12.2e",
       stats.iter,
+      max(solver.substats.iter, 0),
       stats.objective,
       stats.primal_feas,
       stats.dual_feas,
@@ -117,7 +121,7 @@ function conclusion_message(solver, nlp, stats; type = :outer_loop)
     return ""
   elseif type == :inner_loop
     return "  |
-        |  Subproblem solved with status $(stats.status), after $(stats.iter) iterations. 
-        |  Reached dfeas = $(stats.dual_feas)"
+        |  Subproblem solved with status $(stats.status) after $(stats.iter) iterations. 
+        |  Reached dfeas = $(stats.dual_feas)\n      " * separator(type = type)
   end
 end

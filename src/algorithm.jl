@@ -406,7 +406,7 @@ function SolverCore.solve!(
 
     ## Log status
     if print_level > 0 && stats.iter % verbose == 0
-      if stats.iter % (10 * verbose) == 0 && stats.iter > 0
+      if stats.iter % (20 * verbose) == 0 && stats.iter > 0
         @info separator()
         @info header_message()
         @info separator()
