@@ -419,6 +419,10 @@ function SolverCore.solve!(
     done = stats.status != :unknown
   end
 
+  if print_level > 0
+    @info conclusion_message(solver, nlp, stats)
+  end
+
   set_solution!(stats, x)
   return stats
 end
