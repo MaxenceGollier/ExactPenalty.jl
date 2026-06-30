@@ -73,6 +73,7 @@ function SolverCore.solve!(
   x::V = reg_nlp.model.meta.x0,
   atol::T = √eps(T),
   rtol::T = √eps(T),
+  print_level::Int = 0,
   verbose::Int = 0,
   max_iter::Int = 1000,
   max_time::Float64 = 30.0,
@@ -122,6 +123,7 @@ function SolverCore.solve!(
   set_solver_specific!(stats, :smooth_obj, fk)
   set_solver_specific!(stats, :nonsmooth_obj, hk)
   set_solver_specific!(stats, :sigma, σk)
+  set_solver_specific!(stats, :rho, T(0))
   m_monotone > 1 && (m_fh_hist[stats.iter%(m_monotone-1)+1] = fk + hk)
 
   solved = false
@@ -139,36 +141,13 @@ function SolverCore.solve!(
     ),
   )
 
-  # Logging
-  if verbose > 0
-    @info log_header(
-      [:outer, :inner, :fx, :hx, :xi, :ρ, :σ, :normx, :norms, :arrow],
-      [Int, Int, T, T, T, T, T, T, T, Char],
-      hdr_override = Dict{Symbol,String}(
-        :fx => "f(x)",
-        :hx => "h(x)",
-        :xi => "du_feas",
-        :normx => "‖x‖",
-        :norms => "‖s‖",
-        :arrow => "PenaltyR2N",
-      ),
-      colsep = 1,
-    )
-    @info log_row(
-      Any[
-        stats.iter,
-        solver.substats.iter,
-        fk,
-        hk,
-        stats.dual_feas,
-        ρk,
-        σk,
-        norm(xk),
-        norm(s),
-        (η2 ≤ ρk < Inf) ? '↘' : (ρk < η1 ? '↗' : '='),
-      ],
-      colsep = 1,
-    )
+  ## Logging
+  if print_level > 0
+    @info introduction_message(solver, nlp, stats)
+    @info separator(type = :inner_loop)
+    @info header_message(type = :inner_loop)
+    @info separator(type = :inner_loop)
+    @info log_iteration(solver, nlp, stats; type = :inner_loop)
   end
 
   callback(reg_nlp, solver, stats)
@@ -279,6 +258,7 @@ function SolverCore.solve!(
     set_solver_specific!(stats, :smooth_obj, fk)
     set_solver_specific!(stats, :nonsmooth_obj, hk)
     set_solver_specific!(stats, :sigma, σk)
+    set_solver_specific!(stats, :rho, ρk)
     set_solver_specific!(stats, :n_fact, get_n_fact(solver.subsolver.workspace))
     set_iter!(stats, stats.iter + 1)
     set_time!(stats, time() - start_time)
@@ -297,37 +277,23 @@ function SolverCore.solve!(
       ),
     )
 
-    # Logging
-    verbose > 0 &&
-      stats.iter % verbose == 0 &&
-      @info log_row(
-        Any[
-          stats.iter,
-          solver.substats.iter,
-          fk,
-          hk,
-          stats.dual_feas,
-          ρk,
-          σk,
-          norm(xk),
-          norm(s),
-          is_active(watchdog_checkpoint) ? 'w' :
-          (η2 ≤ ρk < Inf) ? '↘' : (ρk < η1 ? '↗' : '='),
-        ],
-        colsep = 1,
-      )
+    ## Log status
+    if print_level > 0 && stats.iter % verbose == 0
+      if stats.iter % (10 * verbose) == 0 && stats.iter > 0
+        @info separator(type = :inner_loop)
+        @info header_message(type = :inner_loop)
+        @info separator(type = :inner_loop)
+      end
+      @info log_iteration(solver, nlp, stats; type = :inner_loop)
+    end
 
     callback(reg_nlp, solver, stats)
 
     done = stats.status != :unknown
   end
 
-  if verbose > 0 && stats.status == :first_order
-    @info log_row(
-      Any[stats.iter, 0, fk, hk, stats.dual_feas, ρk, σk, norm(xk), norm(s), ""],
-      colsep = 1,
-    )
-    @info "PenaltyR2N: terminating with √(ξ1/ν) = $(stats.dual_feas)"
+  if print_level > 0
+    @info conclusion_message(solver, nlp, stats; type = :inner_loop)
   end
 
   set_solution!(stats, xk)

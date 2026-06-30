@@ -39,6 +39,8 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T,V}) where {T,V}
   set_solver_specific!(substats, :dual_ktol, T(0))
   set_solver_specific!(substats, :n_fact, T(0))
   set_solver_specific!(substats, :tau, T(0))
+  set_solver_specific!(substats, :sigma, T(0))
+  set_solver_specific!(substats, :rho, T(0))
 
   return L2PenaltySolver(
     x,
@@ -168,8 +170,8 @@ function SolverCore.solve!(
   max_eval::Int = -1,
   sub_max_eval::Int = -1,
   max_decreas_iter::Int = 10,
-  verbose::Int = 0,
-  sub_verbose::Int = 0,
+  print_level::Int = 0,
+  verbose::Int = 1,
   τ::T = T(100),
   β1::T = T(1),
   β3::T = 1e-4/τ,
@@ -188,10 +190,6 @@ function SolverCore.solve!(
   shift!(ψ, x)
   fx = obj(nlp, x)
   hx = norm(ψ.b)
-
-  if verbose > 0
-    @info introduction_message(solver::L2PenaltySolver, nlp::AbstractNLPModel)
-  end
 
   set_iter!(stats, 0)
   rem_eval = max_eval
@@ -218,6 +216,7 @@ function SolverCore.solve!(
 
   set_solver_specific!(solver.substats, :primal_ktol, primal_ktol)
   set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
+  set_residuals!(stats, dual_feas, primal_feas)
 
   solved = dual_feas ≤ dual_tol && primal_feas ≤ primal_tol
 
@@ -226,6 +225,15 @@ function SolverCore.solve!(
   set_penalty!(mk, τ)
   νsub = 1 / β4
   set_solver_specific!(solver.substats, :tau, τ)
+
+  ## Logging
+  if print_level > 0
+    @info introduction_message(solver, nlp)
+    @info separator()
+    @info header_message()
+    @info separator()
+    @info log_iteration(solver, nlp, stats)
+  end
 
   ## Initialize Model
   shift!(mk, x, ∇f = solver.∇fk, y = y)
@@ -266,7 +274,8 @@ function SolverCore.solve!(
       x = x,
       atol = dual_ktol,
       rtol = dual_krtol,
-      verbose = sub_verbose,
+      print_level = print_level - 1,
+      verbose = verbose,
       max_iter = sub_max_iter,
       max_time = max_time - stats.elapsed_time,
       max_eval = min(rem_eval, sub_max_eval),
@@ -302,16 +311,6 @@ function SolverCore.solve!(
 
     primal_feas = kkt_primal_feas!(solver)
     dual_feas = kkt_dual_feas!(solver)
-
-    ## Log status
-    if verbose > 0 && stats.iter % verbose == 0
-      if stats.iter % (10 * verbose) == 0 
-        @info separator()
-        @info header_message()
-        @info separator()
-      end
-      @info log_iteration(solver, nlp, stats)
-    end
 
     if primal_feas > primal_ktol || (dual_ktol ≤ dual_tol && primal_feas > primal_tol)
       # Update penalty parameter
@@ -406,14 +405,20 @@ function SolverCore.solve!(
       ),
     )
 
+    ## Log status
+    if print_level > 0 && stats.iter % verbose == 0
+      if stats.iter % (10 * verbose) == 0 && stats.iter > 0
+        @info separator()
+        @info header_message()
+        @info separator()
+      end
+      @info log_iteration(solver, nlp, stats)
+    end
+
     callback(nlp, solver, stats)
 
     done = stats.status != :unknown
   end
-
-  ## Log status
-    verbose > 0 &&
-      @info log_iteration(solver, nlp, stats)
 
   set_solution!(stats, x)
   return stats
