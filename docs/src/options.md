@@ -25,21 +25,13 @@ We define $\epsilon_P$ and $\epsilon_D$ as
 
   > Relative tolerance for primal and dual residuals. When `T == Float64`, the default value is $\approx 10^{-8}$.
 
-* `dual_inf_atol::T = √eps(T)`: $\epsilon^a_D$ -- Desired convergence tolerance (absolute) for dual infeasibility.
-
-  > Absolute tolerance for dual infeasibility. When `T == Float64`, the default value is $\approx 10^{-8}$.
+* `dual_inf_atol::T = 0`: $\epsilon^a_D$ -- Desired convergence tolerance (absolute) for dual infeasibility.
   
-* `dual_inf_rtol::T = √eps(T)`: $\epsilon^r_D$ -- Desired convergence tolerance (relative) for dual infeasibility.
+* `dual_inf_rtol::T = 0`: $\epsilon^r_D$ -- Desired convergence tolerance (relative) for dual infeasibility.
 
-  > Relative tolerance for dual infeasibility. When `T == Float64`, the default value is $\approx 10^{-8}$.
+* `primal_inf_atol::T = 0`: $\epsilon^a_P$ -- Desired convergence tolerance (absolute) for primal infeasibility.
 
-* `primal_inf_atol::T = √eps(T)`: $\epsilon^a_P$ -- Desired convergence tolerance (absolute) for primal infeasibility.
-
-  > Absolute tolerance for primal infeasibility. When `T == Float64`, the default value is $\approx 10^{-8}$.
-
-* `primal_inf_rtol::T = √eps(T)`: $\epsilon^r_P$ -- Desired convergence tolerance (relative) for primal infeasibility.
-
-  > Relative tolerance for primal infeasibility. When `T == Float64`, the default value is $\approx 10^{-8}$.
+* `primal_inf_rtol::T = 0`: $\epsilon^r_P$ -- Desired convergence tolerance (relative) for primal infeasibility.
 
 * `max_eval::Int = -1`: Maximum number of objective function evaluation.
 

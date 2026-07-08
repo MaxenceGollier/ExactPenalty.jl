@@ -57,4 +57,4 @@ This writes a `.sol` file that AMPL can read.
 
 - If your model includes inequality constraints, convert them to equalities
   (for example with slack variables) before solving with `L2Penalty`.
-- For advanced solver options, see the [Options Reference](options.md).
+- For advanced solver options, see the [Options Reference](../options.md).
