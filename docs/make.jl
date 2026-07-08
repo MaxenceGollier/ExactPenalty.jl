@@ -17,7 +17,19 @@ makedocs(;
   format = Documenter.HTML(;
     canonical = "https://MaxenceGollier.github.io/ExactPenalty.jl",
   ),
-  pages = ["index.md"; numbered_pages],
+  pages = [
+    "Home" => "index.md",
+    "Options" => "options.md",
+    "Callbacks" => "callbacks.md",
+    "Tutorials" => [
+      "AMPL" => "tutorials/AMPL.md",
+      "CUTEst" => "tutorials/CUTEst.md",
+    ],
+    "Developers" => [
+      "Contributing" => "90-contributing.md",
+      "Developing" => "91-developer.md",
+    ]
+  ],
 )
 
 deploydocs(; repo = "github.com/MaxenceGollier/ExactPenalty.jl")
