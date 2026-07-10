@@ -158,20 +158,30 @@ function SolverCore.solve!(
   stats::GenericExecutionStats{T,V,V};
   callback = (args...) -> nothing,
   x::V = nlp.meta.x0,
+
+  ## Termination arguments
   atol::T = √eps(T),
   rtol::T = √eps(T),
-  sub_rtol = 1e-2,
-  sub_atol = zero(T),
-  infeasible_tol = T(1e-2),
-  infeasible_iter = 3,
-  max_iter::Int = 1000,
-  sub_max_iter::Int = 1000,
-  max_time::T = T(30.0),
+  dual_inf_atol::T = zero(T),
+  dual_inf_rtol::T = zero(T),
+  primal_inf_atol::T = zero(T),
+  primal_inf_rtol::T = zero(T),
   max_eval::Int = -1,
-  sub_max_eval::Int = -1,
-  max_decreas_iter::Int = 10,
+  max_time::Float64 = 30.0,
+  max_iter::Int = 100,
+  r2n_max_iter::Int = 1000,
+  ms_max_iter::Int = 10,
+  μ::T = T(1e-2),
+  infeasible_tol::T = T(1e-2),
+  infeasible_iter::Int = 3,
+  
+  ## Logging arguments
   print_level::Int = 0,
   verbose::Int = 1,
+  r2n_verbose::Int = 1,
+
+  ## Other arguments
+  max_decreas_iter::Int = 10,
   τ::T = T(100),
   β1::T = T(1),
   β3::T = 1e-4/τ,
@@ -207,11 +217,11 @@ function SolverCore.solve!(
   dual_feas = least_square_dual_feas!(solver)
   solver.subsolver.y .= solver.y
 
-  primal_tol = atol + rtol * primal_feas
-  dual_tol = atol + rtol * dual_feas
+  primal_tol = max(primal_inf_atol, atol) + max(primal_inf_rtol, rtol) * primal_feas
+  dual_tol = max(dual_inf_atol, atol) + max(dual_inf_rtol, rtol) * dual_feas
 
   primal_ktol = one(primal_tol)
-  dual_ktol = min(one(dual_tol), max(sub_rtol * dual_feas + sub_atol, dual_tol))
+  dual_ktol = min(one(dual_tol), max(μ * dual_feas, dual_tol))
   dual_krtol = T(0)
 
   set_solver_specific!(solver.substats, :primal_ktol, primal_ktol)
@@ -275,10 +285,11 @@ function SolverCore.solve!(
       atol = dual_ktol,
       rtol = dual_krtol,
       print_level = print_level - 1,
-      verbose = verbose,
-      max_iter = sub_max_iter,
+      verbose = r2n_verbose,
+      max_iter = r2n_max_iter,
+      ms_max_iter = ms_max_iter,
       max_time = max_time - stats.elapsed_time,
-      max_eval = min(rem_eval, sub_max_eval),
+      max_eval = rem_eval,
       σmin = β4,
       σk = 1 / νsub,
       η2 = isa(nlp, QuasiNewtonModel) ? T(0.9) : T(0.1),
@@ -338,11 +349,11 @@ function SolverCore.solve!(
       dual_ktol = dual_tol
       set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)
       set_solver_specific!(solver.substats, :tau, τ)
-      dual_krtol = sub_rtol
+      dual_krtol = μ
     else
       # Tighten tolerances
-      primal_ktol = max(sub_rtol*primal_feas + sub_atol, primal_tol)
-      dual_ktol = max(sub_rtol*dual_feas + sub_atol, dual_tol)
+      primal_ktol = max(μ*primal_feas, primal_tol)
+      dual_ktol = max(μ*dual_feas, dual_tol)
       dual_krtol = T(0)
       set_solver_specific!(solver.substats, :primal_ktol, primal_ktol)
       set_solver_specific!(solver.substats, :dual_ktol, dual_ktol)

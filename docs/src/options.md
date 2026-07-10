@@ -109,11 +109,9 @@ We define $\epsilon_P$ and $\epsilon_D$ as
 \end{align*}
 ```
 * `atol::T = √eps(T)`: $\epsilon^a$ -- Desired convergence tolerance (absolute).
-
   > Absolute tolerance for primal and dual residuals. When `T == Float64`, the default value is $\approx 10^{-8}$.
 
 * `rtol::T = √eps(T)`: $\epsilon^r$ -- Desired convergence tolerance (relative).
-
   > Relative tolerance for primal and dual residuals. When `T == Float64`, the default value is $\approx 10^{-8}$.
 
 * `dual_inf_atol::T = 0`: $\epsilon^a_D$ -- Desired convergence tolerance (absolute) for dual infeasibility.
@@ -124,26 +122,30 @@ We define $\epsilon_P$ and $\epsilon_D$ as
 
 * `primal_inf_rtol::T = 0`: $\epsilon^r_P$ -- Desired convergence tolerance (relative) for primal infeasibility.
 
-* `max_eval::Int = -1`: Maximum number of objective function evaluation.
+* `μ::T = 0.01` (*advanced*): Decrease factor for penalized problem accuracy.
+  > If $\epsilon_D^k$ is the accuracy level for the current penalized problem, then when the algorithm increases the accuracy it performs the update $\epsilon_D^{k+1} = \max(μ\epsilon_D^{k},\epsilon_D)$. Smaller values mean that subproblems are solved to higher accuracy more aggressively. This is $\mu_{\epsilon}$ in the implementation paper.
 
+* `infeasible_tol::T = 0.01` (*advanced*):
+
+* `infeasible_iter::Int = 3` (*advanced*): 
+
+* `max_eval::Int = -1`: Maximum number of objective function evaluation.
   > The solver stops when the number of objective function evaluations exceeds `max_eval`. A negative value means unlimited.
 
 * `max_time::Float64 = 30.0`: Maximum number of CPU seconds.
-
   > The solver stops when the number of CPU seconds exceeds `max_time`.
 
 * `max_iter::Int = 100`: Maximum number of iterations.
-
   > The solver stops when the number of iterations exceeds `max_iter`.
 
 * `r2n_max_iter::Int = 1000` (*advanced*): Maximum number of *r2n-loop* iterations.
 
 * `ms_max_iter::Int = 10` (*advanced*): Maximum number of *ms-loop* iterations.
 
-## Output
+## Logging
+We refer to the [outputs](outputs.md) section for an explanation of the logger output.
 
 * `verbose_level::Int = 0`: Output verbosity level.
-
  > 
  >   The larger this value the more detailed is the output. The valid range is `0 ≤ print_level ≤ 4`. **Warning**: large values can potentially print a lot of information, we recommend to start with a value of `1`. The value of `print_level` corresponds to the depth of the loop that will be printed. That is 
  >   - `print_level = 1`: Prints the information relative to the *penalty loop*,
@@ -156,27 +158,12 @@ We define $\epsilon_P$ and $\epsilon_D$ as
 
  * `r2n_verbose::Int = 1`: Frequency (in iterations) at which information is printed.
     > `r2n_verbose = 1` prints every iteration (of the r2n loop), `r2n_verbose = 10` prints every ten iteration (of the r2n loop). If `print_level < 2`, this parameter is ignored.
+ 
  * `ms_verbose::Int = 1`: Frequency (in iterations) at which information is printed.
    > `ms_verbose = 1` prints every iteration (of the ms loop), `ms_verbose = 10` prints every ten iteration (of the ms loop). If `print_level < 3`, this parameter is ignored.
 
-## NLP
+## R2N Specific
 
-TODO
-
-## Initialization
-
-TODO
-
-## Penalty Parameter Update
-
-TODO
-
-## Quadratic Regularization
-
-TODO
+## MS Specific
 
 ## Linear Solver
-
-TODO
-
-## Hessian Approximation

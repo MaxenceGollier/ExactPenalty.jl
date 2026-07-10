@@ -77,6 +77,7 @@ function SolverCore.solve!(
   print_level::Int = 0,
   verbose::Int = 0,
   max_iter::Int = 1000,
+  ms_max_iter::Int = 10,
   max_time::Float64 = 30.0,
   max_eval::Int = -1,
   σk::T = eps(T)^(1 / 5),
@@ -191,7 +192,7 @@ function SolverCore.solve!(
 
     # Compute a step 
     solver.subpb.model.data.σ = σk
-    solve!(solver.subsolver, solver.subpb, solver.substats;)
+    solve!(solver.subsolver, solver.subpb, solver.substats; max_iter = ms_max_iter)
     get_primal_dual_sol!(s, y, solver.subsolver)
     σk = solver.subpb.model.data.σ
 
