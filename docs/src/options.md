@@ -1,7 +1,98 @@
-# Options Reference
+# Options
+
+Options are passed to the solver as [keyword arguments](https://docs.julialang.org/en/v1/manual/functions/#Keyword-Arguments).
+For clarity, if you want to pass an `option` to the solver with some `value`, simply write
+```{julia}
+# Interface your problem with the NLPModels.jl API
+julia> nlp = ...
+
+# Install
+julia> using Pkg
+julia> Pkg.add("ExactPenalty")
+julia> using ExactPenalty
+
+# Solve with a specified option
+julia> ExactPenalty(nlp, option = value)
+```
+Each option has a type and a default value.
+Therefore, following the Julia syntax, we present each parameter as 
+```
+  parameter::type = default_value
+```
+
+!!! note "Parametric Types"
+    Some option types are [parametric](https://docs.julialang.org/en/v1/manual/types/#Parametric-Types).
+    The [NLPModels.jl](https://github.com/JuliaSmoothOptimizers/NLPModels.jl) API that we use to represent the nonlinear programming problem allow users to choose for their [floating point format](https://en.wikipedia.org/wiki/Computer_number_format) when making the representation.
+    In ExactPenalty.jl, the (parametric) scalar type of the problem is `T` and the (parametric) vector type is `V`.
+    You can find more information in [this tutorial](tutorials/multiprecision.md).
+    By default, you can consider that `T == Float64` and `V == Vector{Float64}`.
+
+    To acount for the parametric nature of the problem, default values are often a function of `eps(T)` which represents the [machine epsilon](https://en.wikipedia.org/wiki/Machine_epsilon) of `T`. Again, by default you can consider that
+    ```
+      eps(T) = eps(Float64) ≈ 1e-16
+    ```
 
 Options that should be modified by expert users only are marked as *advanced*.
 
+## Terminology
+
+!!! note "Solver Structure"
+    Our solver is organized with multiple nested loops.
+    Each of these loops have their own specific options.
+    This section tries to give a concise presentation of each of these.
+    Just **be aware** that, unless explicitly stated otherwise, options interact with the outermost loop.
+    On the other hand, most *advanced* options are the options for the lower level loops.
+    
+    We try to clearly disembiguate on which level each option acts. 
+    Therefore, if you want to use some *advanced* options, you are strongly advised to read this section.
+
+Our algorithm solves
+```math
+    \underset{x \in \mathbb{R}^n}{\textup{minimize}} \ f(x) \quad \textup{subject to} \ c(x) = 0.
+```
+We replace this problem with a **sequence** of unconstrained *penalized* problems
+```math
+    \underset{x \in \mathbb{R}^n}{\textup{minimize}} \ f(x) + \tau_k \| c(x) \|_2.
+```
+This sequence is the outermost loop, we call it the *penalty loop* or *outer loop*.
+To solve this unconstrained problem, we call an **iterative subsolver** called *R2N*.
+The process of solving one penalized problem is called the *R2N loop* or *inner loop*.
+
+Basically, the *R2N* solver starts with an initial iterate $x_0 \in \mathbb{R}^n$.
+Then, it computes a *step* $s_0$ and updates $x_1 := x_0 + s_0$.
+It then proceeds with $x_2 := x_1 + s_1$, etc.
+
+To compute a *step*, we use an **iterative subsolver** based on the method of Moré and Sorensen.
+The process of computing a step for *R2N* is called the *Moré-Sorensen loop* or *MS loop*.
+
+Finally, the Moré-Sorensen solver requires solving multiple *linear systems*.
+Therefore, it calls a *linear solver*, such as MUMPS.
+
+Schematically, the structure looks like this.
+```
+┌──────────────────┐
+│ ExactPenalty     │
+└──────────────────┘
+          │
+          ▼
+Penalty loop
+          │
+          ▼
+R2N loop                     (minimizes one penalized objective)
+          │
+          ▼
+Moré–Sorensen loop           (computes a step)
+          │
+          ▼
+Linear solver                (solves a linear system)
+```
+
+!!! info "Options Terminology"
+    * An option that acts on the R2N loop is prefixed with `r2n`. For example, `r2n_max_iter` represents the maximum number of iterations for the R2N loop.
+    * An option that acts on the MS loop is prefixed with `ms`.
+    * An option that acts on the linear solver is prefixed with `ls`.
+
+# Options Reference
 ## Termination
 
 We declare an iterate $(x_k, y_k)$ optimal when it satisfies
@@ -41,17 +132,32 @@ We define $\epsilon_P$ and $\epsilon_D$ as
 
   > The solver stops when the number of CPU seconds exceeds `max_time`.
 
-* `outer_loop_max_iter::Int = 10000`: Maximum number of *outer-loop* iterations.
+* `max_iter::Int = 100`: Maximum number of iterations.
 
-  >
+  > The solver stops when the number of iterations exceeds `max_iter`.
 
-* `inner_loop_max_iter::Int = 10000`: Maximum number of *inner-loop* iterations.
+* `r2n_max_iter::Int = 1000` (*advanced*): Maximum number of *r2n-loop* iterations.
 
-  >
+* `ms_max_iter::Int = 10` (*advanced*): Maximum number of *ms-loop* iterations.
 
 ## Output
 
-TODO
+* `verbose_level::Int = 0`: Output verbosity level.
+
+ > 
+ >   The larger this value the more detailed is the output. The valid range is `0 ≤ print_level ≤ 4`. **Warning**: large values can potentially print a lot of information, we recommend to start with a value of `1`. The value of `print_level` corresponds to the depth of the loop that will be printed. That is 
+ >   - `print_level = 1`: Prints the information relative to the *penalty loop*,
+ >   - `print_level = 2`: Prints the information relative to the *r2n loop*,
+ >   - `print_level = 3`: Prints the information relative to the *ms loop*,
+ >   - `print_level = 4`: Prints the information relative to the *linear solver*.
+
+ * `verbose::Int = 1`: Frequency (in iterations) at which information is printed.
+    > `verbose = 1` prints every iteration (of the outer loop), `verbose = 10` prints every ten iteration (of the outer loop). If `print_level < 1`, this parameter is ignored.
+
+ * `r2n_verbose::Int = 1`: Frequency (in iterations) at which information is printed.
+    > `r2n_verbose = 1` prints every iteration (of the r2n loop), `r2n_verbose = 10` prints every ten iteration (of the r2n loop). If `print_level < 2`, this parameter is ignored.
+ * `ms_verbose::Int = 1`: Frequency (in iterations) at which information is printed.
+   > `ms_verbose = 1` prints every iteration (of the ms loop), `ms_verbose = 10` prints every ten iteration (of the ms loop). If `print_level < 3`, this parameter is ignored.
 
 ## NLP
 
