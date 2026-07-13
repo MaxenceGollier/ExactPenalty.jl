@@ -13,6 +13,7 @@ makedocs(;
     assets = ["assets/link-icons.css"],
     collapselevel = 1
   ),
+  workdir = joinpath(@__DIR__, "src"),
   pages = [
     "Home" => "index.md",
     "Options" => "options.md",

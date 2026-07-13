@@ -12,7 +12,7 @@ julia> Pkg.add("ExactPenalty")
 julia> using ExactPenalty
 
 # Solve with a specified option
-julia> ExactPenalty(nlp, option = value)
+julia> L2Penalty(nlp, option = value)
 ```
 Each option has a type and a default value.
 Therefore, following the Julia syntax, we present each parameter as 
@@ -93,6 +93,7 @@ Linear solver                (solves a linear system)
     * An option that acts on the linear solver is prefixed with `ls`.
 
 # Options Reference
+
 ## Termination
 
 We declare an iterate $(x_k, y_k)$ optimal when it satisfies
@@ -123,7 +124,7 @@ We define $\epsilon_P$ and $\epsilon_D$ as
 * `primal_inf_rtol::T = 0`: $\epsilon^r_P$ -- Desired convergence tolerance (relative) for primal infeasibility.
 
 * `μ::T = 0.01` (*advanced*): Decrease factor for penalized problem accuracy.
-  > If $\epsilon_D^k$ is the accuracy level for the current penalized problem, then when the algorithm increases the accuracy it performs the update $\epsilon_D^{k+1} = \max(μ\epsilon_D^{k},\epsilon_D)$. Smaller values mean that subproblems are solved to higher accuracy more aggressively. This is $\mu_{\epsilon}$ in the implementation paper.
+  > If $\epsilon_D^k$ is the accuracy level for the current penalized problem, then when the algorithm increases the accuracy for the subproblem, it performs the update $\epsilon_D^{k+1} = \max(μ\epsilon_D^{k},\epsilon_D)$. Smaller values mean that subproblems are solved to higher accuracy more aggressively. This is $\mu_{\epsilon}$ in the implementation paper.
 
 * `infeasible_tol::T = 0.01` (*advanced*):
 
@@ -164,6 +165,34 @@ We refer to the [outputs](outputs.md) section for an explanation of the logger o
 
 ## R2N Specific
 
+ * `r2n_η1::T = √√eps(T)` (*advanced*): Armijo sufficient decrease threshold. 
+    > Steps are accepted when the ratio of the actual decrease and the first-order decrease is larger than `r2n_η1`. This is $\eta_1$ in the implementation paper. When `T == Float64`, the default value is $\approx 10^{-4}$.
+
+ * `r2n_η2::T = 0.1` (*advanced*): strong Armijo sufficient decrease threshold.
+    > In addition to being accepted, when the ratio of the actual decrease and the first-order decrease is larger than `r2n_η2`, the quadratic regularization parameter is decreased by some constant factor (see `r2n_γ`). This is $\eta_2$ in the implementation paper. Note that `r2n_η2 ≥ r2n_η1` should hold.
+
+ * `r2n_γ::T = 3` (*advanced*): decrease/increase factor for quadratic regularization parameter
+    > When a step is rejected, the quadratic regularization paramater $\sigma_l$ is increased by a factor `r2n_γ`, when a step is "strongly" accepted (see `r2n_η2`), the quadratic regularization parameter is decreased by a factor `1/r2n_γ`. Note that `r2n_γ > 1` should hold.
+
+ * `r2n_watchdog_max_iter::Int = 10` (*advanced*): maximum number of watchdog iterations.
+    > 
+  
+ * `r2n_watchdog_η0::T = √eps(T)` (*advanced*):
+    >
+
+ * `r2n_tiny_step_tol::T = 10*eps(T)` (*advanced*):
+    >
+
+ * `r2n_monotone::Int = 10` (*advanced*):
+
 ## MS Specific
+
+ * `ms_accept_descent::Bool = true` (*advanced*):
+
+ * `ms_σmax::T = 1/eps(T)` (*advanced*):
+
+ * `ms_tol::T = eps(T)^(0.6)` (*advanced*): 
+
+ * `ms_theta::T`
 
 ## Linear Solver

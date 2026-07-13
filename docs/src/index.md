@@ -31,7 +31,7 @@ On a practical level, the package uses the standardized [NLPModels.jl](https://g
 
 !!! note "Using Other Modelling Languages"
     If your NLP is represented in one of the following formats/sets, no worries, you can easily use our solver!
-    * [AMPL](https://ampl.com/wp-content/uploads/BOOK.pdf): Use [AMPLNLPReader.jl](https://github.com/JuliaSmoothOptimizers/AmplNLReader.jl). You should read [this tutorial](tutorials/AMPL.md).
+    * [AMPL](https://ampl.com/wp-content/uploads/BOOK.pdf): Use [AmplNLReader.jl](https://github.com/JuliaSmoothOptimizers/AmplNLReader.jl). You should read [this tutorial](tutorials/AMPL.md).
     * [JuMP](https://jump.dev/JuMP.jl/stable/): Use [NLPModelsJuMP.jl](https://github.com/JuliaSmoothOptimizers/NLPModelsJuMP.jl). You should read [this tutorial](tutorials/JuMP.md).
     * [CUTEst](https://link.springer.com/article/10.1007/s10589-014-9687-3): Use [CUTEst.jl](https://github.com/JuliaSmoothOptimizers/CUTEst.jl). You should read [this tutorial](tutorials/CUTEst.md).
 
@@ -46,7 +46,7 @@ julia> Pkg.add("ExactPenalty")
 julia> using ExactPenalty
 
 # Solve
-julia> ExactPenalty(nlp)
+julia> L2Penalty(nlp)
 ```
 The example above uses the solver with its default settings.
 ExactPenalty.jl also provides a variety of [options](options.md) for customizing the optimization process, and returns a [result object](outputs.md) containing the computed solution together with diagnostic information. 📖

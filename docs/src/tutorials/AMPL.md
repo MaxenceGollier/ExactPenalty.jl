@@ -1,48 +1,69 @@
-# AMPL tutorial
+# [AMPL tutorial](@id ampl-tutorial)
 
-This tutorial shows how to solve an AMPL model with `ExactPenalty.jl` using
-`AmplNLPReader.jl` (`AmplNLReader.jl` package name).
+This tutorial shows how to solve a model written in [AMPL](https://ampl.com)
+with `ExactPenalty.jl`, using
+[AmplNLReader.jl](https://github.com/JuliaSmoothOptimizers/AmplNLReader.jl).
 
-## 1. Create an `.nl` file with AMPL
+!!! warning "Inequality Constraints"
+    `ExactPenalty.jl` solves problems of the form `minimize f(x) s.t. c(x) = 0`.
+    If your AMPL model has inequality constraints, the solver will fail.
 
-Assume your AMPL model is in `mymodel.mod` and `mymodel.dat`.
-Generate the `.nl` file from AMPL:
+## 1. The AMPL model
 
-```bash
-ampl -ogmymodel mymodel.mod mymodel.dat
+We use the Hock–Schittkowski problem 6 (HS6), a small equality-constrained
+problem.
+
+```ampl
+var x1 := -1.2;
+var x2 := 1;
+
+minimize obj: (1 - x1)^2;
+
+subject to c1: 10 * (x2 - x1^2) = 0;
 ```
 
-This command creates `mymodel.nl`.
+We save this in a `hs6.mod` file.
 
-## 2. Read the AMPL model in Julia
+## 2. Generate the `.nl` file
 
-```julia
+AMPL compiles a model into a `.nl` file that solvers
+read directly, without needing AMPL itself at solve time:
+
+```console
+$ ampl -oghs6 assets/hs6.mod
+```
+
+This produces file `hs6.nl`.
+
+## 3. Read the model into Julia
+
+```@example ampl
 using AmplNLReader
 
-nlp = AmplModel("mymodel.nl")
+nlp = AmplModel(joinpath(@__DIR__, "assets", "hs6.nl"))
+
+nothing # hide
 ```
 
-`nlp` is an `NLPModel`, so it can be passed directly to `ExactPenalty.jl`.
+## 4. Solve with ExactPenalty
 
-## 3. Solve with ExactPenalty
-
-```julia
+```@example ampl
 using ExactPenalty
 
 stats = L2Penalty(nlp; print_level = 1)
 
-println("status: ", stats.status)
-println("objective: ", stats.objective)
-println("solution: ", stats.solution)
+nothing # hide
 ```
 
-## 4. (Optional) Write a `.sol` file for AMPL
+See the [options reference](../options.md) for the full list of keyword
+arguments accepted by the solver.
 
-`AmplNLReader.jl` exposes `write_sol` to export primal-dual solutions:
+## 5. Write a `.sol` file for AMPL (optional)
 
-```julia
-using NLPModels
+If you started from AMPL and want to hand the solution back to it,
+`AmplNLReader.jl` exposes `write_sol` to export the primal-dual solution:
 
+```@example ampl
 write_sol(
   nlp,
   string("Solved with status ", stats.status),
@@ -51,10 +72,5 @@ write_sol(
 )
 ```
 
-This writes a `.sol` file that AMPL can read.
-
-## Notes
-
-- If your model includes inequality constraints, convert them to equalities
-  (for example with slack variables) before solving with `L2Penalty`.
-- For advanced solver options, see the [Options Reference](../options.md).
+AMPL can then read the resulting `.sol` file to recover the solution inside
+your original model.

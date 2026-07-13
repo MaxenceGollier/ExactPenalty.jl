@@ -1,10 +1,11 @@
 [deps]
+AmplNLReader = "77dd3d4c-cb1d-5e09-9340-85030ff7ba66"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-LiveServer = "16fef848-5104-11e9-1b77-fb7a48bbb589"
 ExactPenalty = "9416bf39-c24a-5b52-a5c2-6dfe9a752fef"
+LiveServer = "16fef848-5104-11e9-1b77-fb7a48bbb589"
+
+[sources]
+ExactPenalty = {path = ".."}
 
 [compat]
 Documenter = "1"
-
-[sources]
-ExactPenalty = { path = ".." }
