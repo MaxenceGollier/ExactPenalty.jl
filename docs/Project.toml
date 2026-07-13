@@ -2,7 +2,9 @@
 AmplNLReader = "77dd3d4c-cb1d-5e09-9340-85030ff7ba66"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 ExactPenalty = "9416bf39-c24a-5b52-a5c2-6dfe9a752fef"
+JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 LiveServer = "16fef848-5104-11e9-1b77-fb7a48bbb589"
+NLPModelsJuMP = "792afdf1-32c1-5681-94e0-d7bf7a5df49e"
 
 [sources]
 ExactPenalty = {path = ".."}

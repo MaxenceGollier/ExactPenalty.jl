@@ -55,6 +55,12 @@ stats = L2Penalty(nlp; print_level = 1)
 nothing # hide
 ```
 
+```@example ampl
+println("status    : ", stats.status)
+println("objective : ", stats.objective)
+println("solution  : ", stats.solution)
+```
+
 See the [options reference](../options.md) for the full list of keyword
 arguments accepted by the solver.
 
