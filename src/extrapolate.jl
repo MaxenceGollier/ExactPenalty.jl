@@ -1,11 +1,11 @@
-# function extrapolate!(
-#   x::V,
-#   solver::L2PenaltySolver{T,V,S,PB},
-#   τ₂::T,
-#   τ₁::T,
-# ) where {T,V,S,N<:QuasiNewtonModel{T,V},PB<:L2PenalizedProblem{T,V,N}}
-#   return false
-# end
+function extrapolate!(
+  x::V,
+  solver::L2PenaltySolver{T,V,S,PB},
+  τ₂::T,
+  τ₁::T,
+) where {T,V,S,N<:QuasiNewtonModel{T,V},PB<:L2PenalizedProblem{T,V,N}}
+  return false
+end
 
 function extrapolate!(
   x::V,
