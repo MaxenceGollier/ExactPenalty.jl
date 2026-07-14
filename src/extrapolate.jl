@@ -34,7 +34,7 @@ function extrapolate!(
     ms_solver.workspace,
     φ.data.H,
     ψ.A,
-    φ.data.σ,
+    zero(T),
     α,
   )
 
