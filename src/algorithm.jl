@@ -302,7 +302,8 @@ function SolverCore.solve!(
       not_desc = true
     end
 
-    x, y .= solver.substats.solution, solver.subsolver.y
+    x .= solver.substats.solution
+    y .= solver.subsolver.y
     fx = solver.substats.solver_specific[:smooth_obj]
     hx_prev = copy(hx)
     hx = solver.substats.solver_specific[:nonsmooth_obj]/τ

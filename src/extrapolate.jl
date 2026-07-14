@@ -3,7 +3,7 @@ function extrapolate!(
   solver::L2PenaltySolver{T,V,S,PB},
   τ₂::T,
   τ₁::T,
-) where {T,V,S,N<:QuasiNewtonModel{T,V},PB<:L2PenalizedProblem{T,V,N}}
+) where {T,V,S,N<:NullHessianModel{T,V},PB<:L2PenalizedProblem{T,V,N}}
   return false
 end
 
@@ -48,7 +48,7 @@ function extrapolate!(
   α_dot = norm_y/dot(y, py)
 
   px .*= α_dot
-  solver.x .= x .+ (τ₂ - τ₁) * px
+  solver.x .= x .+ (τ₂ - τ₁) .* px
 
   return true
 end

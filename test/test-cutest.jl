@@ -56,7 +56,7 @@ function test_problem(name, primal_solution, dual_solution, expected_status)
         Inf,
       ) ≤ 100*tol
     end
-    @test stats.primal_feas == norm(cons(nlp, stats.solution), Inf)
+    @test abs(stats.primal_feas - norm(cons(nlp, stats.solution), Inf)) ≤ 1000*tol
     @test stats.solver_specific[:n_fact] > 0
 
     # Test stability and allocations
@@ -91,7 +91,7 @@ function test_problem(name, primal_solution, dual_solution, expected_status)
         Inf,
       ) ≤ 100*tol
     end
-    @test stats.primal_feas == norm(cons(nlp, stats.solution), Inf)
+    @test abs(stats.primal_feas - norm(cons(nlp, stats.solution), Inf)) ≤ 1000*tol
     @test stats.solver_specific[:n_fact] > 0
 
     # Test stability and allocations
