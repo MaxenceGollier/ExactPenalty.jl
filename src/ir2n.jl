@@ -39,6 +39,7 @@ function PenaltyR2NSolver(
 
   subpb = shifted(penalty_nlp, xk, ∇f = ∇fk)
   substats = GenericExecutionStats(subpb, solver_specific = Dict{Symbol,T}())
+  set_solver_specific!(substats, :alpha, 0)
   subsolver = subsolver(subpb)
 
   checkpoint = watchdog_checkpoint(subpb; m_monotone = m_monotone)

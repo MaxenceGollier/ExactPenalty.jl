@@ -303,14 +303,13 @@ function SolverCore.solve!(
     end
 
     x .= solver.substats.solution
+    y .= solver.subsolver.y
     fx = solver.substats.solver_specific[:smooth_obj]
     hx_prev = copy(hx)
     hx = solver.substats.solver_specific[:nonsmooth_obj]/τ
     solver.∇fk .= φ.data.c
-    update_constraint_multipliers!(solver)
 
     ## Compute feasibility 
-
     primal_feas = kkt_primal_feas!(solver)
     dual_feas = kkt_dual_feas!(solver)
 
@@ -334,9 +333,9 @@ function SolverCore.solve!(
 
     if primal_feas > primal_ktol || (dual_ktol ≤ dual_tol && primal_feas > primal_tol)
       # Update penalty parameter
-      τ₊ = max(τ + β1, norm(solver.subsolver.y, 1))
+      τ₊ = max(τ + β1, norm(y, 1))
       if extrapolate!(x, solver, τ₊, τ)
-        shift!(mk, x, y = solver.subsolver.y)
+        shift!(mk, x, y = y)
         set_solver_specific!(solver.substats, :smooth_obj, obj(nlp, x))
 
         # Subsolver: Do not impose primal decrease
