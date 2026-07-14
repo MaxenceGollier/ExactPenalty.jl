@@ -26,6 +26,10 @@ function extrapolate!(
   n, m = nlp.meta.nvar, nlp.meta.ncon
   α = ms_stats.solver_specific[:alpha]
 
+  # (x, y) is an (approximate) solution of 
+  # min_x f(x) + τ₁ ‖ c(x) ‖₂ = min_x max_y f(x) +  yᵀ c(x) s.t. ‖y‖₂ ≤ τ₁ 
+  # If ‖y‖₂ < τ₁, then no extrapolation is needed.
+  # Else, we consider that τ₁ = ‖y‖₂.
   norm_y = norm(y, 2)
   norm_y < τ₁ && return false
   τ₁ = norm_y
@@ -38,23 +42,27 @@ function extrapolate!(
     α,
   )
 
-  # [ H + σI Aᵀ][x'] = -[0]
-  # [   A    0 ][y'] = -[x] 
+  # [ H + σI Aᵀ][px] = -[0]
+  # [   A    0 ][py] = -[y] 
   @views @. ms_solver.u2[(n+1):(n+m)] = -ms_solver.x1[(n+1):(n+m)]
   solve_system!(ms_solver.workspace, ms_solver.u2)
   get_solution!(ms_solver.x2, ms_solver.workspace)
+  @views px, py = ms_solver.x2[1:n], ms_solver.x2[(n+1):(n+m)]
 
+  # Check inertia and safeguard the solution.
   npos, nzero, nneg = get_inertia(ms_solver.workspace)
   status = get_status(ms_solver.workspace)
-
   if status == :failed || npos != n || nneg != m || nzero != 0
     return false
   end
 
-  @views px, py = ms_solver.x2[1:n], ms_solver.x2[(n+1):(n+m)]
+  # α' = ‖y‖₂ / (yᵀ y')
   α_dot = norm_y/dot(y, py)
 
+  # x' = α' p_x
   px .*= α_dot
+
+  # x = x + (τ₂ - τ₁) x'
   solver.x .= x .+ (τ₂ - τ₁) .* px
 
   return true
