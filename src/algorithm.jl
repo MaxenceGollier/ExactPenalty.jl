@@ -308,10 +308,8 @@ function SolverCore.solve!(
     hx_prev = copy(hx)
     hx = solver.substats.solver_specific[:nonsmooth_obj]/τ
     solver.∇fk .= φ.data.c
-    # update_constraint_multipliers!(solver)
 
     ## Compute feasibility 
-
     primal_feas = kkt_primal_feas!(solver)
     dual_feas = kkt_dual_feas!(solver)
 
