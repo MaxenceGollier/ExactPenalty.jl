@@ -44,6 +44,13 @@ function extrapolate!(
   solve_system!(ms_solver.workspace, ms_solver.u2)
   get_solution!(ms_solver.x2, ms_solver.workspace)
 
+  npos, nzero, nneg = get_inertia(ms_solver.workspace)
+  status = get_status(ms_solver.workspace)
+
+  if status == :failed || npos != n || nneg != m || nzero != 0
+    return false
+  end
+
   @views px, py = ms_solver.x2[1:n], ms_solver.x2[(n+1):(n+m)]
   α_dot = norm_y/dot(y, py)
 
