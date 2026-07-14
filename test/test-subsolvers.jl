@@ -15,6 +15,7 @@ for (solver_name, solver_constructor) in zip(solver_names, solvers)
         generate_instance(n, m, 0.5, Hessian_modifier = x -> sparse(tril(x)))
       solver = eval(solver_constructor)(small_instance_boundary)
       stats = GenericExecutionStats(small_instance_boundary.model)
+      set_solver_specific!(stats, :alpha, 0.0)
       if VERSION >= v"1.12"
         @test @wrappedallocs(
           solve!(
