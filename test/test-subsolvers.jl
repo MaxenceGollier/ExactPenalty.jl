@@ -14,7 +14,10 @@ for (solver_name, solver_constructor) in zip(solver_names, solvers)
       small_instance_boundary, solution =
         generate_instance(n, m, 0.5, Hessian_modifier = x -> sparse(tril(x)))
       solver = eval(solver_constructor)(small_instance_boundary)
-      stats = GenericExecutionStats(small_instance_boundary.model; solver_specific = Dict{Symbol,Float64}(:alpha => 0.0))
+      stats = GenericExecutionStats(
+        small_instance_boundary.model;
+        solver_specific = Dict{Symbol,Float64}(:alpha => 0.0),
+      )
       if VERSION >= v"1.12"
         @test @wrappedallocs(
           solve!(
@@ -35,7 +38,10 @@ for (solver_name, solver_constructor) in zip(solver_names, solvers)
       small_instance_interior, solution =
         generate_instance(n, m, 0.0, Hessian_modifier = x -> sparse(tril(x)))
       solver = eval(solver_constructor)(small_instance_interior)
-      stats = GenericExecutionStats(small_instance_interior.model; solver_specific = Dict{Symbol,Float64}(:alpha => 0.0))
+      stats = GenericExecutionStats(
+        small_instance_interior.model;
+        solver_specific = Dict{Symbol,Float64}(:alpha => 0.0),
+      )
       if VERSION >= v"1.12"
         @test @wrappedallocs(
           solve!(
@@ -57,7 +63,10 @@ for (solver_name, solver_constructor) in zip(solver_names, solvers)
       medium_instance_boundary, solution =
         generate_instance(n, m, 0.5, Hessian_modifier = x -> sparse(tril(x)))
       solver = eval(solver_constructor)(medium_instance_boundary)
-      stats = GenericExecutionStats(medium_instance_boundary.model; solver_specific = Dict{Symbol,Float64}(:alpha => 0.0))
+      stats = GenericExecutionStats(
+        medium_instance_boundary.model;
+        solver_specific = Dict{Symbol,Float64}(:alpha => 0.0),
+      )
       if VERSION >= v"1.12"
         @test @wrappedallocs(
           solve!(
@@ -78,7 +87,10 @@ for (solver_name, solver_constructor) in zip(solver_names, solvers)
       medium_instance_interior, solution =
         generate_instance(n, m, 0.0, Hessian_modifier = x -> sparse(tril(x)))
       solver = eval(solver_constructor)(medium_instance_interior)
-      stats = GenericExecutionStats(medium_instance_interior.model; solver_specific = Dict{Symbol,Float64}(:alpha => 0.0))
+      stats = GenericExecutionStats(
+        medium_instance_interior.model;
+        solver_specific = Dict{Symbol,Float64}(:alpha => 0.0),
+      )
       if VERSION >= v"1.12"
         @test @wrappedallocs(
           solve!(
@@ -103,7 +115,10 @@ for (solver_name, solver_constructor) in zip(solver_names, solvers)
           read_instance(instance, type = Float64, Hessian_modifier = x -> sparse(tril(x)))
         n = reg_nlp.model.meta.nvar
         solver = eval(solver_constructor)(reg_nlp)
-        stats = GenericExecutionStats(reg_nlp.model; solver_specific = Dict{Symbol,Float64}(:alpha => 0.0))
+        stats = GenericExecutionStats(
+          reg_nlp.model;
+          solver_specific = Dict{Symbol,Float64}(:alpha => 0.0),
+        )
         if VERSION >= v"1.12"
           @test @wrappedallocs(solve!(solver, reg_nlp, stats, accept_descent = false)) == 0
         else

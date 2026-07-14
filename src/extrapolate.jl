@@ -34,13 +34,7 @@ function extrapolate!(
   norm_y < τ₁ && return false
   τ₁ = norm_y
 
-  update_workspace!(
-    ms_solver.workspace,
-    φ.data.H,
-    ψ.A,
-    zero(T),
-    α,
-  )
+  update_workspace!(ms_solver.workspace, φ.data.H, ψ.A, zero(T), α)
 
   # [ H + σI Aᵀ][px] = -[0]
   # [   A    0 ][py] = -[y] 
