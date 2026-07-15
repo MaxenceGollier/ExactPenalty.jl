@@ -169,7 +169,7 @@ We refer to the [outputs](outputs.md) section for an explanation of the logger o
     > Steps are accepted when the ratio of the actual decrease and the first-order decrease is larger than `r2n_η1`. This is $\eta_1$ in the implementation paper. When `T == Float64`, the default value is $\approx 10^{-4}$.
 
  * `r2n_η2::T = 0.1` (*advanced*): strong Armijo sufficient decrease threshold.
-    > In addition to being accepted, when the ratio of the actual decrease and the first-order decrease is larger than `r2n_η2`, the quadratic regularization parameter is decreased by some constant factor (see `r2n_γ`). This is $\eta_2$ in the implementation paper. Note that `r2n_η2 ≥ r2n_η1` should hold.
+    > In addition to being accepted, when the ratio of the actual decrease and the first-order decrease is larger than `r2n_η2`, the quadratic regularization parameter is decreased by some constant factor (see `r2n_γ`). This is $\eta_2$ in the implementation paper. Note that `r2n_η2 ≥ r2n_η1` should hold. When using quasi-Newton approximations, the default value becomes `r2n_η2::T = 0.9`.
 
  * `r2n_γ::T = 3` (*advanced*): decrease/increase factor for quadratic regularization parameter
     > When a step is rejected, the quadratic regularization paramater $\sigma_l$ is increased by a factor `r2n_γ`, when a step is "strongly" accepted (see `r2n_η2`), the quadratic regularization parameter is decreased by a factor `1/r2n_γ`. Note that `r2n_γ > 1` should hold.
@@ -180,8 +180,8 @@ We refer to the [outputs](outputs.md) section for an explanation of the logger o
  * `r2n_watchdog_η0::T = √eps(T)` (*advanced*):
     >
 
- * `r2n_tiny_step_tol::T = 10*eps(T)` (*advanced*):
-    >
+ * `r2n_tiny_step_tol::T = eps(T)` (*advanced*): tolerance for detecting numerically insignificant steps.
+    > When a step $$s$$ for some iterate $$x$$ is such that $$\|s\|_{\infty} / \|x\|_{\infty}$$ is smaller than `r2n_tiny_step_tol`, the inner loop returns with a corresponding exit message. When `T == Float64`, the default value is $\approx 10^{-16}$.
 
  * `r2n_monotone::Int = 10` (*advanced*):
 
@@ -193,6 +193,20 @@ We refer to the [outputs](outputs.md) section for an explanation of the logger o
 
  * `ms_tol::T = eps(T)^(0.6)` (*advanced*): 
 
- * `ms_theta::T`
+ * `ms_theta::T` (*advanced)*:
 
 ## Linear Solver
+
+ * `linear_solver::Sring = "ldlfactorizations_jl"`: Linear solver library used for step computations.
+    > Determines which linear algebra package is to be used for the solution of the linear systems.
+    >
+    > Possible values:
+    > * ldlfactorizations_jl: use the [LDLFactorizations.jl](https://github.com/JuliaSmoothOptimizers/LDLFactorizations.jl) package.
+    > * ma57: use the HSL routine MA57.
+    > * minres\_qlp (does not work well): use the minres\_qlp solver from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl).
+    > * mumps: use the Mumps package.
+    >
+    > **NOTE**: Except for the default, you need to **load** corresponding packages to use a different options.
+    > * ma57: Load [HSL.jl](https://github.com/JuliaSmoothOptimizers/HSL.jl).
+    > * minres\_qlp: Load [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl).
+    > * mumps: Load [MPI.jl](https://github.com/JuliaParallel/MPI.jl) and [MUMPS.jl](https://github.com/JuliaSmoothOptimizers/MUMPS.jl).

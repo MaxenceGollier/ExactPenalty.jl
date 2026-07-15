@@ -22,8 +22,10 @@ makedocs(;
     "Performance" => "performance.md",
     "Tutorials" => [
       "AMPL" => "tutorials/AMPL.md",
-      "JuMP" => "tutorials/JuMP.md",
       "CUTEst" => "tutorials/CUTEst.md",
+      "JuMP" => "tutorials/JuMP.md",
+      "HSL" => "tutorials/HSL.md",
+      "MUMPS" => "tutorials/MUMPS.md",
       "Multiprecision" => "tutorials/multiprecision.md",
     ],
     "Developers" => [

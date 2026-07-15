@@ -55,6 +55,13 @@ For more advanced use cases, you can monitor or customize the optimization proce
 
 Finally, if performance is critical, you can find tips in the [performance section](performance.md). ⚡
 
+!!! note "Choosing A Linear Solver Library"
+    Our algorithm solves multiple [linear systems](https://en.wikipedia.org/wiki/System_of_linear_equations).
+    By default, the linear system solver we use is [LDLFactorizations.jl](https://github.com/JuliaSmoothOptimizers/LDLFactorizations.jl).
+    Our solver is interfaced with the following solvers too:
+    * [MUMPS](https://mumps-solver.org/index.php?page=doc). You should read [this tutorial](tutorials/MUMPS.md).
+    * [HSL-MA57](https://www.hsl.rl.ac.uk/catalogue/ma57.html). You should read [this tutorial](tutorials/HSL.md).
+
 ## Credit
 
 This documentation is largely inspired by the excellent documentation of [Ipopt](https://coin-or.github.io/Ipopt/), [Krylov.jl](https://jso.dev/Krylov.jl/stable/), and [Manopt.jl](https://manoptjl.org/stable/).
