@@ -9,16 +9,17 @@ using [NLPModelsJuMP.jl](https://github.com/JuliaSmoothOptimizers/NLPModelsJuMP.
 
 ## 1. Build the JuMP model
 
-We use the Hock–Schittkowski problem 6 (HS6), a small equality-constrained
-problem.
+In this example, we use the Hock--Schittkowski problem **HS6**.
 
 ```@example jump
 using JuMP
-
 model = Model()
+
 @variable(model, x1, start = -1.2)
 @variable(model, x2, start = 1.0)
+
 @objective(model, Min, (1 - x1)^2)
+
 @constraint(model, 10 * (x2 - x1^2) == 0)
 
 nothing # hide

@@ -10,8 +10,7 @@ with `ExactPenalty.jl`, using
 
 ## 1. The AMPL model
 
-We use the Hock–Schittkowski problem 6 (HS6), a small equality-constrained
-problem.
+In this example, we use the Hock--Schittkowski problem **HS6**.
 
 ```ampl
 var x1 := -1.2;
@@ -59,6 +58,8 @@ nothing # hide
 println("status    : ", stats.status)
 println("objective : ", stats.objective)
 println("solution  : ", stats.solution)
+
+nothing # hide
 ```
 
 See the [options reference](../options.md) for the full list of keyword
@@ -76,6 +77,8 @@ write_sol(
   stats.solution,
   stats.multipliers,
 )
+
+nothing # hide
 ```
 
 AMPL can then read the resulting `.sol` file to recover the solution inside
