@@ -64,22 +64,3 @@ nothing # hide
 
 See the [options reference](../options.md) for the full list of keyword
 arguments accepted by the solver.
-
-## 5. Write a `.sol` file for AMPL (optional)
-
-If you started from AMPL and want to hand the solution back to it,
-`AmplNLReader.jl` exposes `write_sol` to export the primal-dual solution:
-
-```@example ampl
-write_sol(
-  nlp,
-  string("Solved with status ", stats.status),
-  stats.solution,
-  stats.multipliers,
-)
-
-nothing # hide
-```
-
-AMPL can then read the resulting `.sol` file to recover the solution inside
-your original model.

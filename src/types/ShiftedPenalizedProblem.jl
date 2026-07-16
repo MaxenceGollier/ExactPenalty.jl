@@ -46,7 +46,7 @@ function ShiftedL2PenalizedProblem(
   nlp, h = penalty_nlp.model, penalty_nlp.h
 
   ∇f = isnothing(∇f) ? grad(nlp, x) : ∇f
-  B = hess_op(nlp, x)
+  B = get_op(nlp)
   φ = QuadraticModel(∇f, B, x0 = x, regularize = true)
 
   ψ = shifted(h, x)

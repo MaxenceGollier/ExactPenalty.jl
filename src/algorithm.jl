@@ -22,7 +22,11 @@ mutable struct L2PenaltySolver{
   substats::GenericExecutionStats{T,V,V,T}
 end
 
-function L2PenaltySolver(nlp::AbstractNLPModel{T,V}) where {T,V}
+function L2PenaltySolver(
+  nlp::AbstractNLPModel{T,V};
+  r2n_m_monotone::Int=12,
+  linear_solver::String="ldlt",
+) where {T,V}
   x0 = nlp.meta.x0
   x, xn, s, s0 = similar(x0), similar(x0), similar(x0), zero(x0)
   temp_b = similar(x0, nlp.meta.ncon)
@@ -33,7 +37,7 @@ function L2PenaltySolver(nlp::AbstractNLPModel{T,V}) where {T,V}
 
   penalty_subproblem = L2PenalizedProblem(nlp) # f(x) + τ‖c(x)‖₂
   substats = GenericExecutionStats(penalty_subproblem, solver_specific = Dict{Symbol,T}())
-  solver = PenaltyR2NSolver(penalty_subproblem)
+  solver = PenaltyR2NSolver(penalty_subproblem; m_monotone = r2n_m_monotone, linear_solver = linear_solver)
 
   set_solver_specific!(substats, :primal_ktol, T(0))
   set_solver_specific!(substats, :dual_ktol, T(0))
@@ -142,11 +146,23 @@ Notably, you can access, and modify, the following:
   - `stats.elapsed_time`: elapsed time in seconds.
 You can also use the `sub_callback` keyword argument which has exactly the same structure and in sent to `R2`.
 """
-function L2Penalty(nlp::AbstractNLPModel{T,V}; kwargs...) where {T<:Real,V}
+function L2Penalty(
+  nlp::AbstractNLPModel{T,V};
+  r2n_m_monotone::Int=12,
+  linear_solver::String="ldlt",
+  kwargs...
+) where {T<:Real,V}
+
   if !equality_constrained(nlp)
     error("L2Penalty: This algorithm only works for equality contrained problems.")
   end
-  solver = L2PenaltySolver(nlp)
+
+  solver = L2PenaltySolver(
+    nlp;
+    r2n_m_monotone=r2n_m_monotone,
+    linear_solver=linear_solver,
+  )
+
   stats = ExactPenaltyExecutionStats(nlp)
   solve!(solver, nlp, stats; kwargs...)
   return stats
@@ -179,6 +195,14 @@ function SolverCore.solve!(
   print_level::Int = 0,
   verbose::Int = 1,
   r2n_verbose::Int = 1,
+
+  ## R2N Specific arguments
+  r2n_η1::T = √√eps(T),
+  r2n_η2::T = isa(nlp, QuasiNewtonModel) ? T(0.9) : T(0.1),
+  r2n_γ::T = T(3),
+  r2n_watchdog_max_iter::Int = 10,
+  r2n_watchdog_η0::T = √eps(T),
+  r2n_tiny_step_tol::T = 10*eps(T),
 
   ## Other arguments
   max_decreas_iter::Int = 10,
@@ -292,7 +316,12 @@ function SolverCore.solve!(
       max_eval = rem_eval,
       σmin = β4,
       σk = 1 / νsub,
-      η2 = isa(nlp, QuasiNewtonModel) ? T(0.9) : T(0.1),
+      η1 = r2n_η1,
+      η2 = r2n_η2,
+      γ = r2n_γ,
+      watchdog_max_iter = r2n_watchdog_max_iter,
+      watchdog_η0 = r2n_watchdog_η0,
+      tiny_step_tol = r2n_tiny_step_tol,
       is_shifted = true,
       primal_decrease = primal_decrease,
       first_increase = first_increase,
@@ -446,6 +475,7 @@ function get_status(
   unbounded = false,
   infeasible = false,
   not_desc = false,
+  small_step = false,
   n_iter_since_decrease = 0,
   max_eval = Inf,
   max_time = Inf,
@@ -460,6 +490,8 @@ function get_status(
     :unbounded
   elseif not_desc
     :not_desc
+  elseif small_step
+    :small_step
   elseif iter >= max_iter
     :max_iter
   elseif elapsed_time >= max_time

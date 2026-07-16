@@ -23,8 +23,8 @@ end
 
 function PenaltyR2NSolver(
   penalty_nlp::AbstractPenalizedProblem{T,V};
-  subsolver = MoreSorensenSolver,
   m_monotone::Int = 12,
+  linear_solver::String = "ldlt",
 ) where {T,V}
   x0 = penalty_nlp.model.meta.x0
 
@@ -40,7 +40,7 @@ function PenaltyR2NSolver(
   subpb = shifted(penalty_nlp, xk, ∇f = ∇fk)
   substats = GenericExecutionStats(subpb, solver_specific = Dict{Symbol,T}())
   set_solver_specific!(substats, :alpha, 0)
-  subsolver = subsolver(subpb)
+  subsolver = MoreSorensenSolver(subpb; solver = Symbol(linear_solver))
 
   checkpoint = watchdog_checkpoint(subpb; m_monotone = m_monotone)
 
@@ -85,6 +85,9 @@ function SolverCore.solve!(
   η1::T = √√eps(T),
   η2::T = T(0.1),
   γ::T = T(3),
+  watchdog_max_iter::Int = 10,
+  watchdog_η0::T = √eps(T),
+  tiny_step_tol::T = eps(T),
   is_shifted::Bool = false,
   primal_decrease::Bool = false,
   first_increase::Bool = true,
@@ -180,9 +183,9 @@ function SolverCore.solve!(
     end
 
     # Check the watchdog
-    if check_watchdog!(watchdog_checkpoint, stats, mk, xk, η1^2)
+    if check_watchdog!(watchdog_checkpoint, stats, mk, xk, watchdog_max_iter, watchdog_η0)
       fallback!(mk, xk, y, watchdog_checkpoint)
-      φ.data.σ *= γ^10
+      φ.data.σ *= γ^watchdog_max_iter
       σk = φ.data.σ
       hk, fk = watchdog_checkpoint.hk, watchdog_checkpoint.fk
       m_fh_hist .= watchdog_checkpoint.m_fh_hist
@@ -276,6 +279,7 @@ function SolverCore.solve!(
         max_eval = max_eval,
         max_time = max_time,
         max_iter = max_iter,
+        small_step = norm(s, Inf) < norm(xk, Inf) * tiny_step_tol
       ),
     )
 

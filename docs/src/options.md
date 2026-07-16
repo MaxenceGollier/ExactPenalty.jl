@@ -109,26 +109,28 @@ We define $\epsilon_P$ and $\epsilon_D$ as
   \epsilon_D &= \max(\epsilon_D^a, \epsilon^a) + \max(\epsilon_D^r, \epsilon^r) \lVert \nabla f(x_0) + J(x_0)^T y_0 \rVert_{\infty}.
 \end{align*}
 ```
-* `atol::T = √eps(T)`: $\epsilon^a$ -- Desired convergence tolerance (absolute).
+* `atol::T = √eps(T)`: $\epsilon^a$, desired convergence tolerance (absolute).
   > Absolute tolerance for primal and dual residuals. When `T == Float64`, the default value is $\approx 10^{-8}$.
 
-* `rtol::T = √eps(T)`: $\epsilon^r$ -- Desired convergence tolerance (relative).
+* `rtol::T = √eps(T)`: $\epsilon^r$, desired convergence tolerance (relative).
   > Relative tolerance for primal and dual residuals. When `T == Float64`, the default value is $\approx 10^{-8}$.
 
-* `dual_inf_atol::T = 0`: $\epsilon^a_D$ -- Desired convergence tolerance (absolute) for dual infeasibility.
+* `dual_inf_atol::T = 0`: $\epsilon^a_D$, desired convergence tolerance (absolute) for dual infeasibility.
   
-* `dual_inf_rtol::T = 0`: $\epsilon^r_D$ -- Desired convergence tolerance (relative) for dual infeasibility.
+* `dual_inf_rtol::T = 0`: $\epsilon^r_D$, desired convergence tolerance (relative) for dual infeasibility.
 
-* `primal_inf_atol::T = 0`: $\epsilon^a_P$ -- Desired convergence tolerance (absolute) for primal infeasibility.
+* `primal_inf_atol::T = 0`: $\epsilon^a_P$, desired convergence tolerance (absolute) for primal infeasibility.
 
-* `primal_inf_rtol::T = 0`: $\epsilon^r_P$ -- Desired convergence tolerance (relative) for primal infeasibility.
+* `primal_inf_rtol::T = 0`: $\epsilon^r_P$, desired convergence tolerance (relative) for primal infeasibility.
 
 * `μ::T = 0.01` (*advanced*): Decrease factor for penalized problem accuracy.
   > If $\epsilon_D^k$ is the accuracy level for the current penalized problem, then when the algorithm increases the accuracy for the subproblem, it performs the update $\epsilon_D^{k+1} = \max(μ\epsilon_D^{k},\epsilon_D)$. Smaller values mean that subproblems are solved to higher accuracy more aggressively. This is $\mu_{\epsilon}$ in the implementation paper.
 
-* `infeasible_tol::T = 0.01` (*advanced*):
+* `infeasible_tol::T = 0.01` (*advanced*): local infeasibility tolerance.
+  > When an optimality measure of $\min_x \|c(x)\|_2$ arround the current iterate is detected to be smaller (relative to this tolerance) than the current primal residual, the problem is declared infeasible. Larger values can cause false positives while smaller values cause false negatives. This is $\epsilon_I$ in the implementation paper.
 
-* `infeasible_iter::Int = 3` (*advanced*): 
+* `infeasible_iter::Int = 3` (*advanced*): local infeasibility detection frequency.
+  > Frequency (in *outer-loop* iterations) at which we estimate locally infeasibility. For performance, if you are positive that your model is feasible, you can set this parameter to a very large value. 
 
 * `max_eval::Int = -1`: Maximum number of objective function evaluation.
   > The solver stops when the number of objective function evaluations exceeds `max_eval`. A negative value means unlimited.
@@ -140,19 +142,20 @@ We define $\epsilon_P$ and $\epsilon_D$ as
   > The solver stops when the number of iterations exceeds `max_iter`.
 
 * `r2n_max_iter::Int = 1000` (*advanced*): Maximum number of *r2n-loop* iterations.
+  > Each run of the *r2n-loop* stops when the number of iterations exceeds `r2n_max_iter`.
 
 * `ms_max_iter::Int = 10` (*advanced*): Maximum number of *ms-loop* iterations.
+  > Each run of the *ms-loop* stops when the number of iterations exceeds `ms_max_iter`.
 
 ## Logging
 We refer to the [outputs](outputs.md) section for an explanation of the logger output.
 
 * `verbose_level::Int = 0`: Output verbosity level.
- > 
- >   The larger this value the more detailed is the output. The valid range is `0 ≤ print_level ≤ 4`. **Warning**: large values can potentially print a lot of information, we recommend to start with a value of `1`. The value of `print_level` corresponds to the depth of the loop that will be printed. That is 
- >   - `print_level = 1`: Prints the information relative to the *penalty loop*,
- >   - `print_level = 2`: Prints the information relative to the *r2n loop*,
- >   - `print_level = 3`: Prints the information relative to the *ms loop*,
- >   - `print_level = 4`: Prints the information relative to the *linear solver*.
+    >   The larger this value the more detailed is the output. The valid range is `0 ≤ print_level ≤ 4`. **Warning**: large values can potentially print a lot of information, we recommend to start with a value of `1`. The value of `print_level` corresponds to the depth of the loop that will be printed. That is 
+    >   - `print_level = 1`: Prints the information relative to the *penalty loop*,
+    >   - `print_level = 2`: Prints the information relative to the *r2n loop*,
+    >   - `print_level = 3`: Prints the information relative to the *ms loop*,
+    >   - `print_level = 4`: Prints the information relative to the *linear solver*.
 
  * `verbose::Int = 1`: Frequency (in iterations) at which information is printed.
     > `verbose = 1` prints every iteration (of the outer loop), `verbose = 10` prints every ten iteration (of the outer loop). If `print_level < 1`, this parameter is ignored.
@@ -171,23 +174,25 @@ We refer to the [outputs](outputs.md) section for an explanation of the logger o
  * `r2n_η2::T = 0.1` (*advanced*): strong Armijo sufficient decrease threshold.
     > In addition to being accepted, when the ratio of the actual decrease and the first-order decrease is larger than `r2n_η2`, the quadratic regularization parameter is decreased by some constant factor (see `r2n_γ`). This is $\eta_2$ in the implementation paper. Note that `r2n_η2 ≥ r2n_η1` should hold. When using quasi-Newton approximations, the default value becomes `r2n_η2::T = 0.9`.
 
- * `r2n_γ::T = 3` (*advanced*): decrease/increase factor for quadratic regularization parameter
+ * `r2n_γ::T = 3` (*advanced*): decrease/increase factor for quadratic regularization parameter.
     > When a step is rejected, the quadratic regularization paramater $\sigma_l$ is increased by a factor `r2n_γ`, when a step is "strongly" accepted (see `r2n_η2`), the quadratic regularization parameter is decreased by a factor `1/r2n_γ`. Note that `r2n_γ > 1` should hold.
 
+ * `r2n_m_monotone::Int = 12` (*advanced*): non-monotone memory parameter.
+    > When computing the ratio of the actual decrease and the first-order decrease (see `r2n_η1`), the decrease is computed with respect to the maximum of the last `r2n_m_monotone` values of the objective.
+
  * `r2n_watchdog_max_iter::Int = 10` (*advanced*): maximum number of watchdog iterations.
-    > 
+    > When the watchdog technique is activated, the solver accepts a step regardless of `r2n_η1` and proceeds for at most `r2n_watchdog_max_iter` before retreating to the watchdog activation iterate. When the watchdog is active, if a sufficient decrease (see `r2n_watchdog_η0`) in either the dual infeasibility or the objective is attained, the watchdog is deactivated and the current iterate is retained. See the implementation paper for more details.
   
- * `r2n_watchdog_η0::T = √eps(T)` (*advanced*):
-    >
+ * `r2n_watchdog_η0::T = √eps(T)` (*advanced*): watchdog deactivation threshold.
+    > The watchdog is deactivated when a sufficient decrease condition in either the dual infeasibility or the objective is attained. See the implementation paper for more details. When `T == Float64`, the default value is $\approx 10^{-8}$.
 
  * `r2n_tiny_step_tol::T = eps(T)` (*advanced*): tolerance for detecting numerically insignificant steps.
     > When a step $$s$$ for some iterate $$x$$ is such that $$\|s\|_{\infty} / \|x\|_{\infty}$$ is smaller than `r2n_tiny_step_tol`, the inner loop returns with a corresponding exit message. When `T == Float64`, the default value is $\approx 10^{-16}$.
 
- * `r2n_monotone::Int = 10` (*advanced*):
-
 ## MS Specific
 
- * `ms_accept_descent::Bool = true` (*advanced*):
+ * `ms_accept_descent::Bool = true` (*advanced*): *secular* equation Newton's method truncation parameter.
+     > When `ms_accept_descent` is set to `true`, the Newton's method applied to the *secular* equation is truncated when a simple decrease in the quadratic model of the objective has been reached. Setting this parameter to `false` can significantly increase the number of matrix factorizations, therefore we do not recommend it. For details on the *secular* equation and Newton's method, we refer to the implementation paper.
 
  * `ms_σmax::T = 1/eps(T)` (*advanced*):
 
@@ -197,16 +202,16 @@ We refer to the [outputs](outputs.md) section for an explanation of the logger o
 
 ## Linear Solver
 
- * `linear_solver::Sring = "ldlfactorizations_jl"`: Linear solver library used for step computations.
+ * `linear_solver::Sring = "ldlt"`: Linear solver library used for step computations.
     > Determines which linear algebra package is to be used for the solution of the linear systems.
     >
     > Possible values:
-    > * ldlfactorizations_jl: use the [LDLFactorizations.jl](https://github.com/JuliaSmoothOptimizers/LDLFactorizations.jl) package.
+    > * ldlt: use the [LDLFactorizations.jl](https://github.com/JuliaSmoothOptimizers/LDLFactorizations.jl) package.
     > * ma57: use the HSL routine MA57.
     > * minres\_qlp (does not work well): use the minres\_qlp solver from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl).
     > * mumps: use the Mumps package.
     >
-    > **NOTE**: Except for the default, you need to **load** corresponding packages to use a different options.
+    > **NOTE**: Except for the default, you need to **load** corresponding packages to use each option.
     > * ma57: Load [HSL.jl](https://github.com/JuliaSmoothOptimizers/HSL.jl).
     > * minres\_qlp: Load [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl).
     > * mumps: Load [MPI.jl](https://github.com/JuliaParallel/MPI.jl) and [MUMPS.jl](https://github.com/JuliaSmoothOptimizers/MUMPS.jl).

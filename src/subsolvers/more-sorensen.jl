@@ -17,7 +17,7 @@ end
 
 function MoreSorensenSolver(
   reg_nlp::AbstractRegularizedNLPModel{T,V};
-  solver = :minres_qlp,
+  solver = :ldlt,
 ) where {T,V}
   x0 = reg_nlp.model.meta.x0
   n = reg_nlp.model.meta.nvar
@@ -27,24 +27,34 @@ function MoreSorensenSolver(
   x1 = zeros(eltype(x0), n+m)
   x2 = zeros(eltype(x0), n+m)
 
-  # Choose linear solver automatically
-
-  # Use LDLFactorizations.jl by default
-  solver = :ldlt
+  # Check linear solver
 
   # Check for MUMPS
   mumps_loaded = !isnothing(Base.get_extension(@__MODULE__, :ExactPenaltyMUMPSExt))
-  solver = mumps_loaded ? :mumps : solver
+  if !mumps_loaded && solver == :mumps
+    warning("ExactPenalty.jl: MUMPS extension is not loaded. Please install MPI.jl and MUMPS.jl. Switching to LDLFactorizations.jl...")
+    solver = :ldlt
+  end
 
   # Check for HSL
   hsl_loaded = !isnothing(Base.get_extension(@__MODULE__, :ExactPenaltyHSLExt))
+  if !hsl_loaded && solver == :ma57
+    warning("ExactPenalty.jl: HSL extension is not loaded. Please install HSL.jl. Switching to LDLFactorizations.jl...")
+    solver = :ldlt
+  end
+
   hsl_isfunctional = hsl_loaded && hsl_functional()
-  solver = hsl_isfunctional ? :ma57 : solver
+  if !hsl_isfunctional && solver == :ma57
+    warning("ExactPenalty.jl: HSL extension is not functional. Please check your license and make sure you have loaded HSL_jll.jl appropriately. Switching to LDLFactorizations.jl...")
+    solver = :ldlt
+  end
 
   # Check for Krylov
   krylov_loaded = !isnothing(Base.get_extension(@__MODULE__, :ExactPenaltyKrylovExt))
-  linear_op = krylov_loaded ? isa(reg_nlp.model.data.H, AbstractLinearOperator) : false
-  solver = linear_op ? :minres_qlp : solver
+  if !krylov_loaded && solver == :minres_qlp
+    warning("ExactPenalty.jl: Krylov extension is not loaded. Please install Krylov.jl. Switching to LDLFactorizations.jl...")
+    solver = :ldlt
+  end
 
   H = K2(
     n,
