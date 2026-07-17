@@ -115,6 +115,13 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     α,
   )
 
+  if print_level > 0
+    @info introduction_message(solver, Δ)
+    @info separator(type = :ms_loop)
+    @info header_message(type = :ms_loop)
+    @info separator(type = :ms_loop)
+  end
+
   αmin = αmin1
 
   # [ H + σI Aᵀ][x] = -[∇f]
@@ -164,13 +171,20 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   end
 
   is_descent = check_descent(reg_nlp, @view x1[1:n])
+  norm_x1 = norm(@view x1[(n+1):(n+m)])
 
-  if norm(@view x1[(n+1):(n+m)]) <= Δ || (is_descent && accept_descent)
+  if print_level > 0 && stats.iter % verbose == 0
+    @info log_ms_iteration(stats, reg_nlp.model.data.σ, α, norm_x1, Δ, npos, nzero, nneg, status, is_descent)
+  end
+
+  if norm_x1 <= Δ || (is_descent && accept_descent)
     set_solution!(stats, @view x1[1:n])
     set_status!(stats, :first_order)
 
     !is_descent && set_status!(stats, :not_desc)
     set_solver_specific!(stats, :alpha, α)
+    print_level > 0 && @info conclusion_message(solver, stats)
+
     return
   end
 
@@ -179,8 +193,6 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   @views @. u2[(n+1):(n+m)] = -x1[(n+1):(n+m)]
   solve_system!(solver_workspace, u2)
   get_solution!(x2, solver_workspace)
-
-  norm_x1 = norm(@view x1[(n+1):(n+m)])
 
   while abs(norm_x1 - Δ) > atol && stats.iter < max_iter && stats.elapsed_time < max_time
     # α = α + (‖y‖/Δ - 1)*‖y‖²/(yᵀy')
@@ -196,14 +208,19 @@ function SolverCore.solve!( #TODO add verbose and kwargs
 
     # Check whether x1 decreases the model.
     is_descent = check_descent(reg_nlp, @view x1[1:n])
+    norm_x1 = norm(@view x1[(n+1):(n+m)])
+
     if is_descent && accept_descent
       set_solution!(stats, @view x1[1:n])
       set_status!(stats, :first_order)
       set_solver_specific!(stats, :alpha, α)
+      set_iter!(stats, stats.iter + 1)
+      if print_level > 0 && stats.iter % verbose == 0
+        @info log_ms_iteration(stats, reg_nlp.model.data.σ, α, norm_x1, Δ, npos, nzero, nneg, status, is_descent)
+      end
+      print_level > 0 && @info conclusion_message(solver, stats)
       return
     end
-
-    norm_x1 = norm(@view x1[(n+1):(n+m)])
 
     # Check whether the matrix still has the correct inertia. (We may have failed to detect earlier)
     npos, nzero, nneg = get_inertia(solver_workspace)
@@ -211,6 +228,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
       reg_nlp.model.data.σ *= μσ
       if reg_nlp.model.data.σ >= σmax
         set_status!(stats, :exception)
+        print_level > 0 && @info conclusion_message(solver, stats)
         return
       end
       solve!(solver, reg_nlp, stats)
@@ -224,6 +242,11 @@ function SolverCore.solve!( #TODO add verbose and kwargs
 
     set_iter!(stats, stats.iter + 1)
     set_time!(stats, time()-start_time)
+
+    if print_level > 0 && stats.iter % verbose == 0
+      @info log_ms_iteration(stats, reg_nlp.model.data.σ, α, norm_x1, Δ, npos, nzero, nneg, status, is_descent)
+    end
+
     α == αmin && break
   end
 
@@ -238,6 +261,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     reg_nlp.model.data.σ *= μσ
     if reg_nlp.model.data.σ >= σmax
       set_status!(stats, :not_desc)
+      print_level > 0 && @info conclusion_message(solver, stats)
       return
     end
     solve!(solver, reg_nlp, stats)

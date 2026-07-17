@@ -35,9 +35,16 @@ end
 
 function introduction_message(solver::PenaltyR2NSolver, nlp::AbstractNLPModel, stats::GenericExecutionStats)
   return separator(type = :inner_loop) *
-  @sprintf("\n        |  Solving subproblem minₓ f(x) + %-3.2e ‖c(x)‖₂ with tolerance %-3.2e...", 
+  @sprintf("\n            |  Solving subproblem minₓ f(x) + %-3.2e ‖c(x)‖₂ with tolerance %-3.2e...", 
   stats.solver_specific[:tau], stats.solver_specific[:dual_ktol])
 end
+
+function introduction_message(solver::MoreSorensenSolver, Δ)
+  return separator(type = :ms_loop) *
+  @sprintf("\n                  |  Solving Moré-Sorensen trust-region subproblem, ‖y‖ ≤ %-3.2e...",
+  Δ)
+end
+
 
 const W_ITER  = 7
 const W_LARGE = 16
@@ -52,7 +59,9 @@ function separator(;type = :outer_loop)
   if type == :outer_loop
     return repeat("-", textwidth(header_message(type = type)))
   elseif type == :inner_loop
-    return "  | " * repeat("-", textwidth(header_message(type = type))-4)
+    return "      | " * repeat("-", textwidth(header_message(type = type))-4)
+  elseif type == :ms_loop
+    return "            | " * repeat("-", textwidth(header_message(type = type))-4)
   end
 end
 
@@ -72,7 +81,7 @@ function header_message(; type = :outer_loop)
     )
   elseif type == :inner_loop
     return @sprintf(
-        "  | %-*s%-*s%-*s%-*s%-*s%-*s%-*s%-*s%-*s",
+        "      | %-*s%-*s%-*s%-*s%-*s%-*s%-*s%-*s%-*s",
         W_ITER,  "Iter",
         W_ITER,  "sIter",
         W_LARGE, "Objective",
@@ -83,7 +92,42 @@ function header_message(; type = :outer_loop)
         W_MED,   "‖x‖",
         W_MED,   "‖s‖",
     )
+  elseif type == :ms_loop
+    return @sprintf(
+        "            | %-*s%-*s%-*s%-*s%-*s%-*s%-*s%-*s",
+        W_ITER,  "Iter",
+        W_MED,   "σ",
+        W_MED,   "α",
+        W_MED,   "‖y‖",
+        W_MED,   "Δ",
+        W_MED,   "inertia",
+        W_MED,   "lsolve",
+        W_MED,   "descent",
+    )
   end
+end
+
+"""
+    log_ms_iteration(stats, σ, α, norm_y, Δ, npos, nzero, nneg, lin_status, is_descent)
+
+Log one Moré-Sorensen iteration: the regularized linear system being solved
+(parametrized by `σ`, the primal regularization, and `α`, the dual one),
+the norm of the resulting dual step against the trust-region radius `Δ`,
+the observed inertia of the augmented system, and the status reported by
+the linear solver.
+"""
+function log_ms_iteration(stats, σ, α, norm_y, Δ, npos, nzero, nneg, lin_status, is_descent)
+  return @sprintf(
+    "            | %-7d%-12.2e%-12.2e%-12.2e%-12.2e%-12s%-12s%-12s",
+    stats.iter,
+    σ,
+    α,
+    norm_y,
+    Δ,
+    "($npos,$nzero,$nneg)",
+    string(lin_status),
+    is_descent ? "true" : "false",
+  )
 end
 
 function log_iteration(solver, nlp, stats; type = :outer_loop)
@@ -102,7 +146,7 @@ function log_iteration(solver, nlp, stats; type = :outer_loop)
     )
   elseif type == :inner_loop
     return @sprintf(
-      "  | %-7d%-7d%-+16.7e%-12.2e%-12.2e%-12.2e%-+12.2e%-12.2e%-12.2e",
+      "      | %-7d%-7d%-+16.7e%-12.2e%-12.2e%-12.2e%-+12.2e%-12.2e%-12.2e",
       stats.iter,
       max(solver.substats.iter, 0),
       stats.objective,
@@ -114,6 +158,12 @@ function log_iteration(solver, nlp, stats; type = :outer_loop)
       norm(solver.s),
     )
   end
+end
+
+function conclusion_message(solver::MoreSorensenSolver, stats; type = :ms_loop)
+  return "            |
+                  |  MS subproblem solved with status $(stats.status) after $(stats.iter) iterations." *
+            "\n      " * separator(type = type)
 end
 
 function conclusion_message(solver, nlp, stats; type = :outer_loop)
@@ -128,8 +178,8 @@ function conclusion_message(solver, nlp, stats; type = :outer_loop)
     log *= "EXIT: $(stats.status).\n"
     return log
   elseif type == :inner_loop
-    return "  |
-        |  Subproblem solved with status $(stats.status) after $(stats.iter) iterations. 
-        |  Reached dfeas = $(stats.dual_feas)\n      " * separator(type = type)
+    return "      |
+            |  Subproblem solved with status $(stats.status) after $(stats.iter) iterations. 
+            |  Reached dfeas = $(stats.dual_feas)\n      " * separator(type = type)
   end
 end
