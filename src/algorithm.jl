@@ -195,6 +195,7 @@ function SolverCore.solve!(
   print_level::Int = 0,
   verbose::Int = 1,
   r2n_verbose::Int = 1,
+  ms_verbose::Int = 1,
 
   ## R2N Specific arguments
   r2n_η1::T = √√eps(T),
@@ -203,6 +204,16 @@ function SolverCore.solve!(
   r2n_watchdog_max_iter::Int = 10,
   r2n_watchdog_η0::T = √eps(T),
   r2n_tiny_step_tol::T = 10*eps(T),
+
+  ## MS Specific arguments
+  ms_accept_descent::Bool = true,
+  ms_σmax::T = 1/eps(T),
+  ms_tol::T = eps(T)^(0.6),
+  ms_μα::T = T(0.1),
+  ms_μσ::T = T(10),
+  ms_α0::T = eps(T),
+  ms_αmin1::T = isa(nlp, QuasiNewtonModel) ? eps(T)^(0.6) : eps(T)^(0.8),
+  ms_αmin2::T = eps(T)^(0.6),
 
   ## Other arguments
   max_decreas_iter::Int = 10,

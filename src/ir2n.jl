@@ -91,6 +91,17 @@ function SolverCore.solve!(
   is_shifted::Bool = false,
   primal_decrease::Bool = false,
   first_increase::Bool = true,
+
+  ## MS Specific arguments
+  ms_verbose::Int = 1,
+  ms_accept_descent::Bool = true,
+  ms_σmax::T = 1/eps(T),
+  ms_tol::T = eps(T)^(0.6),
+  ms_μα::T = T(0.1),
+  ms_μσ::T = T(10),
+  ms_α0::T = eps(T),
+  ms_αmin1::T = eps(T)^(0.8),
+  ms_αmin2::T = eps(T)^(0.6),
 ) where {T,V}
   reset!(stats)
 
@@ -195,7 +206,22 @@ function SolverCore.solve!(
 
     # Compute a step 
     solver.subpb.model.data.σ = σk
-    solve!(solver.subsolver, solver.subpb, solver.substats; max_iter = ms_max_iter)
+    solve!(
+      solver.subsolver, 
+      solver.subpb, 
+      solver.substats; 
+      verbose = ms_verbose,
+      print_level = print_level - 1,
+      max_iter = ms_max_iter,
+      accept_descent = ms_accept_descent,
+      σmax = ms_σmax,
+      atol = ms_tol,
+      μα = ms_μα,
+      μσ = ms_μσ,
+      α0 = ms_α0,
+      αmin1 = ms_αmin1,
+      αmin2 = ms_αmin2,
+    )
     get_primal_dual_sol!(s, y, solver.subsolver)
     σk = solver.subpb.model.data.σ
 

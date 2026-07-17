@@ -78,11 +78,17 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   reg_nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
   stats::GenericExecutionStats{T,V,V};
   x = reg_nlp.model.meta.x0,
-  σk = T(1),
-  atol = eps(T)^(0.6),
-  max_time = T(30),
-  max_iter = 10,
-  σmax = 1 / eps(T),
+  print_level::Int = 0,
+  verbose::Int = 1,
+  atol::T = eps(T)^(0.6),
+  max_time::T = T(30),
+  max_iter::Int = 10,
+  μα::T = T(0.1),
+  μσ::T = T(10),
+  α0::T = eps(T),
+  αmin1::T = eps(T)^(0.8),
+  αmin2::T = eps(T)^(0.6),
+  σmax::T = 1 / eps(T),
   accept_descent::Bool = true, # Whether we accept inexact steps that decrease the quadratic model.
 ) where {T,V,M,H,P}
   start_time = time()
@@ -100,7 +106,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   @. u1[1:n] = -reg_nlp.model.data.c
   @. u1[(n+1):(n+m)] = -reg_nlp.h.b
 
-  α = eps(T)
+  α = α0
   update_workspace!(
     solver_workspace,
     reg_nlp.model.data.H,
@@ -109,9 +115,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     α,
   )
 
-  αmin = isa(reg_nlp.model.data.H, CompactBFGS) ? eps(T)^(0.6) : eps(T)^(0.8)
-  θ = T(0.1)
-  μ = T(10)
+  αmin = αmin1
 
   # [ H + σI Aᵀ][x] = -[∇f]
   # [   A    0 ][y] = -[c] 
@@ -131,7 +135,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     status = get_status(solver_workspace)
 
     if nneg < m || status == :failed
-      αmin = eps(T)^(0.6)
+      αmin = αmin2
       α = αmin
       set_dual_inertia!(solver_workspace, α)
       solve_system!(solver_workspace, u1)
@@ -143,7 +147,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
 
   while (npos < n || status == :failed) && reg_nlp.model.data.σ <= σmax
 
-    reg_nlp.model.data.σ *= μ
+    reg_nlp.model.data.σ *= μσ
     set_primal_inertia!(solver_workspace, reg_nlp.model.data.σ)
 
     # [ H + σI Aᵀ][x] = -[∇f]
@@ -182,7 +186,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     # α = α + (‖y‖/Δ - 1)*‖y‖²/(yᵀy')
     @views α₊ = α + norm_x1^2/dot(x1[(n+1):(n+m)], x2[(n+1):(n+m)])*(norm_x1/Δ - 1)
 
-    α = α₊ ≤ 0 ? max(θ*α, αmin) : α₊
+    α = α₊ ≤ 0 ? max(μα*α, αmin) : α₊
     set_dual_inertia!(solver_workspace, α)
 
     # [ H + σI  Aᵀ ][x] = -[∇f]
@@ -204,7 +208,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
     # Check whether the matrix still has the correct inertia. (We may have failed to detect earlier)
     npos, nzero, nneg = get_inertia(solver_workspace)
     if npos < n
-      reg_nlp.model.data.σ *= μ
+      reg_nlp.model.data.σ *= μσ
       if reg_nlp.model.data.σ >= σmax
         set_status!(stats, :exception)
         return
@@ -231,7 +235,7 @@ function SolverCore.solve!( #TODO add verbose and kwargs
   stats.elapsed_time >= max_time && set_status!(stats, :max_time)
   !check_descent(reg_nlp, @view x1[1:n]) && set_status!(stats, :not_desc)
   if !check_descent(reg_nlp, @view x1[1:n])
-    reg_nlp.model.data.σ *= μ
+    reg_nlp.model.data.σ *= μσ
     if reg_nlp.model.data.σ >= σmax
       set_status!(stats, :not_desc)
       return
@@ -245,11 +249,18 @@ function SolverCore.solve!(
   reg_nlp::ShiftedL2PenalizedProblem{T,V,M,H,P},
   stats::GenericExecutionStats{T,V,V};
   x = reg_nlp.model.meta.x0,
-  σk = T(1),
-  atol = eps(T)^(0.6),
-  max_time = T(30),
-  max_iter = 10,
-  σmax = 1 / eps(T),
+  print_level::Int = 0,
+  verbose::Int = 1,
+  atol::T = eps(T)^(0.6),
+  max_time::T = T(30),
+  max_iter::Int = 10,
+  μα::T = T(0.1),
+  μσ::T = T(10),
+  α0::T = eps(T),
+  αmin1::T = eps(T)^(0.8),
+  αmin2::T = eps(T)^(0.6),
+  σmax::T = 1 / eps(T),
+  accept_descent::Bool = true, # Whether we accept inexact steps that decrease the quadratic model.
 ) where {T,V,M,H,O<:NullHessianModel,P<:L2PenalizedProblem{T,V,O}}
 
   n = reg_nlp.model.meta.nvar
