@@ -41,7 +41,8 @@ end
 
 function introduction_message(solver::MoreSorensenSolver, Δ)
   return separator(type = :ms_loop) *
-  @sprintf("\n                  |  Solving Moré-Sorensen trust-region subproblem, ‖y‖ ≤ %-3.2e...",
+  @sprintf("\n                  |  Computing step ( H + σI    Jᵀ )(s) = -(∇f)
+                  |                 ( J        -αI )(y) = -(c), with ‖y‖ ≤ %-3.2e...",
   Δ)
 end
 
@@ -162,7 +163,7 @@ end
 
 function conclusion_message(solver::MoreSorensenSolver, stats; type = :ms_loop)
   return "            |
-                  |  MS subproblem solved with status $(stats.status) after $(stats.iter) iterations." *
+                  |  Step computed with status $(stats.status) after $(stats.iter) iterations." *
             "\n      " * separator(type = type)
 end
 
