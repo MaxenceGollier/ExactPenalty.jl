@@ -305,7 +305,7 @@ function SolverCore.solve!(
         max_eval = max_eval,
         max_time = max_time,
         max_iter = max_iter,
-        small_step = norm(s, Inf) < norm(xk, Inf) * tiny_step_tol
+        small_step = all(i -> abs(s[i]) < tiny_step_tol * abs(x[i]), eachindex(s, x))
       ),
     )
 
