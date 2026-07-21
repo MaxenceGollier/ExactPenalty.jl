@@ -194,11 +194,26 @@ We refer to the [outputs](outputs.md) section for an explanation of the logger o
  * `ms_accept_descent::Bool = true` (*advanced*): *secular* equation Newton's method truncation parameter.
      > When `ms_accept_descent` is set to `true`, the Newton's method applied to the *secular* equation is truncated when a simple decrease in the quadratic model of the objective has been reached. Setting this parameter to `false` can significantly increase the number of matrix factorizations, therefore we do not recommend it. For details on the *secular* equation and Newton's method, we refer to the implementation paper.
 
- * `ms_σmax::T = 1/eps(T)` (*advanced*):
+ * `ms_σmax::T = 1/eps(T)`, (*advanced*): maximum value for the regularization parameter.
+     > When inertia corrections are performed within the ms loop, we increase the quadratic regularization parameter `σ` by a factor `ms_μσ` (see `ms_μσ`) until either the inertia is $(n, 0, m)$ or `σ` reaches `ms_σmax`. In the latter case, the solver stops and returns an error message. When `T == Float64`, the default value is $\approx 10^{16}$.
 
- * `ms_tol::T = eps(T)^(0.6)` (*advanced*): 
+ * `ms_tol::T = eps(T)^(0.6)`, (*advanced*): tolerance for the MS loop (absolute).
+     > Tolerance for Newton's method applied to the *secular* equation. For completeness, the MS loop terminates when $| \|y\| - Δ | \leq \text{ms\_tol}$. When `T == Float64`, the default value is $\approx 10^{-10}$.
 
- * `ms_theta::T` (*advanced)*:
+ * `ms_μα::T = 0.1`, (*advanced*): dual inertia decrease factor.
+     > When the Newton's method applied to the *secular* equation produces a negative value of `α`, the iterate is reduced instead by a factor `ms_μα`. This is $\mu_{\alpha}$ in the implementation paper.
+
+ * `ms_μσ::T = T(10)`, (*advanced*): primal inertia increase factor.
+     > When inertia corrections are performed within the ms loop, we increase the quadratic regularization parameter `σ` by a factor `ms_μσ` until either the inertia is $(n, 0, m)$ or `σ` reaches `ms_σmax` (see `ms_σmax`). This is $\mu_{\sigma}$ in the implementation paper.
+
+ * `ms_α0::T = eps(T)`, (*advanced*): initial value for the MS method.
+      > We highly recommend to keep this value as the default. Accepted values are `ms_α0 ∈ [0, ms_αmin1)` (see `ms_αmin1`). When `T == Float64`, the default value is $\approx 10^{-16}$.
+
+ * `ms_αmin1::T = eps(T)^(0.8)`, (*advanced*): first minimum value for the MS method.
+      > When a rank defficient Jacobian is detected, the MS method is restarted with `α = ms_αmin1`. Accepted values are `ms_αmin1 ∈ (ms_α0, ms_αmin2)` (see `ms_α0` and `ms_αmin2`). This is $\alpha_{\text{trial}}^1$ in the implementation paper. When `T == Float64`, the default value is $\approx 10^{-13}$.
+
+ * `ms_αmin2::T = eps(T)^(0.6)`, (*advanced*): second minimum value for the MS method.
+      > When a rank defficient Jacobian is detected, and the linear solver failed with `α = ms_αmin2`, the MS method is restarted with `α = ms_αmin2`. This is $\alpha_{\text{trial}}^2$ in the implementation paper. When `T == Float64`, the default value is $\approx 10^{-10}$.
 
 ## Linear Solver
 

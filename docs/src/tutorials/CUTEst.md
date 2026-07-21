@@ -4,7 +4,7 @@ This tutorial shows how to solve a problem from
 [CUTEst.jl](https://github.com/JuliaSmoothOptimizers/CUTEst.jl)
 with `ExactPenalty.jl`.
 
-!!! warning "Equality-Constrained Problems"
+!!! warning "Inequality Constraints"
     `ExactPenalty.jl` solves problems of the form
     `minimize f(x) s.t. c(x) = 0`.
     Therefore, choose a CUTEst problem containing only equality
