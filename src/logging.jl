@@ -42,7 +42,7 @@ end
 function introduction_message(solver::MoreSorensenSolver, Δ)
   return separator(type = :ms_loop) *
   @sprintf("\n                  |  Computing step ( H + σI    Jᵀ )(s) = -(∇f)
-                  |                 ( J        -αI )(y) = -(c), with ‖y‖ ≤ %-3.2e...",
+                  |                 ( J        -αI )(y) = -(c ), with ‖y‖ ≤ %-3.2e...",
   Δ)
 end
 
