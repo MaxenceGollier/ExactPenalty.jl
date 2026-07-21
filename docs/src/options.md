@@ -148,7 +148,7 @@ We define $\epsilon_P$ and $\epsilon_D$ as
   > Each run of the *ms-loop* stops when the number of iterations exceeds `ms_max_iter`.
 
 ## Logging
-We refer to the [outputs](outputs.md) section for an explanation of the logger output.
+We refer to the [outputs](outputs.md#console-output) section for an explanation of the logger output.
 
 * `verbose_level::Int = 0`: Output verbosity level.
     >   The larger this value the more detailed is the output. The valid range is `0 ≤ print_level ≤ 4`. **Warning**: large values can potentially print a lot of information, we recommend to start with a value of `1`. The value of `print_level` corresponds to the depth of the loop that will be printed. That is 
@@ -186,8 +186,8 @@ We refer to the [outputs](outputs.md) section for an explanation of the logger o
  * `r2n_watchdog_η0::T = √eps(T)` (*advanced*): watchdog deactivation threshold.
     > The watchdog is deactivated when a sufficient decrease condition in either the dual infeasibility or the objective is attained. See the implementation paper for more details. When `T == Float64`, the default value is $\approx 10^{-8}$.
 
- * `r2n_tiny_step_tol::T = eps(T)` (*advanced*): tolerance for detecting numerically insignificant steps.
-    > When a step $$s$$ for some iterate $$x$$ is such that $$\|s\|_{\infty} / \|x\|_{\infty}$$ is smaller than `r2n_tiny_step_tol`, the inner loop returns with a corresponding exit message. When `T == Float64`, the default value is $\approx 10^{-16}$.
+ * `r2n_tiny_step_tol::T = 10 * eps(T)` (*advanced*): tolerance for detecting numerically insignificant steps.
+    > When a step $s$ for some iterate $x$ is such that $|s_i|/|x_i|$ is smaller than `r2n_tiny_step_tol` for all $1 \leq i \leq n$, the inner loop returns with a corresponding exit message. When `T == Float64`, the default value is $\approx 10^{-15}$.
 
 ## MS Specific
 
