@@ -448,6 +448,7 @@ function SolverCore.solve!(
         optimal = solved,
         infeasible = infeasible,
         not_desc = not_desc,
+        small_step = solver.substats.status == :small_step,
         max_eval = max_eval,
         max_time = max_time,
         max_iter = max_iter,
