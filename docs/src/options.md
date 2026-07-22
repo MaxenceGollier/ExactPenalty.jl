@@ -186,8 +186,8 @@ We refer to the [outputs](outputs.md#console-output) section for an explanation 
  * `r2n_watchdog_η0::T = √eps(T)` (*advanced*): watchdog deactivation threshold.
     > The watchdog is deactivated when a sufficient decrease condition in either the dual infeasibility or the objective is attained. See the implementation paper for more details. When `T == Float64`, the default value is $\approx 10^{-8}$.
 
- * `r2n_tiny_step_tol::T = 10 * eps(T)` (*advanced*): tolerance for detecting numerically insignificant steps.
-    > When a step $s$ for some iterate $x$ is such that $|s_i|/|x_i|$ is smaller than `r2n_tiny_step_tol` for all $1 \leq i \leq n$, the inner loop returns with a corresponding exit message. When `T == Float64`, the default value is $\approx 10^{-15}$.
+ * `r2n_tiny_step_tol::T = eps(T)` (*advanced*): tolerance for detecting numerically insignificant steps.
+    > When a step $s$ for some iterate $x$ is such that $|s_i|/|x_i|$ is smaller than `r2n_tiny_step_tol` for all $1 \leq i \leq n$, the inner loop returns with a corresponding exit message. When `T == Float64`, the default value is $\approx 10^{-16}$.
 
 ## MS Specific
 

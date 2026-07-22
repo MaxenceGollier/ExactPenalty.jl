@@ -203,7 +203,7 @@ function SolverCore.solve!(
   r2n_γ::T = T(3),
   r2n_watchdog_max_iter::Int = 10,
   r2n_watchdog_η0::T = √eps(T),
-  r2n_tiny_step_tol::T = 10*eps(T),
+  r2n_tiny_step_tol::T = eps(T),
 
   ## MS Specific arguments
   ms_accept_descent::Bool = true,
