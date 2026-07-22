@@ -97,6 +97,7 @@ For example,
 
 ### Inner (R2N)-Loop Header
 
+For the inner loop logger, the logger prints the following columns:
 * `Iter`: R2N iteration counter (within the current penalized subproblem).
 * `sIter`: number of Moré–Sorensen iterations used to compute the current step.
 * `Objective`: current value of the penalized objective $f(x) + \tau_k \lVert c(x) \rVert_2$.
@@ -115,3 +116,5 @@ For example,
 
   finalize(nlp)
 ```
+
+### MS-Loop Header

@@ -155,7 +155,7 @@ We refer to the [outputs](outputs.md#console-output) section for an explanation 
     >   - `print_level = 1`: Prints the information relative to the *penalty loop*,
     >   - `print_level = 2`: Prints the information relative to the *r2n loop*,
     >   - `print_level = 3`: Prints the information relative to the *ms loop*,
-    >   - `print_level = 4`: Prints the information relative to the *linear solver*.
+    >   - `print_level = 4`: Prints the information relative to the *linear solver* (not implemented yet).
 
  * `verbose::Int = 1`: Frequency (in iterations) at which information is printed.
     > `verbose = 1` prints every iteration (of the outer loop), `verbose = 10` prints every ten iteration (of the outer loop). If `print_level < 1`, this parameter is ignored.
