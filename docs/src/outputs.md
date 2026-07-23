@@ -118,3 +118,30 @@ For example,
 ```
 
 ### MS-Loop Header
+
+!!! warning
+    Using `print_level = 3` prints out a lot of information (you are printing 3 nested loops), as you will see below.
+    We recommend to use `print_level < 3` first before increasing the value.
+
+For the Moré–Sorensen loop logger, the logger prints the following columns:
+* `Iter`: Moré–Sorensen iteration counter (within the current R2N step computation).
+* `σ`: current primal regularization parameter of the augmented system.
+* `α`: current dual regularization parameter of the augmented system.
+* `‖y‖`: norm of the dual step computed by solving the augmented system, compared against the trust-region radius `Δ`.
+* `Δ`: current trust-region radius.
+* `inertia`: observed inertia $(n_+, n_0, n_-)$ of the augmented system, i.e., the number of positive, zero, and negative eigenvalues.
+* `lsolve`: status reported by the linear solver for the last system solved.
+* `descent`: whether the computed step was found to be a descent direction for the quadratic model (`true`/`false`); see `ms_accept_descent`.
+
+For example,
+```@example output-print-level-1
+  using CUTEst, ExactPenalty
+
+  nlp = CUTEstModel("BT7")
+  stats = L2Penalty(nlp; print_level = 3)
+
+  finalize(nlp) # hide
+```
+
+!!! tip "Reading `lsolve`"
+    The `lsolve` column reports the status returned directly by the chosen `linear_solver` (see [options](options.md#Linear-Solver)) for the corresponding factorization/solve. A value other than `success` typically triggers either a regularization increase or a fallback strategy (e.g., switching MUMPS to an indefinite factorization), and does not necessarily indicate that the overall Moré–Sorensen iteration failed.

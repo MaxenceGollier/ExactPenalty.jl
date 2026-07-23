@@ -52,7 +52,7 @@ plot_kwargs = ( # hide
 plot(objvals; plot_kwargs...)
 ```
  
-!!! warning "Where Does My Callback Act ?"
+!!! warning
     Note that the callback acts at the end of each *outer* loop iteration.
     Refer to the [terminology](options.md#Terminology) section for details on what this means.
 
