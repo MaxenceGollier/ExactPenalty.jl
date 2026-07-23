@@ -92,7 +92,7 @@ For example,
   nlp = CUTEstModel("BT7")
   stats = L2Penalty(nlp; print_level = 1)
 
-  finalize(nlp)
+  finalize(nlp) # hide
 ```
 
 ### Inner (R2N)-Loop Header
@@ -114,7 +114,7 @@ For example,
   nlp = CUTEstModel("BT7")
   stats = L2Penalty(nlp; print_level = 2)
 
-  finalize(nlp)
+  finalize(nlp) # hide
 ```
 
 ### MS-Loop Header

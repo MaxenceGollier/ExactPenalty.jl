@@ -1,39 +1,63 @@
 # Callbacks
  
-`ExactPenalty.jl` lets you hook into the solve at each iteration through a
+`ExactPenalty.jl` lets you hook into the solve process at each iteration through a
 *callback* function. This is useful to log custom information, record
 history, plot progress in real time, or implement your own stopping
 criterion.
- 
-!!! note "Terminology"
-    See the [terminology](options.md#Terminology) section of the options
-    page for an explanation of the *outer* (penalty), *R2N*, and
-    *Moré–Sorensen* loops.
- 
-## The Outer-Loop Callback
- 
-The expected signature is
+  
+The signature of the *callback* function is
 ```julia
 callback(nlp, solver, stats)
 ```
-and its return value is ignored. The callback is called once before the
-first iteration and once after every subsequent iteration, right before the
-stopping criteria are checked, so any modification you make to `solver` or
-`stats` takes effect immediately.
+and its return value is ignored. 
+The call to the callback function is the last step of each iteration.
+Therefore, you can customize the behavior of the algorithm by implementing your customization into the callback.
+Below are a few typical examples of callback customizations.
  
-```julia
-using ExactPenalty
+### Example 1 : Plot the Objective Value History
+```@example cb-1
+using CUTEst, ExactPenalty, Plots
  
+# Define the nonlinear program
+nlp = CUTEstModel("HS26")
+
+# Define the callback: you can use variables defined in the current scope
+objvals = Float64[]
+
 function my_callback(nlp, solver, stats)
-  push!(objectives, stats.objective)
+  push!(objvals, stats.objective)
 end
  
-objectives = Float64[]
+# Solve the problem
 stats = L2Penalty(nlp, callback = my_callback)
+finalize(nlp) # hide
+
+# Plot the objective values
+plot_kwargs = ( # hide
+    xlabel = "k", # hide
+    ylabel = "f(xₖ)", # hide
+    title = "Objective Value History", # hide
+    yscale = :log10, # hide
+    lw = 2.5, # hide
+    legend = false, # hide
+    framestyle = :box, # hide
+    gridalpha = 0.25, # hide
+    xticks = -1:2:length(objvals), # hide
+    yticks = 10.0 .^ (-15:3:1), # hide
+    tickfontsize = 10, # hide
+    guidefontsize = 12, # hide
+    titlefontsize = 14, # hide
+    size = (650, 400), # hide
+) # hide
+plot(objvals; plot_kwargs...)
 ```
  
-### Stopping the Algorithm Early
- 
+!!! warning "Where Does My Callback Act ?"
+    Note that the callback acts at the end of each *outer* loop iteration.
+    Refer to the [terminology](options.md#Terminology) section for details on what this means.
+
+### Example 2 : Stop the Algorithm Early
+
 Setting
 ```julia
 stats.status = :user
@@ -43,91 +67,35 @@ callback returns. Use this to implement custom stopping criteria (e.g., a
 target objective value, a wall-clock budget managed externally, or an
 interactive "stop" signal).
  
-```julia
+```@example cb-2
+using CUTEst, ExactPenalty
+
+# Define the nonlinear program
+nlp = CUTEstModel("HS26")
+
+# Define the callback
+# We stop when the objective function is below 1e-3.
 function stop_early(nlp, solver, stats)
   if stats.objective < 1e-3
+    println("returning on user request...")
     stats.status = :user
   end
 end
+
+# Solve the problem
+stats = L2Penalty(nlp, callback = stop_early, print_level = 1)
+
+finalize(nlp) # hide
 ```
  
-### What You Can Access and Modify
+## What Can You Access
  
 All the information relevant to the current state of the algorithm is
-available through `nlp`, `solver`, and `stats`. In particular:
- 
-* `solver.x`: the current outer iterate $x_k$. You may modify it, though
-  doing so will affect subsequent iterations, so use with care.
-* `solver.subsolver`: a `PenaltyR2NSolver` structure holding the
-  state of the R2N subsolver used to (approximately) minimize the current
-  penalized subproblem $f(x) + \tau_k \|c(x)\|_2$. See the [inner-loop
-  callback](#The-Inner-Loop-Callback) section below for how to hook into
-  this subsolver directly, and the [options](options.md#Terminology) page
-  for the overall solver structure.
+available through `nlp`, `solver`, and `stats`. 
+
+In particular:
+
+* `nlp`: the [`AbstractNLPModel`](https://github.com/JuliaSmoothOptimizers/NLPModels.jl) object that contains information relative to the nonlinear program solved by `ExactPenalty.jl`. You can for example access the [problem meta](https://jso.dev/NLPModels.jl/stable/reference/#NLPModels.NLPModelMeta) or the [problem counters](https://jso.dev/NLPModels.jl/stable/tools/#Functions-evaluations) in the callback.
+* `solver`: the `ExactPenaltySolver` structure containing all allocated objects used during the optimization process. Refer to the [performance](performance.md) section of the documentation for a detailed list of information that you can access through this structure.
 * `stats`: the [`GenericExecutionStats`](https://github.com/JuliaSmoothOptimizers/SolverCore.jl)
-  object that will eventually be returned by `L2Penalty`. Notably:
-  * `stats.iter`: the current outer-iteration counter;
-  * `stats.objective`: the current value of $f(x_k)$;
-  * `stats.primal_feas`, `stats.dual_feas`: the current primal and dual
-    feasibility measures;
-  * `stats.status`: the current status of the algorithm. It should remain
-    `:unknown` unless a stopping criterion has been attained; setting it to
-    any other value (typically `:user`, see above) will stop the algorithm;
-  * `stats.elapsed_time`: the elapsed (CPU) time, in seconds, since the
-    start of the solve.
-## The Inner-Loop (R2N) Callback
- 
-If you need finer-grained control, you can also pass a callback directly to
-the R2N subsolver through the `sub_callback` keyword argument of
-`L2Penalty`. It has exactly the same structure as the outer-loop callback
-described above, but is called once per *R2N* (inner-loop) iteration, i.e.,
-once per step computed while minimizing a single penalized subproblem.
- 
-```julia
-function my_sub_callback(penalized_nlp, subsolver, substats)
-  @info "R2N iter $(substats.iter): objective = $(substats.objective)"
-end
- 
-stats = L2Penalty(nlp, sub_callback = my_sub_callback)
-```
- 
-Inside `my_sub_callback`, the arguments correspond to:
- 
-* `penalized_nlp`: the current `L2PenalizedProblem` (or its shifted
-  variant), representing $f(x) + \tau_k \|c(x)\|_2$ for the current value
-  of $\tau_k$;
-* `subsolver`: the `PenaltyR2NSolver` itself, giving access to
-  `subsolver.xk` (the current inner iterate), `subsolver.y` (the current
-  multiplier estimate), and `subsolver.subsolver` (the underlying
-  `MoreSorensenSolver` used to compute each step);
-* `substats`: the `GenericExecutionStats` for the R2N loop, with the same
-  fields as `stats` above (`iter`, `objective`, `primal_feas`, `dual_feas`,
-  `status`, `elapsed_time`), plus solver-specific entries such as
-  `substats.solver_specific[:sigma]` (the current quadratic regularization
-  parameter) and `substats.solver_specific[:rho]` (the ratio of actual to
-  predicted decrease for the last step).
-As with the outer-loop callback, setting `substats.status = :user` stops
-the R2N loop early (and control then returns to the outer loop, which will
-proceed to update the penalty parameter as usual).
- 
-## Example: Recording Convergence History
- 
-Combining both callbacks lets you build a detailed convergence history
-across all levels of the algorithm:
- 
-```julia
-using ExactPenalty
- 
-outer_history = Float64[]
-inner_history = Float64[]
- 
-function outer_cb(nlp, solver, stats)
-  push!(outer_history, stats.objective)
-end
- 
-function inner_cb(penalized_nlp, subsolver, substats)
-  push!(inner_history, substats.objective)
-end
- 
-stats = L2Penalty(nlp, callback = outer_cb, sub_callback = inner_cb)
-```
+  object that will eventually be returned by `L2Penalty`. You can refer to [this section](outputs.md#the-genericexecutionstats-object) for a list of the information contained in this object.
