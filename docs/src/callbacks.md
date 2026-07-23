@@ -12,10 +12,6 @@ criterion.
  
 ## The Outer-Loop Callback
  
-The main entry point, [`L2Penalty`](@ref)/[`solve!`](@ref), accepts a
-`callback` keyword argument that is called once per *outer* (penalty-loop)
-iteration.
- 
 The expected signature is
 ```julia
 callback(nlp, solver, stats)
@@ -62,7 +58,7 @@ available through `nlp`, `solver`, and `stats`. In particular:
  
 * `solver.x`: the current outer iterate $x_k$. You may modify it, though
   doing so will affect subsequent iterations, so use with care.
-* `solver.subsolver`: a [`PenaltyR2NSolver`](@ref) structure holding the
+* `solver.subsolver`: a `PenaltyR2NSolver` structure holding the
   state of the R2N subsolver used to (approximately) minimize the current
   penalized subproblem $f(x) + \tau_k \|c(x)\|_2$. See the [inner-loop
   callback](#The-Inner-Loop-Callback) section below for how to hook into
@@ -100,10 +96,10 @@ Inside `my_sub_callback`, the arguments correspond to:
 * `penalized_nlp`: the current `L2PenalizedProblem` (or its shifted
   variant), representing $f(x) + \tau_k \|c(x)\|_2$ for the current value
   of $\tau_k$;
-* `subsolver`: the [`PenaltyR2NSolver`](@ref) itself, giving access to
+* `subsolver`: the `PenaltyR2NSolver` itself, giving access to
   `subsolver.xk` (the current inner iterate), `subsolver.y` (the current
   multiplier estimate), and `subsolver.subsolver` (the underlying
-  [`MoreSorensenSolver`](@ref) used to compute each step);
+  `MoreSorensenSolver` used to compute each step);
 * `substats`: the `GenericExecutionStats` for the R2N loop, with the same
   fields as `stats` above (`iter`, `objective`, `primal_feas`, `dual_feas`,
   `status`, `elapsed_time`), plus solver-specific entries such as
